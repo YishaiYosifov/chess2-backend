@@ -1,10 +1,32 @@
-from werkzeug.exceptions import BadRequest
+import os
 
+from werkzeug.exceptions import BadRequest, Unauthorized
+
+from google_auth_oauthlib.flow import Flow
+
+from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
-from flask import request, g
 
-from member import Member, Player
+from dotenv import load_dotenv
+
+import mysql.connector
+
+from dao.member import Member, Player
+
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+load_dotenv()
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+flow = Flow.from_client_secrets_file(
+    client_secrets_file="google_auth.json",
+    scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+    redirect_uri="http://127.0.0.1:5000/google_login_callback")
+
+
+database = mysql.connector.connect(host=os.getenv("MYSQL_HOST"), database=os.getenv("MYSQL_DATABASE"), user=os.getenv("MYSQL_USER"), password=os.getenv("MYSQL_PASSWORD"))
+cursor = database.cursor(dictionary=True)
 
 def requires_authentication(type : Member | Player, allow_guests : bool = False):
     """
@@ -22,13 +44,14 @@ def requires_authentication(type : Member | Player, allow_guests : bool = False)
     if allow_guests and type == Member: raise ValueError("Type Member cannot be guest")
     def decorator(function):
         def wrapper(*args, **kwargs):
-            if request.path == "/socket.io/": raise NotImplementedError()
 
             if allow_guests: user = Player.create_guest()
             else:
-                # TODO: registed user authentication
-                parsed = _parse_arguments(reqparse.Argument("session_token", type=str, help="Token generated when the session started"))
-                user = None
+                if not "session_token" in session: raise Unauthorized
+
+                user = Member.select(session_token=session["session_token"])
+                if not user: raise Unauthorized
+                user = user[0]
 
             return function(*args, user=user, **kwargs)
 
