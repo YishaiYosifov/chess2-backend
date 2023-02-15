@@ -73,7 +73,7 @@ def login(args):
     if member.authentication_method != AuthenticationMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
 
     auth : WebsiteAuth = WebsiteAuth.select(member_id=member.member_id)[0]
-    if not bcrypt.checkpw(password, auth.hash): raise Unauthorized("Unknown email / username / password")
+    if bcrypt.hashpw(password, auth.salt) != auth.hash: raise Unauthorized("Unknown email / username / password")
 
     member.session_token = uuid.uuid4().hex
     member.update()
