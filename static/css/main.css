@@ -1,0 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Secular+One&display=swap");
+
+:root {
+    --dark-primary: #212121;
+}
+
+body {
+    background-color: var(--dark-primary);
+    font-family: "Secular One", sans-serif;
+}
+
+.nav-item {
+    transition: all 0.2s;
+}
+.nav-item:hover {
+    background-color: var(--dark-primary);
+}
+
+.nav-link {
+    padding-left: 3%;
+}
+
+hr {
+    background-color: cornflowerblue;
+    height: 2px;
+    border: none;
+}

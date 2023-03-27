@@ -1,0 +1,14 @@
+[
+    {
+        "label": "Play",
+        "icon": "bi-play-fill",
+
+        "path": "/play"
+    },
+    {
+        "label": "Profile",
+        "icon": "bi-person-fill",
+
+        "path": "/member"
+    }
+]

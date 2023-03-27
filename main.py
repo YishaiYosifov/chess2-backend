@@ -5,7 +5,7 @@ import uuid
 
 from werkzeug.exceptions import InternalServerError, Conflict
 
-from flask import redirect, session, render_template
+from flask import redirect, session, render_template, send_from_directory
 from flask_restful.reqparse import Argument
 
 from google_auth_oauthlib.flow import Flow
@@ -81,13 +81,13 @@ def login(args):
 
     return "Logged In", 200
 
-@app.route("/api/logout", methods=["POST", "GET"])
+@app.route("/logout", methods=["POST", "GET"])
 @requires_authentication(type=Member)
 def logout(user : Member):
     session.pop("session_token")
     user.session_token = ""
     user.update()
-    return "Logged Out", 200
+    return redirect("/")
 
 @app.route("/api/verify_email/<id>", methods=["GET"])
 def verify_email(id):
@@ -140,11 +140,14 @@ def google_register():
         member.session_token = session["session_token"]
         member.update()
     else: Member(session_token=session["session_token"], username=id_info["name"], email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
-
+    
+    session["message"] = "Logged In Successfully"
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])
 def google_login():
+    if "session_token" in session: return redirect("/")
+
     authorization_url, state = flow.authorization_url()
     session["state"] = state
     return redirect(authorization_url)
@@ -159,7 +162,25 @@ def index_template():
     if message: session.pop("message")
     return render_template("index.html", message=message)
 
+@app.route("/login")
+def login_template():
+    if "session_token" in session: return redirect("/")
+    return render_template("login.html")
+
+@app.route("/play")
+def play_template(): return render_template("play.html")
+
 # endregion
+
+# region assets
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, "static/assets"), "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
+# endregion
+
+# region tests
 
 @app.route("/protected")
 @requires_authentication(type=Member)
@@ -167,8 +188,8 @@ def protected(user):
     print(user)
     return "Logged in!"
 
-@app.route("/test")
-def test():
+@app.route("/website_login_test")
+def website_login_test():
     return """<script>
         fetch("http://127.0.0.1:5000/api/login", {
             method: "POST",
@@ -180,6 +201,8 @@ def test():
         });
     </script>""", 200
 
+# endregion
+
 @app.before_first_request
 def start_clean_verifications():
     def clean_verifications():
@@ -190,7 +213,7 @@ def start_clean_verifications():
     threading.Thread(target=clean_verifications).start()
 
 @app.before_request
-def pernament_session(): session.permanent = True
+def permanent_session(): session.permanent = True
 
 if __name__ == "__main__":
     flow = Flow.from_client_secrets_file(
