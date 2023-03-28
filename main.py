@@ -5,7 +5,7 @@ import uuid
 
 from werkzeug.exceptions import InternalServerError, Conflict
 
-from flask import redirect, session, render_template, send_from_directory
+from flask import redirect, session, render_template, send_from_directory, jsonify
 from flask_restful.reqparse import Argument
 
 from google_auth_oauthlib.flow import Flow
@@ -27,15 +27,15 @@ app.secret_key = "bb5c8af0e15d4d0195e37fa995430280"
 
 # region API
 
-@app.route("/api/register", methods=["POST"])
+@app.route("/api/signup", methods=["POST"])
 @requires_arguments(Argument("username", type=str, required=True), Argument("password", type=str, required=True), Argument("email", type=str, required=True))
-def register(args):
+def signup(args):
     username = args.username
     password = args.password
     email = args.email
 
     if len(username) > 60: raise BadRequest("Username Too Long")
-    elif len(username) < 3: raise BadRequest("Username Too Short")
+    elif len(username) < 1: raise BadRequest("Username Too Short")
     
     if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
 
@@ -56,7 +56,8 @@ def register(args):
 
     send_verification_email(email, auth)
 
-    return "Registered", 200
+    session["message"] = "Signed Up Successfully"
+    return "Signed Up", 200
 
 @app.route("/api/login", methods=["POST"])
 @requires_arguments(Argument("selector", type=str, required=True), Argument("password", type=str, required=True))
@@ -80,6 +81,12 @@ def login(args):
     session["session_token"] = member.session_token
 
     return "Logged In", 200
+
+@app.route("/api/username_taken", methods=["POST"])
+@requires_arguments(Argument("username", type=str, required=True))
+def username_taken(args):
+    if Member.select(username=args.username): return Conflict("Username Taken")
+    return "Not Taken", 200
 
 @app.route("/logout", methods=["POST", "GET"])
 @requires_authentication(type=Member)
@@ -118,7 +125,7 @@ def send_verification_email_route(user : Member):
 # region google auth
 
 @app.route("/google_login_callback", methods=["GET"])
-def google_register():
+def google_signup():
     flow.fetch_token(authorization_response=request.url)
     if session["state"] != request.args["state"]: raise InternalServerError()
 
@@ -166,6 +173,11 @@ def index_template():
 def login_template():
     if "session_token" in session: return redirect("/")
     return render_template("login.html")
+
+@app.route("/signup")
+def signup_template():
+    if "session_token" in session: return redirect("/")
+    return render_template("signup.html")
 
 @app.route("/play")
 def play_template(): return render_template("play.html")

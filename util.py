@@ -32,7 +32,7 @@ load_dotenv()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
-STRONG_PASSWORD_REG = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}.*$")
+STRONG_PASSWORD_REG = re.compile(r"^(?=.*[A-Z])(?=.*)(?=.*[0-9])(?=.*[a-z]).{8,}$")
 EMAIL_REG = re.compile(r"[\w\.-]+@[\w\.-]+(\.[\w]+)+")
 
 with open("email_verification.html", "r") as f: EMAIL_VERIFICATION_MESSAGE = f.read()
