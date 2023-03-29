@@ -3,9 +3,7 @@ import flask
 import time
 import uuid
 
-from werkzeug.exceptions import InternalServerError, Conflict
-
-from flask import redirect, session, render_template, send_from_directory, jsonify
+from flask import redirect, session, render_template, send_from_directory
 from flask_restful.reqparse import Argument
 
 from google_auth_oauthlib.flow import Flow
@@ -56,7 +54,7 @@ def signup(args):
 
     send_verification_email(email, auth)
 
-    session["message"] = "Signed Up Successfully"
+    session["alert"] = "Signed Up Successfully"
     return "Signed Up", 200
 
 @app.route("/api/login", methods=["POST"])
@@ -85,24 +83,26 @@ def login(args):
 @app.route("/logout", methods=["POST", "GET"])
 @requires_authentication(type=Member)
 def logout(user : Member):
-    session.pop("session_token")
+    session.clear()
     user.session_token = ""
     user.update()
     return redirect("/")
 
-@app.route("/api/verify_email/<id>", methods=["GET"])
-def verify_email(id):
-    if not id in awaiting_verification:
-        session["message"] = "Verification Link Expired"
+@app.route("/api/verify_email/<user_id>/<id>", methods=["GET"])
+def verify_email(user_id, id):
+    user_id = int(user_id)
+    verification_data = awaiting_verification.get(user_id, None)
+    if not verification_data or verification_data["id"] != id:
+        session["alert"] = "Verification Link Expired"
         return redirect("/")
 
-    auth : WebsiteAuth = awaiting_verification[id]["auth"]
+    auth : WebsiteAuth = verification_data["auth"]
     auth.verified = True
     auth.update()
 
-    awaiting_verification.pop(id)
+    awaiting_verification.pop(user_id)
 
-    session["message"] = "Email Verified"
+    session["alert"] = "Email Verified!"
     return redirect("/")
 
 @app.route("/api/send_verification_email", methods=["POST"])
@@ -142,7 +142,7 @@ def google_signup():
         member.update()
     else: Member(session_token=session["session_token"], username=id_info["name"], email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
     
-    session["message"] = "Logged In Successfully"
+    session["alert"] = "Logged In Successfully"
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])
@@ -159,19 +159,37 @@ def google_login():
 
 @app.route("/")
 def index_template():
-    message = session.get("message")
-    if message: session.pop("message")
-    return render_template("index.html", message=message)
+    alert = session.get("alert")
+    if alert: session.pop("alert")
+    elif "session_token" in session:
+        member : Member = Member.select(session_token=session["session_token"])
+        if not member: session.clear()
+        else:
+            member = member[0]
+            if member.authentication_method == AuthenticationMethods.WEBSITE and not WebsiteAuth.select(member_id=member.member_id)[0].verified:
+                alert = "You haven't verified your email yet!"
+                verification_data = awaiting_verification.get(member.member_id, None)
+                if not verification_data or verification_data["expires"] - time.time() < (60 * 10) - (60 * 3):
+                    alert += """ Click <b><a href="#" onclick="apiRequest('send_verification_email'); new bootstrap.Alert('#alert').close();">here</a></b> to resend the verification email, or"""
+                alert += " click <b><a href='/settings'>here</a></b> to go to the settings and change your email address."
+
+    return render_template("index.html", alert=alert)
 
 @app.route("/login")
 def login_template():
     if "session_token" in session: return redirect("/")
-    return render_template("login.html")
+
+    alert = session.get("alert")
+    if alert: session.pop("alert")
+    return render_template("login.html", alert=alert)
 
 @app.route("/signup")
 def signup_template():
     if "session_token" in session: return redirect("/")
-    return render_template("signup.html")
+
+    alert = session.get("alert")
+    if alert: session.pop("alert")
+    return render_template("signup.html", alert=alert)
 
 @app.route("/play")
 def play_template(): return render_template("play.html")
@@ -183,29 +201,6 @@ def play_template(): return render_template("play.html")
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(os.path.join(app.root_path, "static/assets"), "favicon.ico", mimetype="image/vnd.microsoft.icon")
-
-# endregion
-
-# region tests
-
-@app.route("/protected")
-@requires_authentication(type=Member)
-def protected(user):
-    print(user)
-    return "Logged in!"
-
-@app.route("/website_login_test")
-def website_login_test():
-    return """<script>
-        fetch("http://127.0.0.1:5000/api/login", {
-            method: "POST",
-            body: JSON.stringify({"selector": "luka", "password": "ASdJAS48sddS"}),
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
-        });
-    </script>""", 200
 
 # endregion
 

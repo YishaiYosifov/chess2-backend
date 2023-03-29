@@ -3,7 +3,7 @@ import uuid
 import re
 import os
 
-from werkzeug.exceptions import BadRequest, Unauthorized
+from werkzeug.exceptions import BadRequest, Unauthorized, Conflict
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -39,9 +39,6 @@ with open("email_verification.html", "r") as f: EMAIL_VERIFICATION_MESSAGE = f.r
 
 database = mysql.connector.connect(host=os.getenv("MYSQL_HOST"), database=os.getenv("MYSQL_DATABASE"), user=os.getenv("MYSQL_USER"), password=os.getenv("MYSQL_PASSWORD"))
 cursor = database.cursor(dictionary=True)
-#cursor.execute("DELETE FROM members;")
-#cursor.execute("DELETE FROM website_authentication;")
-#database.commit()
 
 awaiting_verification : dict[str:dict["expires": str, "auth": WebsiteAuth]] = {}
 
@@ -66,7 +63,9 @@ def requires_authentication(type : Member | Player, allow_guests : bool = False)
                 if not "session_token" in session: raise Unauthorized
 
                 user : Member = Member.select(session_token=session["session_token"])
-                if not user: raise Unauthorized
+                if not user:
+                    session.clear()
+                    raise Unauthorized
 
                 user = user[0]
 
@@ -131,14 +130,12 @@ def create_gmail_service(client_secret_file, api_name, api_version, *scopes, pre
     if os.path.exists(os.path.join(working_dir, token_dir, token_file)): creds = Credentials.from_authorized_user_file(os.path.join(working_dir, token_dir, token_file), SCOPES)
 
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+        if creds and creds.expired and creds.refresh_token: creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
 
-        with open(os.path.join(working_dir, token_dir, token_file), "w") as token:
-            token.write(creds.to_json())
+        with open(os.path.join(working_dir, token_dir, token_file), "w") as token: token.write(creds.to_json())
 
     try:
         service = build(API_SERVICE_NAME, API_VERSION, credentials=creds, static_discovery=False)
@@ -151,14 +148,20 @@ def create_gmail_service(client_secret_file, api_name, api_version, *scopes, pre
 gmail_service = create_gmail_service("google_tokens/email_auth.json", "gmail", "v1", ["https://mail.google.com/"])
 
 def send_verification_email(to : str, auth : WebsiteAuth):
-    id = uuid.uuid4().hex
-    awaiting_verification[id] = {"expires": time.time() + 60 * 10, "auth": auth}
+    expires = time.time() + 60 * 10
+    verification_data = awaiting_verification.get(auth.member_id)
+    if verification_data:
+        id = verification_data["id"]
+        verification_data["expires"] = expires
+    else:
+        id = uuid.uuid4().hex
+        awaiting_verification[auth.member_id] = {"id": id, "expires": expires, "auth": auth}
 
     message = MIMEMultipart("alternative")
     message["To"] = to
     message["Subject"] = "Chess 2 Email Verification"
 
-    message.attach(MIMEText(EMAIL_VERIFICATION_MESSAGE.replace("{VERIFICATION-ID}", id), "html"))
+    message.attach(MIMEText(EMAIL_VERIFICATION_MESSAGE.replace("{MEMBER-ID}", str(auth.member_id)).replace("{VERIFICATION-ID}", id), "html"))
 
     gmail_service.users().messages().send(userId="me", body={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()}).execute()
 

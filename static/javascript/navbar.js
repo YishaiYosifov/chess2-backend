@@ -1,5 +1,5 @@
 const navbar = $($.parseHTML(
-    `<nav class="navbar navbar-dark fixed-top">
+    `<nav class="navbar navbar-dark">
         <div class="container-fluid">
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#navbarOffcanvas" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -38,5 +38,5 @@ $.getJSON("static/navbar.json", navbarItems => {
 
         navbarBody.append(navbarItem);
     };
-    $("body").append(navbar);
+    $("body").prepend(navbar);
 });
