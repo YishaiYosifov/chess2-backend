@@ -53,9 +53,6 @@ async function isUsernameValid(username) {
     } else if (username.length > 60) {
         showError("username", "• Username too long!")
         return false;
-    } else if (!(await apiRequest("username_taken", {"username": username})).ok) {
-        showError("username", "• Username taken!")
-        return false;
     }
     hideError("username");
     return true;
@@ -75,7 +72,14 @@ $("#signup").click(async () => {
     if (!await isUsernameValid(username) || !isEmailValid(email) || !isPasswordValid(password)) return;
 
     response = await apiRequest("signup", {"username": username, "email": email, "password": password})
-    if (!response.ok) {
+    if (response.status == 409) {
+        reason = await response.text();
+        console.log(reason)
+        if (reason == "Username Taken") showError("username", "• Username Taken!");
+        else showError("email", "• Email Taken!");
+        return;
+    }
+    else if (!response.ok) {
         showError("signup", "Something went wrong.");
         return;
     }

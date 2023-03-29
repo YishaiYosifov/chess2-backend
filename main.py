@@ -34,16 +34,16 @@ def signup(args):
     password = args.password
     email = args.email
 
-    if len(username) > 60: raise BadRequest("Username Too Long")
-    elif len(username) < 1: raise BadRequest("Username Too Short")
+    if len(username) > 60: return "Username Too Long", 400
+    elif len(username) < 1: return "Username Too Short", 400
     
-    if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
+    if not STRONG_PASSWORD_REG.findall(password): return "Invalid Password", 400
 
     email_match = EMAIL_REG.match(email)
-    if not email_match or email_match.group(0) != email: raise BadRequest("Invalid Email Address")
+    if not email_match or email_match.group(0) != email: return "Invalid Email Address", 400
 
-    if Member.select(email=email): raise Conflict("Email Taken")
-    if Member.select(username=username): raise Conflict("Username Taken")
+    if Member.select(username=username): return "Username Taken", 409
+    if Member.select(email=email): return "Email Taken", 409
     
     Member(username=username, email=email, authentication_method=AuthenticationMethods.WEBSITE).insert()
     member_id = cursor.lastrowid
@@ -68,25 +68,19 @@ def login(args):
     member : Member = Member.select(username=selector)
     if not member:
         member : Member = Member.select(email=selector)
-        if not member: raise Unauthorized("Unknown email / username / password")
+        if not member: return "Unknown email / username / password", 401
     member = member[0]
     
-    if member.authentication_method != AuthenticationMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
+    if member.authentication_method != AuthenticationMethods.WEBSITE: return "Wrong Authorization Method", 400
 
     auth : WebsiteAuth = WebsiteAuth.select(member_id=member.member_id)[0]
-    if bcrypt.hashpw(password, auth.salt) != auth.hash: raise Unauthorized("Unknown email / username / password")
+    if bcrypt.hashpw(password, auth.salt) != auth.hash: return "Unknown email / username / password", 401
 
     member.session_token = uuid.uuid4().hex
     member.update()
     session["session_token"] = member.session_token
 
     return "Logged In", 200
-
-@app.route("/api/username_taken", methods=["POST"])
-@requires_arguments(Argument("username", type=str, required=True))
-def username_taken(args):
-    if Member.select(username=args.username): return Conflict("Username Taken")
-    return "Not Taken", 200
 
 @app.route("/logout", methods=["POST", "GET"])
 @requires_authentication(type=Member)
@@ -115,7 +109,7 @@ def verify_email(id):
 @requires_authentication(type=Member)
 def send_verification_email_route(user : Member):
     auth : WebsiteAuth = WebsiteAuth.select(member_id=user.member_id)[0]
-    if auth.verified: raise Conflict("Already Verified")
+    if auth.verified: return "Already Verified", 409
 
     send_verification_email(user.email, auth)
     return "Email Sent", 200
@@ -127,7 +121,7 @@ def send_verification_email_route(user : Member):
 @app.route("/google_login_callback", methods=["GET"])
 def google_signup():
     flow.fetch_token(authorization_response=request.url)
-    if session["state"] != request.args["state"]: raise InternalServerError()
+    if session["state"] != request.args["state"]: return "State doesn't match", 500
 
     credentials = flow.credentials
     request_session = requests.session()

@@ -27,7 +27,7 @@ class DatabaseModel:
     def to_dict(self) -> dict[str:any]:
         variables = {}
         for key, value in self.__dict__.items():
-            if not value or key.startswith("_") or callable(key): continue
+            if value == None or key.startswith("_") or callable(key): continue
 
             if isinstance(value, Enum): value = value.value
             variables[key] = value
