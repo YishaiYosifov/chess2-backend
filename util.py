@@ -1,9 +1,9 @@
+from enum import Enum
+
 import time
 import uuid
 import re
 import os
-
-from werkzeug.exceptions import BadRequest, Unauthorized, Conflict
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -12,6 +12,8 @@ from googleapiclient.discovery import build
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+from werkzeug.exceptions import BadRequest, Unauthorized
 
 from flask import request, g, session
 from flask_restful import reqparse
@@ -59,15 +61,7 @@ def requires_authentication(type : Member | Player, allow_guests : bool = False)
     def decorator(function):
         def wrapper(*args, **kwargs):
             if allow_guests: user = Player.create_guest()
-            else:
-                if not "session_token" in session: raise Unauthorized
-
-                user : Member = Member.select(session_token=session["session_token"])
-                if not user:
-                    session.clear()
-                    raise Unauthorized
-
-                user = user[0]
+            else: user = get_user_from_session(True)
 
             return function(*args, user=user, **kwargs)
 
@@ -113,6 +107,22 @@ def _parse_arguments(*arguments):
         raise BadRequest("Missing Arguments:\n" + message)
 
     return args
+
+def get_user_from_session(force_login = True) -> Member | None:
+    """
+    Get the user object from the session.
+
+    :param force_login: raise unauthorized exception when not logged in
+    """
+    if not "session_token" in session:
+        if force_login: raise Unauthorized("Not Logged In")
+        else: return
+
+    user : Member = Member.select(session_token=session["session_token"])
+    if not user:
+        session.clear()
+        raise Unauthorized("Session Expired")
+    return user[0]
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file

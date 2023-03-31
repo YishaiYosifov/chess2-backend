@@ -3,12 +3,8 @@ $("#login").click(async () => {
     var password = $("#password").val();
 
     const response = await apiRequest("login", {selector: selector, password: password});
-    if (!response.ok) {
-        error("Wrong username / password");
-        return;
-    }
-
-    window.location.replace("/")
+    if (!response.ok) error("Wrong username / password");
+    else window.location.replace("/");
 });
 
 var passwordVisible = false;
