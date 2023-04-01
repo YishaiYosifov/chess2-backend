@@ -1,4 +1,4 @@
-from werkzeug.exceptions import HTTPException, BadRequest, Conflict, Unauthorized, NotFound, InternalServerError
+from werkzeug.exceptions import BadRequest, Unauthorized
 
 from flask_restful.reqparse import Argument
 from flask import Blueprint, redirect
@@ -8,7 +8,7 @@ import bcrypt
 from dao.auth import *
 from util import *
 
-auth = Blueprint("auth", __name__, url_prefix="/api/auth")
+auth = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth.route("/signup", methods=["POST"])
 @requires_arguments(Argument("username", type=str, required=True), Argument("password", type=str, required=True), Argument("email", type=str, required=True))
@@ -17,18 +17,13 @@ def signup(args):
     password = args.password
     email = args.email
 
-    if len(username) > 60: raise BadRequest("Username Too Long")
-    elif len(username) < 1: raise BadRequest("Username Too Short")
-
     if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
-
-    email_match = EMAIL_REG.match(email)
-    if not email_match or email_match.group(0) != email: raise BadRequest("Invalid Email Address")
-
-    if Member.select(username=username): raise Conflict("Username Taken")
-    if Member.select(email=email): raise Conflict("Email Taken")
     
-    Member(username=username, email=email, authentication_method=AuthenticationMethods.WEBSITE).insert()
+    member = Member(authentication_method=AuthenticationMethods.WEBSITE)
+    member.set_username(username)
+    member.set_email(email)
+    member.insert()
+
     member_id = cursor.lastrowid
 
     hash = bcrypt.hashpw(password, bcrypt.gensalt())

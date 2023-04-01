@@ -20,7 +20,7 @@ def index_template():
             alert = "You haven't verified your email yet!"
             verification_data = awaiting_verification.get(member.member_id)
             if not verification_data or verification_data["expires"] - time.time() < (60 * 10) - (60 * 3):
-                alert += """ Click <b><a href="#" onclick="apiRequest('send_verification_email'); new bootstrap.Alert('#alert').close();">here</a></b> to resend the verification email, or"""
+                alert += """ Click <b><a href="#" onclick="apiRequest('/send_verification_email'); new bootstrap.Alert('#alert').close();">here</a></b> to resend the verification email, or"""
             alert += " click <b><a href='/settings'>here</a></b> to go to the settings and change your email address."
 
     return render_template("index.html", alert=alert)

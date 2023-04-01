@@ -1,6 +1,6 @@
-async function apiRequest(route, json=null, method="POST") {
+async function apiRequest(route, json=null) {
     const response = await fetch(`/api${route}`, {
-            method: method,
+            method: "POST",
             body: JSON.stringify(json),
             headers: {
                 "Accept": "application/json",

@@ -3,12 +3,10 @@ import numpy
 import flask
 import time
 import uuid
-import os
 
-from werkzeug.exceptions import HTTPException, BadRequest, Conflict, Unauthorized, NotFound, InternalServerError
+from werkzeug.exceptions import HTTPException, InternalServerError
 
-from flask import redirect, session, render_template, send_from_directory
-from flask_restful.reqparse import Argument
+from flask import redirect, session
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
