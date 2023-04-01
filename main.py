@@ -1,5 +1,4 @@
 import threading
-import numpy
 import flask
 import time
 import uuid
@@ -13,11 +12,8 @@ from google.oauth2 import id_token
 
 from pip._vendor import cachecontrol
 
-from PIL import Image
-
 import google.auth.transport.requests
 import requests
-import io
 
 from dao.member import Member
 from dao.auth import *
@@ -29,20 +25,6 @@ from util import *
 
 app = flask.Flask(__name__)
 app.secret_key = "bb5c8af0e15d4d0195e37fa995430280"
-
-@app.route("/api/test", methods=["POST"])
-def test():
-    data = request.files["profile"]
-    buffer = io.BytesIO(data.read())
-    buffer.seek(0)
-    
-    image = Image.open(buffer)
-    image = numpy.asarray(image)
-    image = Image.fromarray(image).convert("RGB")
-
-    image = image.resize((160, 160))
-    image.save("static/uploads/test.jpeg")
-    return "pog", 200
 
 # region google auth
 

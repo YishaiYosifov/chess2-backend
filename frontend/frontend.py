@@ -7,7 +7,7 @@ from .assets import assets
 from dao.auth import *
 from util import *
 
-frontend = Blueprint("frontend", __name__, "/")
+frontend = Blueprint("frontend", __name__, "/", template_folder="templates")
 frontend.register_blueprint(assets)
 
 @frontend.route("/")
