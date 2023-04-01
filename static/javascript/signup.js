@@ -71,7 +71,7 @@ $("#signup").click(async () => {
 
     if (!await isUsernameValid(username) || !isEmailValid(email) || !isPasswordValid(password)) return;
 
-    response = await apiRequest("signup", {"username": username, "email": email, "password": password})
+    response = await apiRequest("/auth/signup", {"username": username, "email": email, "password": password})
     if (response.status == 409) {
         reason = await response.text();
         console.log(reason)

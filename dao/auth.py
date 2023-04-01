@@ -18,4 +18,3 @@ class WebsiteAuth(BaseModel, DatabaseModel):
     verified : bool = False
 
     hash : str
-    salt : str

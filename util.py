@@ -1,5 +1,3 @@
-from enum import Enum
-
 import time
 import uuid
 import re

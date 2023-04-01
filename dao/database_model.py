@@ -25,11 +25,13 @@ class DatabaseModel:
         return [cls.parse_obj(member) for member in cursor.fetchall()]
 
     def to_dict(self) -> dict[str:any]:
-        variables = {}
-        for key, value in self.__dict__.items():
-            if value == None or key.startswith("_") or callable(key): continue
-
+        attributes = [attribute for attribute, value in self.__dict__.items() if value != None and not attribute.startswith("_") and not callable(attribute)]
+        return self.get(attributes)
+    
+    def get(self, attributes : list) -> dict[str:any]:
+        results = {}
+        for attribute in attributes:
+            value = getattr(self, attribute)
             if isinstance(value, Enum): value = value.value
-            variables[key] = value
-        
-        return variables
+            results[attribute] = value
+        return results

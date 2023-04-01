@@ -2,7 +2,7 @@ $("#login").click(async () => {
     var selector = $("#selector").val();
     var password = $("#password").val();
 
-    const response = await apiRequest("login", {selector: selector, password: password});
+    const response = await apiRequest("/auth/login", {selector: selector, password: password});
     if (!response.ok) error("Wrong username / password");
     else window.location.replace("/");
 });

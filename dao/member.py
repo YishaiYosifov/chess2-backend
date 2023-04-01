@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from .database_model import DatabaseModel
 from .auth import AuthenticationMethods
 
-PUBLIC_INFO = ["username"]
+PUBLIC_INFO = ["member_id", "username"]
+PRIVATE_INFO = ["email"]
 
 class Member(BaseModel, DatabaseModel):
     _table = "members"
@@ -18,4 +19,5 @@ class Member(BaseModel, DatabaseModel):
 
     authentication_method : AuthenticationMethods
 
-    def get_public_info(self) -> dict: return {param: self.__dict__[param] for param in PUBLIC_INFO}
+    def get_public_info(self) -> dict: return super().get(PUBLIC_INFO)
+    def get_private_info(self) -> dict: return self.get_public_info() | super().get(PRIVATE_INFO)

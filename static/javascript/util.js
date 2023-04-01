@@ -1,5 +1,5 @@
 async function apiRequest(route, json=null, method="POST") {
-    const response = await fetch(`/api/${route}`, {
+    const response = await fetch(`/api${route}`, {
             method: method,
             body: JSON.stringify(json),
             headers: {
