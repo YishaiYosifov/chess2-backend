@@ -104,6 +104,13 @@ def _parse_arguments(*arguments):
         if is_socket: emit("exception", SocketIOExceptions.BAD_ARGUMENT)
         raise BadRequest("Missing Arguments:\n" + message)
 
+    for arg_name, value in args.copy().items():
+        if value is None:
+            try: arg = next(filter(lambda arg: arg.name == arg_name, parser.args))
+            except StopIteration: continue
+
+            if not arg.default is None: args[arg_name] = arg.default
+
     return args
 
 def get_user_from_session(force_login = True) -> Member | None:

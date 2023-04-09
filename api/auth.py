@@ -34,7 +34,7 @@ def signup(args):
     send_verification_email(email, auth)
     os.makedirs(f"static/uploads/{member_id}")
 
-    session["alert"] = "Signed Up Successfully"
+    session["alert"] = {"message": "Signed Up Successfully", "color": "success"}
     return "Signed Up", 200
 
 @auth.route("/login", methods=["POST"])
@@ -51,8 +51,7 @@ def login(args):
     
     if member.authentication_method != AuthenticationMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
 
-    auth : WebsiteAuth = WebsiteAuth.select(member_id=member.member_id)[0]
-    if not bcrypt.checkpw(password, auth.hash): raise Unauthorized("Unknown email / username / password")
+    if not member.check_password(password): raise Unauthorized("Unknown email / username / password")
 
     member.session_token = uuid.uuid4().hex
     member.update()

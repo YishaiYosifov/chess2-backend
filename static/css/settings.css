@@ -1,0 +1,25 @@
+#change-profile-picture {
+    transition: all 300ms;
+    opacity: 70%;
+    border: 0;
+    width: 160px;
+}
+
+#change-profile-picture:hover {
+    opacity: 90%;
+    background-color: white;
+}
+
+#username {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 280px;
+}
+
+.disabled-input {
+    background-color: #707070 !important;
+    transition: all 1000ms;
+
+    border: 0;
+}

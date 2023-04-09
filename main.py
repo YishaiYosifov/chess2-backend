@@ -52,7 +52,7 @@ def google_signup():
         member.update()
     else: Member(session_token=session["session_token"], username=id_info["name"], email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
     
-    session["alert"] = "Logged In Successfully"
+    session["alert"] = {"message": "Logged In Successfully", "color": "success"}
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])

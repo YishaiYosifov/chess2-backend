@@ -1,25 +1,6 @@
 const tooltips = document.querySelectorAll(".tt")
 tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
 
-var passwordVisible = false;
-$("#passwordToggle").click(() => {
-    var icon = $("#passwordToggleIcon")
-    var input = $("#password")
-
-    if (passwordVisible) {
-        input.attr("type", "password");
-
-        icon.addClass("bi-eye-fill");
-        icon.removeClass("bi-eye-slash-fill");
-    } else {
-        input.attr("type", "text");
-
-        icon.addClass("bi-eye-slash-fill");
-        icon.removeClass("bi-eye-fill");
-    }
-    passwordVisible = !passwordVisible;
-});
-
 function showError(target, text) {
     const error = $(`#${target}Error`);
     error.text(text);
@@ -71,7 +52,7 @@ $("#signup").click(async () => {
 
     if (!await isUsernameValid(username) || !isEmailValid(email) || !isPasswordValid(password)) return;
 
-    response = await apiRequest("/auth/signup", {"username": username, "email": email, "password": password})
+    var response = await apiRequest("/auth/signup", {"username": username, "email": email, "password": password})
     if (response.status == 409) {
         reason = await response.text();
         console.log(reason)

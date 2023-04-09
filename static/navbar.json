@@ -10,5 +10,11 @@
         "icon": "bi-person-fill",
 
         "path": "/member"
+    },
+    {
+        "label": "Settings",
+        "icon": "bi-gear-fill",
+        
+        "path": "/settings"
     }
 ]

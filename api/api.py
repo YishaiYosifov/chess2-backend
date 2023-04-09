@@ -1,11 +1,6 @@
-import numpy
-import os
-import io
-
-from werkzeug.exceptions import Conflict, UnprocessableEntity, RequestEntityTooLarge
+from werkzeug.exceptions import Conflict
 
 from flask import Blueprint, redirect
-from PIL import Image
 
 from .profile import profile
 from .auth import auth
@@ -22,7 +17,7 @@ def verify_email(user_id, id):
     user_id = int(user_id)
     verification_data = awaiting_verification.get(user_id)
     if not verification_data or verification_data["id"] != id:
-        session["alert"] = "Verification Link Expired"
+        session["alert"] = {"message": "Verification Link Expired", "color": "danger"}
         return redirect("/")
 
     auth : WebsiteAuth = verification_data["auth"]
@@ -31,7 +26,7 @@ def verify_email(user_id, id):
 
     awaiting_verification.pop(user_id)
 
-    session["alert"] = "Email Verified!"
+    session["alert"] = {"message": "Email Verified!", "color": "success"}
     return redirect("/")
 
 @api.route("/send_verification_email", methods=["POST"])
@@ -42,24 +37,3 @@ def send_verification_email_route(user : Member):
 
     send_verification_email(user.email, auth)
     return "Email Sent", 200
-
-@api.route("/test", methods=["POST"])
-def test():
-    data = request.files["profile_picture"]
-    file_size = data.seek(0, os.SEEK_END)
-    data.seek(0, os.SEEK_SET)
-    
-    if file_size > 1.049e+6: raise RequestEntityTooLarge("Profile Picture too big")
-    if not data.filename.split(".")[-1] in ["png", "jpeg", "jpg"]: raise UnprocessableEntity("Profile picture must be png/jpeg/jpg")
-
-    blob = data.read()
-    buffer = io.BytesIO(blob)
-    buffer.seek(0)
-    
-    image = Image.open(buffer)
-    image = numpy.asarray(image)
-    image = Image.fromarray(image).convert("RGB")
-
-    image = image.resize((160, 160))
-    image.save("static/uploads/test.jpeg")
-    return "pog", 200

@@ -26,11 +26,17 @@ def get_info(target : str):
     
     return user.get_public_info(), 200
 
+REQUIRES_PASSWORD = ["username", "email"]
 @profile.route("/update", methods=["POST"])
-@requires_arguments(Argument("username", type=str), Argument("email", type=str))
+@requires_arguments(Argument("username", type=str), Argument("email", type=str), Argument("about", type=str), Argument("password_confirmation", type=str, default=""))
 @requires_authentication(type=Member)
 def update(target : str, user : Member, args):
     if target != user.username and target != "me": raise Unauthorized("Not logged into target user")
+
+    for item in REQUIRES_PASSWORD:
+        if args.get(item):
+            if not user.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
+            break
 
     if args.username != None: user.set_username(args.username)
     if args.email != None:
@@ -42,24 +48,43 @@ def update(target : str, user : Member, args):
         auth.update()
 
         send_verification_email(user.email, auth)
-    if "profile_picture" in request.files:
-        data = request.files["profile_picture"]
-        file_size = data.seek(0, os.SEEK_END)
-        data.seek(0, os.SEEK_SET)
-        
-        if file_size > 1.049e+6: raise RequestEntityTooLarge("Profile Picture too big")
-        if not data.filename.split(".")[-1] in ["png", "jpeg", "jpg"]: raise UnprocessableEntity("Profile picture must be png/jpeg/jpg")
-
-        blob = data.read()
-        buffer = io.BytesIO(blob)
-        buffer.seek(0)
-        
-        image = Image.open(buffer)
-        image = numpy.asarray(image)
-        image = Image.fromarray(image).convert("RGB")
-
-        image = image.resize((160, 160))
-        image.save(f"static/uploads/{user.member_id}/profile-picture.jpeg")
+    if args.about != None: user.about = args.about
 
     user.update()
     return "Updated", 200
+
+@profile.route("/upload_profile_picture", methods=["POST"])
+@requires_authentication(type=Member)
+def upload_profile_picture(target : str, user : Member):
+    if target != user.username and target != "me": raise Unauthorized("Not logged into target user")
+
+    data = request.files.get("profile-picture")
+    if not data: raise BadRequest("Missing Profile Picture")
+
+    file_size = data.seek(0, os.SEEK_END)
+    data.seek(0, os.SEEK_SET)
+    
+    if file_size > 1.049e+6: raise RequestEntityTooLarge("Profile Picture too big")
+    if not data.filename.split(".")[-1] in ["png", "jpeg", "jpg"]: raise UnprocessableEntity("Profile picture must be png/jpeg/jpg")
+
+    blob = data.read()
+    buffer = io.BytesIO(blob)
+    buffer.seek(0)
+    
+    image = Image.open(buffer)
+    image = numpy.asarray(image)
+    image = Image.fromarray(image).convert("RGB")
+
+    width, height = image.size
+    box_size = min(width, height)
+
+    left = (width - box_size) / 2
+    top = (height - box_size) / 2
+    right = (width + box_size) / 2
+    bottom = (height + box_size) / 2
+
+    image = image.crop((left, top, right, bottom))
+    image = image.resize((160, 160))
+    image.save(f"static/uploads/{user.member_id}/profile-picture.jpeg")
+
+    return "Uploaded", 200

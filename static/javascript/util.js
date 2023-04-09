@@ -1,5 +1,5 @@
 async function apiRequest(route, json=null) {
-    const response = await fetch(`/api${route}`, {
+    var response = await fetch(`/api${route}`, {
             method: "POST",
             body: JSON.stringify(json),
             headers: {
@@ -9,7 +9,7 @@ async function apiRequest(route, json=null) {
         }
     );
 
-    const responseCopy = response.clone();
+    var responseCopy = response.clone();
     if (responseCopy.status == 401 && await responseCopy.text() == "Session Expired") {
         window.location.replace("/login?a=session-expired");
         throw new Error("Session Token Expired");
@@ -18,4 +18,33 @@ async function apiRequest(route, json=null) {
     return response;
 }
 
+async function apiUpload(route, name, file) {
+    console.log(file)
+    let data = new FormData();
+    data.append(name, file)
+    return await fetch(`/api${route}`, {
+        method: "POST",
+        body: data
+    })
+}
+
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+var passwordVisible = false;
+$("#passwordToggle").click(() => {
+    var icon = $("#passwordToggleIcon")
+    var input = $("#password")
+
+    if (passwordVisible) {
+        input.attr("type", "password");
+
+        icon.addClass("bi-eye-fill");
+        icon.removeClass("bi-eye-slash-fill");
+    } else {
+        input.attr("type", "text");
+
+        icon.addClass("bi-eye-slash-fill");
+        icon.removeClass("bi-eye-fill");
+    }
+    passwordVisible = !passwordVisible;
+});
