@@ -22,17 +22,18 @@ const navbar = $($.parseHTML(
         </div>
     </nav>`
 ));
-    
-$.getJSON("static/navbar.json", navbarItems => {
+
+var root = location.protocol + "//" + location.host
+$.getJSON(`${root}/static/navbar.json`, navbarItems => {
     const navbarBody = navbar.find(".offcanvas-body").find("ul");
     for (item of navbarItems) {
         var navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
 
         var itemText = $("<a></a>");
         itemText.addClass("nav-link");
-        if (item["path"] == window.location.pathname) itemText.addClass("active");
+        if (item["path"] == window.location.pathname.split("/")[1]) itemText.addClass("active");
 
-        itemText.attr("href", item["path"]);
+        itemText.attr("href", root + "/" + item["path"]);
         itemText.html(`<i class="bi ${item["icon"]}"></i> ${item["label"]}`);
         navbarItem.append(itemText);
 

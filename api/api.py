@@ -14,7 +14,9 @@ api.register_blueprint(profile)
 
 @api.route("/verify_email/<user_id>/<id>", methods=["GET"])
 def verify_email(user_id, id):
-    user_id = int(user_id)
+    try: user_id = int(user_id)
+    except ValueError: user_id = 0
+    
     verification_data = awaiting_verification.get(user_id)
     if not verification_data or verification_data["id"] != id:
         session["alert"] = {"message": "Verification Link Expired", "color": "danger"}

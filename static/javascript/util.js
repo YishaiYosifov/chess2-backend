@@ -19,23 +19,22 @@ async function apiRequest(route, json=null) {
 }
 
 async function apiUpload(route, name, file) {
-    console.log(file)
     let data = new FormData();
-    data.append(name, file)
+    data.append(name, file);
     return await fetch(`/api${route}`, {
         method: "POST",
         body: data
-    })
+    });
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-var passwordVisible = false;
-$("#passwordToggle").click(() => {
-    var icon = $("#passwordToggleIcon")
-    var input = $("#password")
+function togglePasswordVisibility(toggleButton) {
+    toggleButton = $(toggleButton);
+    var icon = toggleButton.children("i");
+    var input = $(toggleButton.attr("password-input"));
 
-    if (passwordVisible) {
+    if (icon.hasClass("bi-eye-slash-fill")) {
         input.attr("type", "password");
 
         icon.addClass("bi-eye-fill");
@@ -46,5 +45,4 @@ $("#passwordToggle").click(() => {
         icon.addClass("bi-eye-slash-fill");
         icon.removeClass("bi-eye-fill");
     }
-    passwordVisible = !passwordVisible;
-});
+};

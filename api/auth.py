@@ -3,8 +3,6 @@ from werkzeug.exceptions import BadRequest, Unauthorized
 from flask_restful.reqparse import Argument
 from flask import Blueprint, redirect
 
-import bcrypt
-
 from dao.auth import *
 from util import *
 
@@ -16,19 +14,18 @@ def signup(args):
     username = args.username
     password = args.password
     email = args.email
-
-    if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
     
     member = Member(authentication_method=AuthenticationMethods.WEBSITE)
     member.set_username(username)
-    member.set_email(email)
+    member.set_email(email, False)
+
+    auth = WebsiteAuth()
+    auth.set_password(password)
+
     member.insert()
-
+    
     member_id = cursor.lastrowid
-
-    hash = bcrypt.hashpw(password, bcrypt.gensalt())
-
-    auth = WebsiteAuth(member_id=member_id, hash=hash)
+    auth.member_id = member_id
     auth.insert()
 
     send_verification_email(email, auth)

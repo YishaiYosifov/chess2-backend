@@ -5,8 +5,6 @@ import time
 from werkzeug.exceptions import BadRequest, Conflict, TooManyRequests
 from pydantic import BaseModel
 
-import bcrypt
-
 from .auth import AuthenticationMethods, WebsiteAuth
 from .database_model import DatabaseModel
 
@@ -28,6 +26,11 @@ class Member(BaseModel, DatabaseModel):
 
     def get_public_info(self) -> dict: return super().get(PUBLIC_INFO)
     def get_private_info(self) -> dict: return self.get_public_info() | super().get(PRIVATE_INFO)
+    def get_website_auth(self) -> WebsiteAuth:
+        if self.authentication_method != AuthenticationMethods.WEBSITE: raise Conflict("Not Website Auth")
+
+        auth = WebsiteAuth.select(member_id=self.member_id)
+        return auth[0] if auth else None
 
     def set_username(self, username : str):
         if (self.username_last_changed + 60 * 60 * 24 * 30) - time.time() > 0: raise TooManyRequests("Username Changed Recently")
@@ -38,17 +41,16 @@ class Member(BaseModel, DatabaseModel):
         self.username_last_changed = int(time.time())
         self.username = username
 
-    def set_email(self, email : str):
-        from util import EMAIL_REG
+    def set_email(self, email : str, send_verification = True):
+        from util import EMAIL_REG, send_verification_email
+        auth = self.get_website_auth()
 
         email_match = EMAIL_REG.match(email)
         if not email_match or email_match.group(0) != email: raise BadRequest("Invalid Email Address")
         elif Member.select(email=email): raise Conflict("Email Taken")
 
         self.email = email
-    
-    def check_password(self, password : str) -> bool:
-        if self.authentication_method != AuthenticationMethods.WEBSITE: raise AttributeError("Only Website Auth requires password")
-        
-        auth : WebsiteAuth = WebsiteAuth.select(member_id=self.member_id)[0]
-        return bcrypt.checkpw(password, auth.hash)
+
+        if send_verification:
+            send_verification_email(email, auth)
+            auth.verified = False

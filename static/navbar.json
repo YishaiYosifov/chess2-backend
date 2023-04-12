@@ -3,18 +3,18 @@
         "label": "Play",
         "icon": "bi-play-fill",
 
-        "path": "/play"
+        "path": "play"
     },
     {
         "label": "Profile",
         "icon": "bi-person-fill",
 
-        "path": "/member"
+        "path": "member"
     },
     {
         "label": "Settings",
         "icon": "bi-gear-fill",
         
-        "path": "/settings"
+        "path": "settings"
     }
 ]

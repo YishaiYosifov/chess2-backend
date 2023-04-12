@@ -41,5 +41,16 @@ def settings_template():
     if alert: session.pop("alert")
     return render_template("settings.html", alert=alert)
 
+@frontend.route("/settings/password")
+def change_password_template():
+    if not "session_token" in session: return redirect("/login")
+    
+    member = get_user_from_session(False)
+    if member.authentication_method != AuthenticationMethods.WEBSITE: return redirect("/settings")
+
+    alert = session.get("alert")
+    if alert: session.pop("alert")
+    return render_template("change-password.html", alert=alert)
+
 @frontend.route("/play")
 def play_template(): return render_template("play.html")

@@ -26,29 +26,42 @@ def get_info(target : str):
     
     return user.get_public_info(), 200
 
-REQUIRES_PASSWORD = ["username", "email"]
+
+SETTINGS = {
+    "about": {
+        "requires_password": False,
+        "set": lambda user, about: setattr(user, "about", about)
+    },
+    "username": {
+        "requires_password": False,
+        "set": lambda user, username: user.set_username(username)
+    },
+    "email": {
+        "requires_password": True,
+        "set": lambda user, _, email: user.set_email(email)
+    },
+    "password": {
+        "requires_password": True,
+        "set": lambda _, auth, password: auth.set_password(password)
+    }
+}
 @profile.route("/update", methods=["POST"])
-@requires_arguments(Argument("username", type=str), Argument("email", type=str), Argument("about", type=str), Argument("password_confirmation", type=str, default=""))
+@requires_arguments(Argument("username", type=str), Argument("email", type=str), Argument("password", type=str), Argument("about", type=str), Argument("password_confirmation", type=str, default=""))
 @requires_authentication(type=Member)
 def update(target : str, user : Member, args):
     if target != user.username and target != "me": raise Unauthorized("Not logged into target user")
 
-    for item in REQUIRES_PASSWORD:
-        if args.get(item):
-            if not user.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
-            break
+    for setting, data in filter(lambda setting: not setting[1]["requires_password"] and args[setting[0]] != None, SETTINGS.items()):
+        data["set"](user, args[setting])
 
-    if args.username != None: user.set_username(args.username)
-    if args.email != None:
-        if user.authentication_method != AuthenticationMethods.WEBSITE: raise Conflict("Can only update email when using website auth")
+    if user.authentication_method == AuthenticationMethods.WEBSITE:
+        requires_password = list(filter(lambda setting: setting[1]["requires_password"] and args[setting[0]] != None, SETTINGS.items()))
+        if requires_password:
+            auth = user.get_website_auth()
+            if not auth.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
 
-        user.set_email(args.email)
-        auth : WebsiteAuth = WebsiteAuth.select(member_id=user.member_id)[0]
-        auth.verified = False
-        auth.update()
-
-        send_verification_email(user.email, auth)
-    if args.about != None: user.about = args.about
+            for setting, data in requires_password: data["set"](user, auth, args[setting])
+            auth.update()
 
     user.update()
     return "Updated", 200
