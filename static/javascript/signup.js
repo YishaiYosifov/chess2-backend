@@ -60,8 +60,12 @@ $("#signup").click(async () => {
         else showError("email", "• Email Taken!");
         return;
     }
+    else if (response.status == 500) {
+        showAlert("Something went wrong.");
+        return;
+    }
     else if (!response.ok) {
-        showError("signup", "Something went wrong.");
+        showAlert(await response.text());
         return;
     }
     hideError("signup");

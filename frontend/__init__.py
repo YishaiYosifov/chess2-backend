@@ -1,1 +1,1 @@
-from .frontend import frontend
+from .frontend import *

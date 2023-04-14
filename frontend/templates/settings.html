@@ -64,9 +64,10 @@
                                   <button class="input-group-text text-primary border-0 btn btn-secondary" enable-input-for-setting="email" onclick="enableSettingInput(this)">change</button>
                                 </div>
                             </div>
-                            <div class="mt-4" id="setting-password">
+                            <div id="setting-password">
                                 <a href="/settings/password">change password</a>
                             </div>
+                            <button class="btn btn-danger mt-3" data-bs-toggle="modal" data-bs-target="#account-deletion-confirm"><i class="bi bi-radioactive"></i> Delete Account</button>
                         </div>
                         <button class="btn btn-success mx-auto mb-3" id="save" style="width: 50%" disabled>Save</button>
                     </div>
@@ -87,7 +88,42 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="password-confirmation-submit" data-bs-dismiss="modal">Submit</button>
+                        <button class="btn btn-primary" id="password-confirmation-submit" data-bs-dismiss="modal">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+        <div class="modal fade" id="account-deletion-confirm" tabindex="-1" aria-labelledby="Account Deletion Confirm" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content text-light" style="background-color: var(--dark-primary);">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">Account Deletion</h1>
+                        <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div id="account-deletion-stage-1">
+                        <div class="modal-body">
+                            <h4 class="text-danger" style="text-shadow: 0px 0px 5px black">ARE YOU SURE YOU WANT TO DELETE YOUR ACCOUNT?</h4>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="btn-group-lg" role="group">
+                                <button class="btn btn-danger" onclick="$('#account-deletion-stage-1').hide(); $('#account-deletion-stage-2').show()">Yes</button>
+                                <button  class="btn btn-info" data-bs-dismiss="modal">No</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="account-deletion-stage-2" style="display: none;">
+                        <div class="modal-body">
+                            <h5>Enter your username</h5>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text"><i class="bi bi-person-fill text-light"></i></span>
+                                <input class="form-control" placeholder="Username" aria-label="Username" id="account-deletion-username">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-danger" id="delete-account"><i class="bi bi-radioactive"></i> Delete</button>
+                        </div>
                     </div>
                 </div>
             </div>

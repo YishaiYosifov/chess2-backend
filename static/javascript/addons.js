@@ -9,8 +9,9 @@ const alertHTML = $($.parseHTML(`
 
 const URLAlerts = {
     "session-expired": {"urls": ["/login"], "message": "Your session expired, please log in again!", color: "danger"},
-    "settings_updated": {"urls": ["/settings"], "message": "Updated!", color: "success"},
-    "password_updated": {"urls": ["/settings"], "message": "Password Updated!", color: "success"}
+    "settings-updated": {"urls": ["/settings"], "message": "Updated!", color: "success"},
+    "password-updated": {"urls": ["/settings"], "message": "Password Updated!", color: "success"},
+    "account-deleted": {"urls": ["/"], "message": "Your account has been deleted.", color: "info"}
 }
 
 var message = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
@@ -45,8 +46,10 @@ function showAlert(message, color="danger") {
     let alertText = alertObject.find("#alertText");
     alertText.text(message);
 
-    if ($(".navbar").length) alertObject.insertAfter(".navbar");
+    if ($("#header").length) alertObject.insertAfter("#header");
+    else if ($(".navbar").length) alertObject.insertAfter(".navbar");
     else $("body").prepend(alertObject);
+
     alertObject.fadeIn(300);
 }
 

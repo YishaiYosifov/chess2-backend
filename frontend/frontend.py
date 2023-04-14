@@ -1,6 +1,7 @@
-import time
+from typing import Callable
 
 from flask import Blueprint, session, render_template, redirect
+from pydantic import BaseModel
 
 from .assets import assets
 
@@ -10,47 +11,44 @@ from util import *
 frontend = Blueprint("frontend", __name__, template_folder="templates")
 frontend.register_blueprint(assets)
 
-@frontend.route("/")
-def index_template():
-    alert = session.get("alert")
-    if alert: session.pop("alert")
+class Template(BaseModel):
+    route : str
+    template : str
 
-    return render_template("index.html", alert=alert)
+    requires_auth : bool = False
+    requires_unauth : bool = False
 
-@frontend.route("/login")
-def login_template():
-    if "session_token" in session: return redirect("/")
+    special_function : Callable = None
 
-    alert = session.get("alert")
-    if alert: session.pop("alert")
-    return render_template("login.html", alert=alert)
-
-@frontend.route("/signup")
-def signup_template():
-    if "session_token" in session: return redirect("/")
-
-    alert = session.get("alert")
-    if alert: session.pop("alert")
-    return render_template("signup.html", alert=alert)
-
-@frontend.route("/settings")
-def settings_template():
-    if not "session_token" in session: return redirect("/login")
-
-    alert = session.get("alert")
-    if alert: session.pop("alert")
-    return render_template("settings.html", alert=alert)
-
-@frontend.route("/settings/password")
-def change_password_template():
-    if not "session_token" in session: return redirect("/login")
-    
+def change_password_template_special():    
     member = get_user_from_session(False)
     if member.authentication_method != AuthenticationMethods.WEBSITE: return redirect("/settings")
 
+    return True
+
+TEMPLATES = [
+    Template(route="/", template="index.html"),
+
+    Template(route="/login", template="login.html", requires_unauth=True),
+    Template(route="/signup", template="signup.html", requires_unauth=True),
+
+    Template(route="/settings", template="settings.html", requires_auth=True),
+    Template(route="/settings/password", template="change-password.html", requires_auth=True, special_function=change_password_template_special),
+
+    Template(route="/play", template="play.html")
+]
+
+def default_template(template : Template):
+    print(template)
+
+    logged_in = "session_token" in session
+    if (template.requires_auth and not logged_in) or \
+        (template.requires_unauth and logged_in): return redirect("/")
+    
+    if template.special_function:
+        special_return = template.special_function()
+        if not special_return is True: return special_return
+    
     alert = session.get("alert")
     if alert: session.pop("alert")
-    return render_template("change-password.html", alert=alert)
-
-@frontend.route("/play")
-def play_template(): return render_template("play.html")
+    return render_template(template.template, alert=alert)

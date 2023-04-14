@@ -18,7 +18,7 @@ import requests
 from dao.member import Member
 from dao.auth import *
 
-from frontend import frontend
+from frontend import frontend, TEMPLATES, default_template
 from api import api
 
 from util import *
@@ -30,9 +30,15 @@ app.secret_key = "bb5c8af0e15d4d0195e37fa995430280"
 
 @app.route("/google_login_callback", methods=["GET"])
 def google_signup():
+    """
+    This function will run when a user logs in using google.
+    It gets their name and email address. If a user with the same email address exists, it will log them in. If it doesn't, it'll create a new account.
+    """
+
     flow.fetch_token(authorization_response=request.url)
     if session["state"] != request.args["state"]: raise InternalServerError("State doesn't match")
 
+    # Get credentials
     credentials = flow.credentials
     request_session = requests.session()
     cached_session = cachecontrol.CacheControl(request_session)
@@ -44,6 +50,7 @@ def google_signup():
         audience=GOOGLE_CLIENT_ID
     )
 
+    # Generate the session token and log the user in
     session["session_token"] = uuid.uuid4().hex
     member = Member.select(email=id_info["email"])
     if member:
@@ -52,11 +59,16 @@ def google_signup():
         member.update()
     else: Member(session_token=session["session_token"], username=id_info["name"], email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
     
+    # Alert the user they were logged in and redirect to the home page
     session["alert"] = {"message": "Logged In Successfully", "color": "success"}
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])
 def google_login():
+    """
+    Redirect the user to the google log in page
+    """
+
     if "session_token" in session: return redirect("/")
 
     authorization_url, state = flow.authorization_url()
@@ -68,6 +80,8 @@ def google_login():
 @app.before_first_request
 def start_clean_verifications():
     def clean_verifications():
+        # Delete email verifications after 10 minutes
+
         while True:
             for id, verification in awaiting_verification.copy().items():
                 if verification["expires"] <= time.time(): awaiting_verification.pop(id)
@@ -81,12 +95,20 @@ def permanent_session(): session.permanent = True
 def http_error_handler(exception : HTTPException): return exception.description, exception.code
 
 if __name__ == "__main__":
+    # Gmail Auth
     flow = Flow.from_client_secrets_file(
         client_secrets_file="google_tokens/google_auth.json",
         scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
         redirect_uri="http://127.0.0.1:5000/google_login_callback"
     )
     
+    # Register templates
+    for template in TEMPLATES:
+        route = lambda template=template: default_template(template)
+        route.__name__ = template.route
+        app.route(template.route)(route)
+
+    # Register blueprints
     app.register_blueprint(frontend)
     app.register_blueprint(api)
 

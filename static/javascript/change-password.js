@@ -33,6 +33,6 @@ $("#update").click(async () => {
         return;
     }
 
-    window.location.replace("/settings?a=password_updated");
+    window.location.replace("/settings?a=password-updated");
     console.log(await response.text());
 });

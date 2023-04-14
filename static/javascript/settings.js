@@ -118,7 +118,7 @@ $("#save").click(async () => {
         return;
     }
 
-    window.location.replace("/settings?a=settings_updated");
+    window.location.replace("/settings?a=settings-updated");
 });
 
 function removeNotChanged() {
@@ -128,3 +128,29 @@ function removeNotChanged() {
     }
     return toUpdate;
 }
+
+$("#account-deletion-confirm").on("hidden.bs.modal", () => {
+    $("#account-deletion-stage-1").show()
+    $("#account-deletion-stage-2").hide();
+});
+
+$("#delete-account").click(async () => {
+    $("#account-deletion-confirm").modal("hide");
+
+    let username = $("#account-deletion-username").val();
+    if (username != userInfo["username"]) {
+        showAlert("Wrong Username!");
+        return;
+    }
+
+    const response = await apiRequest("/auth/delete");
+    if (response.status == 500) {
+        showAlert("Something went wrong.");
+        return;
+    } else if (!response.ok) {
+        showAlert(await response.text());
+        return;
+    }
+
+    window.location.replace("/?a=account-deleted")
+})

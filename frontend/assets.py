@@ -10,6 +10,10 @@ def favicon():
 
 @assets.route("/static/uploads/<member_id>/profile-picture.jpeg")
 def profile_picture(member_id : str):
+    """
+    Get a user's profile picture. If the user hasn't uploaded a picture yet, return the default one
+    """
+
     root_path = os.path.dirname(assets.root_path)
     if os.path.exists(f"static/uploads/{member_id}/profile-picture.jpeg"): return send_from_directory(os.path.join(root_path, f"static/uploads/{member_id}"), "profile-picture.jpeg", mimetype="image/jpeg")
     else: return send_from_directory(os.path.join(root_path, "static/assets"), "default-profile-picture.jpg", mimetype="image/jpg")
