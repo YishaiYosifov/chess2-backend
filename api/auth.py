@@ -1,7 +1,10 @@
 from werkzeug.exceptions import BadRequest, Unauthorized
 
+from flask import Blueprint, redirect, jsonify
 from flask_restful.reqparse import Argument
-from flask import Blueprint, redirect
+
+import requests
+import shutil
 
 from dao.auth import *
 from util import *
@@ -24,6 +27,17 @@ def signup(args):
     member = Member(authentication_method=AuthenticationMethods.WEBSITE)
     member.set_username(username)
     member.set_email(email, False)
+
+    ip = request.headers.getlist("X-Forwarded-For")
+    if (ip):
+        try: response = requests.get(f"http://ip-api.com/json/{ip[0]}", params={"fields": "status,message,countryCode"})
+        except: pass
+        else:
+            if response.status_code == 200:
+                try:
+                    ipinfo = response.json()
+                    if ipinfo["success"] in ipinfo: member.set_country(ipinfo["countryCode"])
+                except: pass
 
     # Create a website auth object and add the password
     auth = WebsiteAuth()
@@ -79,6 +93,9 @@ def login(args):
 
     return "Logged In", 200
 
+@auth.route("/is_logged_in", methods=["POST"])
+def is_logged_in(): return jsonify("session_token" in session), 200
+
 @auth.route("/logout", methods=["POST", "GET"])
 @requires_authentication(type=Member)
 def logout(user : Member):
@@ -98,7 +115,7 @@ def delete(user : Member):
     Delete a user's account
     """
     
-    os.rmdir(f"static/uploads/{user.member_id}")
+    shutil.rmtree(f"static/uploads/{user.member_id}")
 
     user.delete()
     session.clear()

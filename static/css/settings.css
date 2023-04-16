@@ -17,7 +17,7 @@
     width: 280px;
 }
 
-.disabled-input {
+input:disabled {
     background-color: #707070 !important;
     transition: all 1000ms;
 

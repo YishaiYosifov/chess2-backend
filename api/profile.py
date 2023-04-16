@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy
 import os
 import io
@@ -6,6 +8,7 @@ from werkzeug.exceptions import NotFound, Unauthorized, UnprocessableEntity, Req
 
 from flask_restful.reqparse import Argument
 from flask import Blueprint, request
+from pydantic import BaseModel
 
 from PIL import Image
 
@@ -33,27 +36,24 @@ def get_info(target : str):
     # Return the public info
     return user.get_public_info(), 200
 
+class Setting(BaseModel):
+    name : str
+    type : type
 
-SETTINGS = {
-    "about": {
-        "requires_password": False,
-        "set": lambda user, about: setattr(user, "about", about)
-    },
-    "username": {
-        "requires_password": False,
-        "set": lambda user, username: user.set_username(username)
-    },
-    "email": {
-        "requires_password": True,
-        "set": lambda user, _, email: user.set_email(email)
-    },
-    "password": {
-        "requires_password": True,
-        "set": lambda _, auth, password: auth.set_password(password)
-    }
-}
+    requires_password : bool = False
+    set_value : Callable
+
+SETTINGS = [
+    Setting(name="username", type=str, set_value=lambda user, value: user.set_username(value)),
+    Setting(name="email", type=str, requires_password=True, set_value=lambda user, _, value: user.set_email(value)),
+
+    Setting(name="country", type=str, set_value=lambda user, value: user.set_country(value)),
+    Setting(name="about", type=str, set_value=lambda user, value: setattr(user, "about", value)),
+
+    Setting(name="password", type=str, requires_password=True, set_value=lambda _, auth, value: auth.set_password(value))
+]
 @profile.route("/update", methods=["POST"])
-@requires_arguments(Argument("username", type=str), Argument("email", type=str), Argument("password", type=str), Argument("about", type=str), Argument("password_confirmation", type=str, default=""))
+@requires_arguments(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
 @requires_authentication(type=Member)
 def update(target : str, user : Member, args):
     """
@@ -64,19 +64,19 @@ def update(target : str, user : Member, args):
     if target != user.username and target != "me": raise Unauthorized("Not logged into target user")
 
     # Loop through every setting that doesn't require password confirmation and was given a new value and call the set function
-    for setting, data in filter(lambda setting: not setting[1]["requires_password"] and args[setting[0]] != None, SETTINGS.items()):
-        data["set"](user, args[setting])
+    for setting in filter(lambda setting: not setting.requires_password and args[setting.name] != None, SETTINGS):
+        setting.set_value(user, args[setting.name])
 
     if user.authentication_method == AuthenticationMethods.WEBSITE:
         # Get every setting that requries password confirmation and was given a new value
-        requires_password = dict(filter(lambda setting: setting[1]["requires_password"] and args[setting[0]] != None, SETTINGS.items()))
+        requires_password = list(filter(lambda setting: setting.requires_password and args[setting.name] != None, SETTINGS))
         if requires_password:
             # If there are any, get the user's website auth and check the password
             auth = user.get_website_auth()
             if not auth.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
 
             # Set the new value
-            for setting, data in requires_password.items(): data["set"](user, auth, args[setting])
+            for setting in requires_password: setting.set_value(user, auth, args[setting])
             auth.update()
 
     user.update()

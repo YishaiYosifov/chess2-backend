@@ -37,7 +37,7 @@
                             <div class="col">
                                 <h4 class="mt-3 tt username" id="username" data-bs-placement="left">username</h4>
                                 <div class="form-floating">
-                                    <textarea class="form-control settings-input" settings-for="about" style="height: 140px; resize: none;" placeholder="About You"></textarea>
+                                    <textarea class="form-control" input-for-setting="about" style="height: 140px; resize: none;" placeholder="About You"></textarea>
                                     <label class="text-secondary" for="description" style="height: 35px; margin-top: -1%;">Enter an about you...</label>
                                 </div>
                             </div>
@@ -53,16 +53,21 @@
                             <div class="mb-3" id="setting-username">
                                 <label class="form-label">Username</label>
                                 <div class="input-group">
-                                  <input class="form-control disabled-input settings-input" input-for-setting="username" disabled>
+                                  <input class="form-control" input-for-setting="username" disabled>
                                   <button class="input-group-text text-primary border-0 btn btn-secondary" enable-input-for-setting="username" id="change-username-button">change</button>
                                 </div>
                             </div>
                             <div class="mb-3" id="setting-email">
                                 <label class="form-label">Email</label>
                                 <div class="input-group">
-                                  <input class="form-control disabled-input settings-input" input-for-setting="email" disabled>
+                                  <input class="form-control" input-for-setting="email" disabled>
                                   <button class="input-group-text text-primary border-0 btn btn-secondary" enable-input-for-setting="email" onclick="enableSettingInput(this)">change</button>
                                 </div>
+                            </div>
+                            <div class="mb-3" id="setting-country">
+                                <label class="form-label">Country</label>
+                                <select class="form-select" aria-label="Country" input-for-setting="country">
+                                </select>
                             </div>
                             <div id="setting-password">
                                 <a href="/settings/password">change password</a>

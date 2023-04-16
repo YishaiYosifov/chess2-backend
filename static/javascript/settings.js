@@ -1,5 +1,7 @@
 class Setting {
-    constructor(requiresPassword = false, forAuth = "all") {
+    constructor(enabledByButton = false, requiresPassword = false, forAuth = "all") {
+        this.enabledByButton = enabledByButton;
+
         this.requiresPassword = requiresPassword;
         this.forAuth = forAuth;
     }
@@ -8,25 +10,36 @@ class Setting {
 var userInfo = {}
 
 const settings = {
-    "about": new Setting(),
-    "username": new Setting(),
-    "email": new Setting(requiresPassword=true, forAuth="website"),
-    "password": new Setting(requiresPassword=false, forAuth="website")
+    "about": new Setting(enabledByButton=false, requiresPassword=false, forAuth="all"),
+    "username": new Setting(enabledByButton=true),
+    "email": new Setting(enabledByButton=true, requiresPassword=true, forAuth="website"),
+    "country": new Setting(),
+    "password": new Setting(enabledByButton=true, requiresPassword=false, forAuth="website")
 }
-var update = {"about": () => { return $("[input-for-setting='about']").val(); }}
 
 async function main() {
     $("#save").prop("disabled", true);
-    $(".disabled-input").prop("disabled", true);
 
     userInfo = await(await apiRequest("/profile/me/get_info")).json();
+    $.getJSON(`${root}/static/countries.json`, async countries => {
+        const dropdown = $("[input-for-setting='country']");
+        for (const [alpha, country] of Object.entries(countries)) {
+            let option = $(`<option value="${alpha}">${country}</option>`);
+            if (alpha == userInfo["country_alpha"]) option.prop("selected", true)
+            dropdown.append(option);
+        }
+    });
 
     for (const [setting, data] of Object.entries(settings)) {
         if (data.forAuth != "all" && data.forAuth != userInfo["authentication_method"]) {
             $(`#setting-${setting}`).remove();
             continue;
         }
-        $(`[input-for-setting="${setting}"]`).val(userInfo[setting]);
+
+        let settingInput = $(`[input-for-setting="${setting}"]`)
+        settingInput.val(userInfo[setting]);
+
+        if (data.enabledByButton) settingInput.prop("disabled", true)
     }
 
     const username = $("#username");
@@ -37,14 +50,6 @@ async function main() {
     $("#profile-picture").css("background", `url("/static/uploads/${userInfo["member_id"]}/profile-picture.jpeg"`);
 }
 main()
-
-function censorEmail(email) {
-    let [name, at] = email.split("@");
-    let [secondary, top] = at.split(".");
-
-    return `${partialCensor(name)}@${partialCensor(secondary)}.${top}`;
-}
-function partialCensor(text) { return text[0] + "*".repeat(text.length - 2) + text.slice(-1); }
 
 function openFileSelector() { $("#profile-picture-upload").click(); }
 async function selectProfilePicture() {
@@ -57,7 +62,7 @@ async function selectProfilePicture() {
         return;
     }
     $("#profile-picture").css("background", `url("/static/uploads/${userInfo["member_id"]}/profile-picture.jpeg?${new Date().getTime()}"`);
-    showAlert("Profile Picture Updated");
+    showAlert("Profile Picture Updated", "success");
 }
 
 $("#change-username-button").click(function() {
@@ -78,21 +83,17 @@ function enableSettingInput(button) {
     let input = $(`[input-for-setting="${setting}"]`);
     input.prop("disabled", false);
     input.attr("style", "background-color: #FFFFFF !important");
-
-    update[setting] = () => { return $(`[input-for-setting="${setting}"]`).val(); };
 }
 
-$(".settings-input").on("input", function () {
+$("[input-for-setting]").on("input", function () {
     let saveButton = $("#save");
 
-    let toUpdate = removeNotChanged();
-    if (!Object.keys(toUpdate).length) saveButton.prop("disabled", true);
+    if (!Object.keys(getChangedSettings()).length) saveButton.prop("disabled", true);
     else saveButton.prop("disabled", false);
 })
 
 $("#save").click(async () => {
-    let toUpdate = removeNotChanged();
-    console.log(toUpdate)
+    let toUpdate = getChangedSettings();
     if (!Object.keys(toUpdate).length) return;
 
     let password = null;
@@ -103,9 +104,7 @@ $("#save").click(async () => {
         }
     }
 
-    let data = {};
-    Object.keys(toUpdate).forEach(key => { data[key] = toUpdate[key](); });
-    let response = await apiRequest("/profile/me/update", Object.assign(data, {"password_confirmation": password}));
+    let response = await apiRequest("/profile/me/update", Object.assign(toUpdate, {"password_confirmation": password}));
     if (response.status == 401) {
         showAlert("Wrong Password!");
         return;
@@ -121,10 +120,11 @@ $("#save").click(async () => {
     window.location.replace("/settings?a=settings-updated");
 });
 
-function removeNotChanged() {
-    let toUpdate = Object.assign({}, update);
-    for (const [key, value] of Object.entries(update)) {
-        if (key in userInfo && userInfo[key] == value()) delete toUpdate[key];
+function getChangedSettings() {
+    let toUpdate = {};
+    for (const setting of Object.keys(settings)) {
+        value = $(`[input-for-setting=${setting}]`).val();
+        if (value != null && (!(setting in userInfo) || userInfo[setting] != value)) toUpdate[setting] = value;
     }
     return toUpdate;
 }

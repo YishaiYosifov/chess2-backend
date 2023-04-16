@@ -26,7 +26,9 @@ window.addEventListener("load", () => {
         message = alertData["message"];
         var color = alertData["color"]
 
-        window.history.replaceState({}, null, window.location.pathname.split("/").pop())
+        pathname = window.location.pathname.split("/").pop()
+        pathname = (pathname == "") ? "/" : pathname
+        window.history.replaceState({}, null, pathname)
     }
     else if (message == "None") return;
     else {

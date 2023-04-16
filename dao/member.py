@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from .auth import AuthenticationMethods, WebsiteAuth
 from .database_model import DatabaseModel
 
-PUBLIC_INFO = ["member_id", "username", "about"]
+PUBLIC_INFO = ["member_id", "username", "about", "country", "country_alpha"]
 PRIVATE_INFO = ["email", "authentication_method", "username_last_changed"]
 
 class Member(BaseModel, DatabaseModel):
@@ -20,6 +20,10 @@ class Member(BaseModel, DatabaseModel):
 
     username : str = None
     email : str = None
+
+    country : str = "International"
+    country_alpha : str = "INTR"
+
     about : str = ""
 
     authentication_method : AuthenticationMethods
@@ -90,3 +94,20 @@ class Member(BaseModel, DatabaseModel):
             # Send the verification email
             send_verification_email(email, auth)
             auth.verified = False
+    
+    def set_country(self, alpha):
+        """
+        Update the country
+
+        :param alpha: the alpha 2 of the country
+
+        :raises BadRequest: invalid country
+        """
+
+        from util import COUNTRIES
+
+        country = COUNTRIES.get(alpha)
+        if not country: raise BadRequest("Invalid Country")
+
+        self.country = country
+        self.country_alpha = alpha

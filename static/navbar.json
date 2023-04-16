@@ -3,11 +3,17 @@
         "label": "Play",
         "icon": "bi-play-fill",
 
+        "auth_req": 0,
+        "side": "top",
+
         "path": "play"
     },
     {
         "label": "Profile",
         "icon": "bi-person-fill",
+
+        "auth_req": 1,
+        "side": "top",
 
         "path": "member"
     },
@@ -15,6 +21,38 @@
         "label": "Settings",
         "icon": "bi-gear-fill",
         
+        "auth_req": 1,
+        "side": "top",
+        
         "path": "settings"
+    },
+    
+    {
+        "label": "Log In",
+        "icon": "bi-box-arrow-in-left",
+        
+        "auth_req": 2,
+        "side": "bottom",
+        
+        "path": "login"
+    },
+    {
+        "label": "Sign Up",
+        "icon": "bi-plus-square",
+        
+        "auth_req": 2,
+        "side": "bottom",
+        
+        "path": "signup"
+    },
+
+    {
+        "label": "Log Out",
+        "icon": "bi-box-arrow-in-right",
+        
+        "auth_req": 1,
+        "side": "bottom",
+        
+        "path": "api/auth/logout"
     }
 ]

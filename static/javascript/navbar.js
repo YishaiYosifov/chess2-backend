@@ -15,7 +15,10 @@ const navbar = $($.parseHTML(
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
-                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3" id="body-top">
+                    </ul>
+                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3" id="body-bottom" style="display: none;">
+                        <hr style="background-color: black;">
                     </ul>
                 </div>
             </div>
@@ -23,10 +26,16 @@ const navbar = $($.parseHTML(
     </nav>`
 ));
 
-var root = location.protocol + "//" + location.host
-$.getJSON(`${root}/static/navbar.json`, navbarItems => {
-    const navbarBody = navbar.find(".offcanvas-body").find("ul");
+const root = location.protocol + "//" + location.host
+$.getJSON(`${root}/static/navbar.json`, async navbarItems => {
+    const isLoggedIn = await (await apiRequest("/auth/is_logged_in")).json()
+
+    const bodyTop = navbar.find(".offcanvas-body").find("#body-top");
+    const bodyBottom = navbar.find(".offcanvas-body").find("#body-bottom");
     for (item of navbarItems) {
+        if ((item["auth_req"] == 1 && !isLoggedIn) ||
+            (item["auth_req"] == 2 && isLoggedIn)) continue;
+
         var navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
 
         var itemText = $("<a></a>");
@@ -34,10 +43,15 @@ $.getJSON(`${root}/static/navbar.json`, navbarItems => {
         if (item["path"] == window.location.pathname.split("/")[1]) itemText.addClass("active");
 
         itemText.attr("href", root + "/" + item["path"]);
-        itemText.html(`<i class="bi ${item["icon"]}"></i> ${item["label"]}`);
+        itemText.html(`<i class="bi ${item["icon"]}"></i> ㅤ ${item["label"]}`);
         navbarItem.append(itemText);
 
-        navbarBody.append(navbarItem);
+        if (item["side"] == "top") bodyTop.append(navbarItem);
+        else if (item["side"] == "bottom") {
+            if (bodyBottom.is(":hidden")) bodyBottom.show();
+            
+            bodyBottom.append(navbarItem);
+        }
     };
     $("body").prepend(navbar);
 });

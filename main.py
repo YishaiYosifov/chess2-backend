@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     # Register templates
     for template in TEMPLATES:
-        route = lambda template=template: default_template(template)
+        route = lambda template=template, **kwargs: default_template(template, **kwargs)
         route.__name__ = template.route
         app.route(template.route)(route)
 
