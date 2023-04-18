@@ -1,5 +1,14 @@
 [
     {
+        "label": "Home",
+        "icon": "bi-house-door-fill",
+
+        "auth_req": 0,
+        "side": "top",
+
+        "path": ""
+    },
+    {
         "label": "Play",
         "icon": "bi-play-fill",
 

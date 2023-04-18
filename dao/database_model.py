@@ -24,7 +24,7 @@ class DatabaseModel:
         database.commit()
 
     @classmethod
-    def select(cls, **params):
+    def select(cls, limit=None, **params):
         """
         Select the object from the database using the given attributes
 
@@ -33,14 +33,30 @@ class DatabaseModel:
 
         from util import cursor
 
-        cursor.execute(f"SELECT * FROM {cls._table} WHERE {' '.join([param + '=%s' for param in params.keys()])}", list(params.values()))
+        statement = f"SELECT * FROM {cls._table} "
+        for index, param in enumerate(params.keys()):
+            is_or = param.startswith("_")
+            if is_or: param = param[1:]
+
+            if index: statement += " OR " if is_or else " AND "
+            else: statement += "WHERE "
+            statement += param + "=%s"
+        
+        if limit: statement += f" ORDER BY {cls._primary} DESC LIMIT {limit}"
+
+        cursor.execute(statement, list(params.values()))
         return [cls.parse_obj(member) for member in cursor.fetchall()]
 
-    def to_dict(self) -> dict[str:any]:
+    def to_dict(self, exclude = []) -> dict[str:any]:
         """
         Convert the object to a dictionary
         """
-        attributes = [attribute for attribute, value in self.__dict__.items() if value != None and not attribute.startswith("_") and not callable(attribute)]
+        attributes = [attribute for attribute, value in self.__dict__.items()
+            if value != None and \
+            not attribute in exclude and \
+            not attribute.startswith("_") and \
+            not callable(attribute)
+        ]
         return self.get(attributes)
     
     def get(self, attributes : list) -> dict[str:any]:

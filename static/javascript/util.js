@@ -46,3 +46,5 @@ function togglePasswordVisibility(toggleButton) {
         icon.removeClass("bi-eye-fill");
     }
 };
+
+document.querySelectorAll(".tt").forEach(tooltip => new bootstrap.Tooltip(tooltip));

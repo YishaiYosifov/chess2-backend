@@ -38,6 +38,7 @@ EMAIL_REG = re.compile(r"[\w\.-]+@[\w\.-]+(\.[\w]+)+")
 
 with open("email_verification.html", "r") as f: EMAIL_VERIFICATION_MESSAGE = f.read()
 with open("static/countries.json", "r") as f: COUNTRIES : dict = json.load(f)
+with open("config.json", "r") as f: CONFIG : dict = json.load(f)
 
 database = mysql.connector.connect(host=os.getenv("MYSQL_HOST"), database=os.getenv("MYSQL_DATABASE"), user=os.getenv("MYSQL_USER"), password=os.getenv("MYSQL_PASSWORD"))
 cursor = database.cursor(dictionary=True)

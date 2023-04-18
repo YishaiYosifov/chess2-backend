@@ -35,7 +35,7 @@
                                 <button class="btn btn-light" onclick="openFileSelector()" style="width: 160px;"><i class="bi bi-camera-fill"></i> change</button>
                             </div>
                             <div class="col">
-                                <h4 class="mt-3 tt username" id="username" data-bs-placement="left">username</h4>
+                                <h4 class="mt-3 tt username limit-text" id="username" data-bs-placement="left" style="width: 280px;">username</h4>
                                 <div class="form-floating">
                                     <textarea class="form-control" input-for-setting="about" style="height: 140px; resize: none;" placeholder="About You"></textarea>
                                     <label class="text-secondary" for="description" style="height: 35px; margin-top: -1%;">Enter an about you...</label>
@@ -48,7 +48,7 @@
 
             <div class="row mt-3">
                 <div class="col-md-7 mx-auto">
-                    <div class="card" style="background-color: var(--dark-secondary);">
+                    <div class="card">
                         <div class="card-body text-light">
                             <div class="mb-3" id="setting-username">
                                 <label class="form-label">Username</label>
@@ -82,7 +82,7 @@
 
         <div class="modal fade" id="password-confirmation" tabindex="-1" aria-labelledby="Password Confirmation" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog">
-                <div class="modal-content text-light" style="background-color: var(--dark-primary);">
+                <div class="modal-content text-light" style="background-color: var(--dark-secondary);">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5">Confirm Your Password</h1>
                     </div>
@@ -101,7 +101,7 @@
    
         <div class="modal fade" id="account-deletion-confirm" tabindex="-1" aria-labelledby="Account Deletion Confirm" aria-hidden="true">
             <div class="modal-dialog">
-                <div class="modal-content text-light" style="background-color: var(--dark-primary);">
+                <div class="modal-content text-light" style="background-color: var(--dark-secondary);">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5">Account Deletion</h1>
                         <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

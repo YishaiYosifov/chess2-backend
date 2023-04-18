@@ -28,17 +28,6 @@ def signup(args):
     member.set_username(username)
     member.set_email(email, False)
 
-    ip = request.headers.getlist("X-Forwarded-For")
-    if (ip):
-        try: response = requests.get(f"http://ip-api.com/json/{ip[0]}", params={"fields": "status,message,countryCode"})
-        except: pass
-        else:
-            if response.status_code == 200:
-                try:
-                    ipinfo = response.json()
-                    if ipinfo["success"] in ipinfo: member.set_country(ipinfo["countryCode"])
-                except: pass
-
     # Create a website auth object and add the password
     auth = WebsiteAuth()
     auth.set_password(password)
@@ -55,9 +44,6 @@ def signup(args):
 
     # Send the verification email
     send_verification_email(email, auth)
-
-    # Create folder for all the user's uploads
-    os.makedirs(f"static/uploads/{member_id}")
 
     session["alert"] = {"message": "Signed Up Successfully", "color": "success"}
     return "Signed Up", 200

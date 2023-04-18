@@ -29,11 +29,14 @@ function isEmailValid(email, allowEmpty = false) {
 }
 async function isUsernameValid(username) {
     if (!username) {
-        showError("username", "• Username is required!")
+        showError("username", "• Username is required!");
         return false;
-    } else if (username.length > 60) {
-        showError("username", "• Username too long!")
+    } else if (username.length >= 30) {
+        showError("username", "• Username too long!");
         return false;
+    } else if (username.includes(" ")) {
+        showError("username", "Username can't include a space!");
+        return;
     }
     hideError("username");
     return true;

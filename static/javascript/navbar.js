@@ -36,9 +36,9 @@ $.getJSON(`${root}/static/navbar.json`, async navbarItems => {
         if ((item["auth_req"] == 1 && !isLoggedIn) ||
             (item["auth_req"] == 2 && isLoggedIn)) continue;
 
-        var navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
+        let navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
 
-        var itemText = $("<a></a>");
+        let itemText = $("<a></a>");
         itemText.addClass("nav-link");
         if (item["path"] == window.location.pathname.split("/")[1]) itemText.addClass("active");
 

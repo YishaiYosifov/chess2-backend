@@ -6,12 +6,13 @@ import io
 
 from werkzeug.exceptions import NotFound, Unauthorized, UnprocessableEntity, RequestEntityTooLarge
 
+from flask import Blueprint, request, jsonify
 from flask_restful.reqparse import Argument
-from flask import Blueprint, request
 from pydantic import BaseModel
 
 from PIL import Image
 
+from dao.game import Game
 from dao.auth import *
 from util import *
 
@@ -35,6 +36,37 @@ def get_info(target : str):
     
     # Return the public info
     return user.get_public_info(), 200
+
+@profile.route("/get_games", methods=["POST"])
+@requires_arguments(Argument("limit", type=int, default=10))
+def get_games(target : str, args):
+    """
+    Get a user's played games
+    """
+
+    # Find the target user
+    target : Member = Member.select(username=target)
+    if not target: raise NotFound("User Not Found")
+    target = target[0]
+
+    if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
+
+    # Get a list of the games
+    games : list[Game] = Game.select(limit=args.limit, _white_id=target.member_id, _black_id=target.member_id)
+    games_data = []
+
+    # Convert it to json
+    for game in games:
+        white : list[Member] = Member.select(member_id=game.white_id)
+        black : list[Member] = Member.select(member_id=game.black_id)
+
+        data = game.to_dict(exclude=["white_id", "black_id"])
+        data["white"] = white[0].username if white else "DELETED"
+        data["black"] = black[0].username if black else "DELETED"
+
+        games_data.append(data)
+
+    return jsonify(games_data), 200
 
 class Setting(BaseModel):
     name : str

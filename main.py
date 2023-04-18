@@ -57,7 +57,7 @@ def google_signup():
         member = member[0]
         member.session_token = session["session_token"]
         member.update()
-    else: Member(session_token=session["session_token"], username=id_info["name"], email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
+    else: Member(session_token=session["session_token"], username=id_info["name"].replace(" ", ""), email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
     
     # Alert the user they were logged in and redirect to the home page
     session["alert"] = {"message": "Logged In Successfully", "color": "success"}
