@@ -43,8 +43,15 @@ def member_helper(**kwargs):
 
     return {"context": {}}
 
+def index_helper(**kwargs):
+    alert = session.get("alert")
+    if alert: session.pop("alert")
+
+    if "session_token" in session: return render_template("index-authorized.html", alert=alert)
+    else: return render_template("index-unauthorized.html", alert=alert)
+
 TEMPLATES = [
-    Template(route="/", template="index.html"),
+    Template(route="/", template="index.html", helper=index_helper),
 
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),

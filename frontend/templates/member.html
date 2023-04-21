@@ -22,9 +22,9 @@
         <script src="../static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body onload="setProfilePirctureSize()" onresize="setProfilePirctureSize()">
-        <div class="container">
+        <div class="container mt-3">
             <div class="row">
-                <div class="card col-md-7 mx-auto text-light">
+                <div class="card col-11 col-sm-11 col-md-7 mx-auto text-light shadow">
                     <div class="card-body row">
                         <div class="col-lg-4 d-flex align-items-center justify-content-center">
                             <img id="profile-picture" class="rounded border border-dark border-4 img-fluid" alt="Profile Picture" style="width: 100%; height: 100%; max-height: 200px; max-width: 200px;">
@@ -38,11 +38,11 @@
             </div>
 
             <div class="row mt-3 mb-5">
-                <div class="card col-md-7 mx-auto text-light">
+                <div class="card col-11 col-sm-11 col-md-7 mx-auto text-light shadow">
                     <div class="card-body">
                         <div class="text-center mt-5 mb-5" id="no-games" style="display: none;">
                             <h2 class="text-danger">This user hasn't played any games yet!</h2>
-                            <a class="btn btn-outline-info">Click here to start a game</a>
+                            <a class="btn btn-outline-info" href="/play">Click here to start a game</a>
                         </div>
                         <table class="table text-light" id="games" style="display: none;">
                             <thead>

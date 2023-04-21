@@ -11,5 +11,5 @@ class Rating(BaseModel, DatabaseModel):
     rating_id : int = None
     member_id : int
 
-    mode : Literal["anarchy"]
+    mode : Literal["anarchy"] | Literal["chss"] | Literal["fog of war"]
     rating : int = 800
