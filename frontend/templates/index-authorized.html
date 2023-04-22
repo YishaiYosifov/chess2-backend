@@ -16,10 +16,9 @@
         <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E=" crossorigin="anonymous"></script>
 
         <!-- Local Imports -->
-        <link href="static/css/index.css" rel="stylesheet">
+        <link href="static/css/logo.css" rel="stylesheet">
         <link href="static/css/main.css" rel="stylesheet">
         
-        <script src="static/javascript/navbar.js"></script>
         <script src="static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
@@ -27,27 +26,22 @@
             <div class="row justify-content-center text-white mt-5">
                 <div class="text-center d-flex justify-content-center" id="logo">
                     <img src="/static/assets/logo.png" class="rounded">
-                    <h1>ㅤ Chess 2</h1>
+                    <h1 class="ms-3">Chess 2</h1>
                 </div>
-                <hr class="col-7 bg-light-subtle" style="height: 3px;">
             </div>
 
             <div class="row mt-5 justify-content-center">
-                <div class="card col-xl-5 col-lg-8 col-11 rounded-5 shadow">
-                    <div class="card-body text-center">
-                        <div class="btn-group-vertical col-12" role="group">
-                            <a class="btn btn-lg btn-success mb-5" href="/play"><img src="/static/assets/pieces/white_knook.png" style="width: 30px; height: 30px;"> play</a>
-                            <a class="btn btn-lg btn-outline-secondary mb-5" href="/member"><i class="bi bi-person-fill"></i> profile</a>
-                            <a class="btn btn-lg btn-outline-secondary" href="/settings"><i class="bi bi-gear-fill"></i> settings</a>
-                        </div>
-                    </div>
+                <div class="btn-group-vertical col-xl-5 col-lg-8 col-11" role="group">
+                    <a class="btn btn-lg btn-success mb-5" href="/play"><img src="/static/assets/pieces/white_knook.png" style="width: 30px; height: 30px;"> play</a>
+                    <a class="btn btn-lg btn-outline-secondary mb-5" href="/member"><i class="bi bi-person-fill"></i> profile</a>
+                    <a class="btn btn-lg btn-outline-secondary" href="/settings"><i class="bi bi-gear-fill"></i> settings</a>
                 </div>
             </div>
         </div>
         
         <div class="container-fluid pb-5" style="background-color: #1a1a1a;">
             <div class="row mt-5 pt-5 align-items-center justify-content-center g-0 mx-auto">
-                <div class="col-8 col-md-3 mb-3" style="max-width: 369px; max-height: 410px;">
+                <div class="col-8 col-md-3 mb-2" style="max-width: 369px; max-height: 410px;">
                     <div class="card text-white mx-auto">
                         <div class="card-body text-center">
                             <h3 class="card-title">CHSS</h3>
@@ -56,7 +50,7 @@
                     </div>
                 </div>
 
-                <div class="col-8 col-md-4 mb-3" style="max-width: 500px; max-height: 530px;">
+                <div class="col-9 col-md-4 mb-3" style="max-width: 500px; max-height: 530px;">
                     <div class="card border-warning border-2 text-white mx-auto">
                         <div class="card-body text-center">
                             <h3 class="card-title">ANARCHY CHESS</h3>
@@ -65,7 +59,7 @@
                     </div>
                 </div>
 
-                <div class="col-8 col-md-3 mb-3" style="max-width: 369px; max-height: 410px;">
+                <div class="col-8 col-md-3 mb-2" style="max-width: 369px; max-height: 410px;">
                     <div class="card text-white mx-auto">
                         <div class="card-body text-center">
                             <h3 class="card-title">FOG OF WAR</h3>
@@ -75,6 +69,8 @@
                 </div>
             </div>
         </div>
+
+        <script src="static/javascript/navbar.js"></script>
         <script src="static/javascript/util.js"></script>
     </body>
 </html>

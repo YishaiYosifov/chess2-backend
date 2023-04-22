@@ -16,6 +16,7 @@ class Game(BaseModel, DatabaseModel):
 
     timestamp : int
     mode : str
+    time_control : int
 
     moves : str
     white_wins : int = 0

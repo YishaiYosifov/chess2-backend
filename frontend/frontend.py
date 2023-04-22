@@ -27,8 +27,11 @@ class Template(BaseModel):
     helper : Callable = None
 
 def change_password_helper(**kwargs):
-    member = get_user_from_session()
-    if member.authentication_method != AuthenticationMethods.WEBSITE: return redirect("/settings")
+    member = get_user_from_session(False)
+    if not member:
+        session["alert"] = {"message": "Your session expired, please log in again!", "color": "danger"}
+        return redirect("/login")
+    elif member.authentication_method != AuthenticationMethods.WEBSITE: return redirect("/settings")
 
     return {"context": {}}
 
@@ -36,7 +39,9 @@ def member_helper(**kwargs):
     username = kwargs.get("username")
     if not username:
         member = get_user_from_session(False)
-        if not member: return redirect("/")
+        if not member:
+            session["alert"] = {"message": "Your session expired, please log in again!", "color": "danger"}
+            return redirect("/login")
 
         return redirect(f"/member/{member.username}")
     elif not Member.select(username=username): return redirect("/")
