@@ -3,10 +3,9 @@ from werkzeug.exceptions import BadRequest, Unauthorized
 from flask import Blueprint, redirect, jsonify
 from flask_restful.reqparse import Argument
 
-import requests
 import shutil
 
-from dao.auth import *
+from dao import WebsiteAuth, AuthenticationMethods
 from util import *
 
 auth = Blueprint("auth", __name__, url_prefix="/auth")
@@ -73,9 +72,7 @@ def login(args):
     if not auth.check_password(password): raise Unauthorized("Unknown email / username / password")
 
     # Generate the session token
-    member.session_token = uuid.uuid4().hex
-    member.update()
-    session["session_token"] = member.session_token
+    member.gen_session_token()
 
     return "Logged In", 200
 
@@ -89,9 +86,7 @@ def logout(user : Member):
     Logout a user
     """
 
-    session.clear()
-    user.session_token = ""
-    user.update()
+    user.logout()
     return redirect("/")
 
 @auth.route("/delete", methods=["POST"])
@@ -104,6 +99,5 @@ def delete(user : Member):
     shutil.rmtree(f"static/uploads/{user.member_id}")
 
     user.delete()
-    session.clear()
     
     return "Deleted", 200

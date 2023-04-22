@@ -23,9 +23,7 @@ from dotenv import load_dotenv
 import mysql.connector
 import base64
 
-from dao.auth import WebsiteAuth
-from dao.member import Member
-from dao.player import Player
+from dao import SessionToken, WebsiteAuth, Member, Player
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -129,13 +127,14 @@ def get_user_from_session(force_login = True) -> Member | None:
         if force_login: raise Unauthorized("Not Logged In")
         else: return
 
-    # Select the member from the database using the session token
-    user : Member = Member.select(session_token=session["session_token"])
-    if not user:
-        # If it doesn't find the user, it means the session token has expired
+    # Select the token
+    token : list[SessionToken] = SessionToken.select(token=session["session_token"])
+    if not token:
+        # If it doesn't find the token, it means the session token has expired
         session.clear()
         raise Unauthorized("Session Expired")
-    return user[0]
+    
+    return Member.select(member_id=token[0].member_id)[0]
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file

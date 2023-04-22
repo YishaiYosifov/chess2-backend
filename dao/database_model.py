@@ -22,6 +22,12 @@ class DatabaseModel:
         from util import cursor, database
         cursor.execute(f"DELETE FROM {self._table} WHERE {self._primary}=%s", (getattr(self, self._primary),))
         database.commit()
+    
+    @classmethod
+    def delete_all(cls, **params):
+        from util import cursor, database
+        cursor.execute(f"DELETE FROM {cls._table} WHERE {', '.join([param + '=%s' for param in params.keys()])}", list(params.values()))
+        database.commit()
 
     @classmethod
     def select(cls, limit=None, **params):

@@ -15,8 +15,7 @@ from pip._vendor import cachecontrol
 import google.auth.transport.requests
 import requests
 
-from dao.member import Member
-from dao.auth import *
+from dao import Member, AuthenticationMethods
 
 from frontend import frontend, TEMPLATES, default_template
 from api import api
@@ -51,16 +50,10 @@ def google_signup():
     )
 
     # Generate the session token and log the user in
-    session["session_token"] = uuid.uuid4().hex
-    member = Member.select(email=id_info["email"])
-    if member:
-        member = member[0]
-        member.session_token = session["session_token"]
-        member.update()
-    else: Member(session_token=session["session_token"], username=id_info["name"].replace(" ", ""), email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
+    member : list[Member] = Member.select(email=id_info["email"])
+    if member: member[0].gen_session_token()
+    else: Member(username=id_info["name"].replace(" ", ""), email=id_info["email"], authentication_method=AuthenticationMethods.GMAIL).insert()
     
-    # Alert the user they were logged in and redirect to the home page
-    session["alert"] = {"message": "Logged In Successfully", "color": "success"}
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])

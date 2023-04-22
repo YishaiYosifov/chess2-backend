@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from .assets import assets
 
-from dao.auth import *
+from dao import AuthenticationMethods
 from util import *
 
 frontend = Blueprint("frontend", __name__, template_folder="templates")

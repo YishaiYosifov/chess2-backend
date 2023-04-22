@@ -5,7 +5,7 @@ from flask import Blueprint, redirect
 from .profile import profile
 from .auth import auth
 
-from dao.auth import *
+from dao import WebsiteAuth
 from util import *
 
 api = Blueprint("api", __name__, url_prefix="/api")

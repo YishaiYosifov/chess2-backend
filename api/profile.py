@@ -12,8 +12,7 @@ from pydantic import BaseModel
 
 from PIL import Image
 
-from dao.game import Game
-from dao.auth import *
+from dao import Game, AuthenticationMethods
 from util import *
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")

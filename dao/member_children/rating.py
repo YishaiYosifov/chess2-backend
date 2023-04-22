@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from .database_model import DatabaseModel
+from .. import DatabaseModel
 
 class Rating(BaseModel, DatabaseModel):
     _table = "ratings"

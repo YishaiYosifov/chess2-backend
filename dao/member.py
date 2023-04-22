@@ -1,17 +1,18 @@
 from __future__ import annotations
 
+import uuid
 import time
 import os
 
 from werkzeug.exceptions import BadRequest, Conflict, TooManyRequests
+from flask import request, session
 from pydantic import BaseModel
-from flask import request
 
 import requests
 
-from .auth import AuthenticationMethods, WebsiteAuth
-from .database_model import DatabaseModel
-from .rating import Rating
+from . import DatabaseModel, \
+            Rating, SessionToken, \
+            AuthenticationMethods, WebsiteAuth
 
 PUBLIC_INFO = ["member_id", "username", "about", "country", "country_alpha"]
 PRIVATE_INFO = ["email", "authentication_method", "username_last_changed"]
@@ -37,7 +38,6 @@ class Member(BaseModel, DatabaseModel):
     _primary = "member_id"
 
     member_id : int = None
-    session_token : str = None
 
     username : str = None
     email : str = None
@@ -65,15 +65,15 @@ class Member(BaseModel, DatabaseModel):
 
     def delete(self):
         super().delete()
-
-        from util import CONFIG
+        self.logout()
 
         try:
             auth = self.get_website_auth()
             auth.delete()
         except Conflict: pass
 
-        for rating in Rating.select(member_id=self.member_id): rating.delete()
+        Rating.delete_all(member_id=self.member_id)
+        SessionToken.delete_all(member_id=self.member_id)
     
     def insert(self):
         """
@@ -85,6 +85,8 @@ class Member(BaseModel, DatabaseModel):
         from util import cursor, CONFIG
 
         member_id = cursor.lastrowid
+        self.member_id = member_id
+
         if not os.path.exists(f"static/uploads/{member_id}"): os.makedirs(f"static/uploads/{member_id}")
 
         for mode in CONFIG["modes"]: Rating(member_id=member_id, mode=mode).insert()
@@ -153,3 +155,18 @@ class Member(BaseModel, DatabaseModel):
 
         self.country = country
         self.country_alpha = alpha
+    
+    def gen_session_token(self):
+        """
+        Generate a new session token
+        """
+
+        token = uuid.uuid4().hex
+        session["session_token"] = token
+        SessionToken(member_id=self.member_id, token=token, create_at=time.time()).insert()
+    
+    def logout(self):
+        token : list[SessionToken] = SessionToken.select(token=session["session_token"])
+        if token: token[0].delete()
+
+        session.clear()
