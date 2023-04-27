@@ -1,7 +1,9 @@
-import json
+from contextlib import contextmanager
+from datetime import datetime
+
+import base64
 import time
 import uuid
-import re
 import os
 
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -18,33 +20,10 @@ from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
 
-from dotenv import load_dotenv
+from dao import EmailVerification, SessionToken, WebsiteAuth, Member, PoolConn
+from extensions import EMAIL_VERIFICATION_MESSAGE
 
-import mysql.connector
-import base64
-
-from dao import SessionToken, WebsiteAuth, Member, Player
-
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
-load_dotenv()
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-
-STRONG_PASSWORD_REG = re.compile(r"^(?=.*[A-Z])(?=.*)(?=.*[0-9])(?=.*[a-z]).{8,}$")
-EMAIL_REG = re.compile(r"[\w\.-]+@[\w\.-]+(\.[\w]+)+")
-
-with open("email_verification.html", "r") as f: EMAIL_VERIFICATION_MESSAGE = f.read()
-with open("static/countries.json", "r") as f: COUNTRIES : dict = json.load(f)
-with open("config.json", "r") as f: CONFIG : dict = json.load(f)
-
-database = mysql.connector.connect(host=os.getenv("MYSQL_HOST"), database=os.getenv("MYSQL_DATABASE"), user=os.getenv("MYSQL_USER"), password=os.getenv("MYSQL_PASSWORD"))
-cursor = database.cursor(dictionary=True)
-
-awaiting_verification : dict[str:dict["expires": str, "auth": WebsiteAuth]] = {}
-account_deletion : dict[str:dict["expires": str, "member": Member]] = {}
-
-def requires_authentication(type : Member | Player, allow_guests : bool = False):
+def requires_auth(allow_guests : bool=False):
     """
     Require the author of the request to be authenticated (suppors socket requests).
 
@@ -57,12 +36,11 @@ def requires_authentication(type : Member | Player, allow_guests : bool = False)
     :param allow_guests: can the request author be authenticated as a guest
     """
 
-    if allow_guests and type == Member: raise ValueError("Type Member cannot be guest")
     def decorator(function):
         def wrapper(*args, **kwargs):
             # Create a guest user / get the user from the session
-            if allow_guests: user = Player.create_guest()
-            else: user = get_user_from_session(True)
+            if allow_guests: user = Member.create_guest()
+            else: user = try_get_user_from_session()
 
             return function(*args, user=user, **kwargs)
 
@@ -70,7 +48,7 @@ def requires_authentication(type : Member | Player, allow_guests : bool = False)
         return wrapper
     return decorator
 
-def requires_arguments(*arguments : reqparse.Argument):
+def requires_args(*arguments : reqparse.Argument):
     """
     Require the request to include certain arguments (supports socket requests).
 
@@ -98,8 +76,10 @@ def requires_arguments(*arguments : reqparse.Argument):
             except BadRequest as error:
                 # If there are any missing / bad arguments, return them through socket io / http request
                 message = "\n".join([f"{argument}: {help}" for argument, help in error.data["message"].items()])
-                if is_socket: emit("exception", SocketIOExceptions.BAD_ARGUMENT)
-                raise BadRequest("Missing Arguments:\n" + message)
+                if is_socket:
+                    emit("exception", SocketIOExceptions.BAD_ARGUMENT)
+                    return
+                else: raise BadRequest("Missing Arguments:\n" + message)
 
             # If there are any empty arguments with a default value, set the arg to the default value
             for arg_name, value in parsed.copy().items():
@@ -115,26 +95,37 @@ def requires_arguments(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def get_user_from_session(force_login = True) -> Member | None:
+def socketio_db(function):
+    def wrapper(*args, **kwargs):
+        request.pool_conn = PoolConn()
+        function(*args, **kwargs)
+        if hasattr(request, "pool_conn") and not request.pool_conn._closed: request.pool_conn.close()
+    return wrapper
+
+def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> Member | None:
     """
     Get the user object from the session.
 
     :param force_login: raise unauthorized exception when not logged in
+    :param raise_on_session_expired: raise unauthorized exception when the user is logged in but the sesion expired
     """
 
     # Check if the user is logged in
     if not "session_token" in session:
-        if force_login: raise Unauthorized("Not Logged In")
+        if must_logged_in: raise Unauthorized("Not Logged In")
         else: return
 
     # Select the token
-    token : list[SessionToken] = SessionToken.select(token=session["session_token"])
+    token : SessionToken = SessionToken.select(token=session["session_token"]).first()
     if not token:
         # If it doesn't find the token, it means the session token has expired
         session.clear()
-        raise Unauthorized("Session Expired")
+        if raise_on_session_expired: raise Unauthorized("Session Expired")
+        return
     
-    return Member.select(member_id=token[0].member_id)[0]
+    token.last_used = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    token.update()
+    return Member.select(member_id=token.member_id).first()
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file
@@ -178,23 +169,24 @@ def send_verification_email(to : str, auth : WebsiteAuth):
     """
 
     # Check if there is already an active verification email
-    expires = time.time() + 60 * 10
-    verification_data = awaiting_verification.get(auth.member_id)
+    verification_data : EmailVerification = EmailVerification.select(member_id=auth.member_id).first()
     if verification_data:
         # If there is one, it will reset the expiry date
-        id = verification_data["id"]
-        verification_data["expires"] = expires
+        token = verification_data.token
+        
+        verification_data.created_at = "CURRENT_TIMESTAMP"
+        verification_data.update()
     else:
         # If there isn't one, it'll generate an id and save it
-        id = uuid.uuid4().hex
-        awaiting_verification[auth.member_id] = {"id": id, "expires": expires, "auth": auth}
+        token = uuid.uuid4().hex
+        EmailVerification(member_id=auth.member_id, token=token).insert()
 
     # Create the email object
     message = MIMEMultipart("alternative")
     message["To"] = to
     message["Subject"] = "Chess 2 Email Verification"
 
-    message.attach(MIMEText(EMAIL_VERIFICATION_MESSAGE.replace("{MEMBER-ID}", str(auth.member_id)).replace("{VERIFICATION-ID}", id), "html"))
+    message.attach(MIMEText(EMAIL_VERIFICATION_MESSAGE.replace("{TOKEN}", token), "html"))
 
     # Send the email
     gmail_service.users().messages().send(userId="me", body={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()}).execute()

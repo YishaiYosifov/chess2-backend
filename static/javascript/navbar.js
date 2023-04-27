@@ -1,7 +1,7 @@
 const navbar = $($.parseHTML(
     `<nav class="navbar navbar-dark">
         <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#navbarOffcanvas" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
+            <button class="navbar-toggler border-3 border-danger" type="button" data-bs-toggle="offcanvas" data-bs-target="#navbarOffcanvas" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="offcanvas offcanvas-start" tabindex="-1" id="navbarOffcanvas" aria-labelledby="navbarOffcanvas" style="background-color: #687c8b;">

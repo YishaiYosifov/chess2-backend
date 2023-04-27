@@ -4,7 +4,7 @@ import numpy
 import os
 import io
 
-from werkzeug.exceptions import NotFound, Unauthorized, UnprocessableEntity, RequestEntityTooLarge
+from werkzeug.exceptions import NotFound, Unauthorized, UnprocessableEntity, RequestEntityTooLarge, BadRequest
 
 from flask import Blueprint, request, jsonify
 from flask_restful.reqparse import Argument
@@ -12,8 +12,8 @@ from pydantic import BaseModel
 
 from PIL import Image
 
-from dao import Game, AuthenticationMethods
-from util import *
+from util import requires_args, requires_auth, try_get_user_from_session
+from dao import Game, AuthMethods, Member, Or
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
 
@@ -25,43 +25,41 @@ def get_info(target : str):
 
     if target == "me":
         # If the target is the logged in user, get the user from the session and return the private information
-        user : Member = get_user_from_session()
+        user : Member = try_get_user_from_session()
         return user.get_private_info()
     
     # Select the user using the given username
-    user : Member = Member.select(username=target)
+    user : Member = Member.select(username=target).first()
     if not user: raise NotFound("User Not Found")
-    user = user[0]
     
     # Return the public info
     return user.get_public_info(), 200
 
 @profile.route("/get_games", methods=["POST"])
-@requires_arguments(Argument("limit", type=int, default=10))
+@requires_args(Argument("limit", type=int, default=10))
 def get_games(target : str, args):
     """
     Get a user's played games
     """
 
     # Find the target user
-    target : Member = Member.select(username=target)
+    target : Member = Member.select(username=target).first()
     if not target: raise NotFound("User Not Found")
-    target = target[0]
 
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.select(limit=args.limit, _white_id=target.member_id, _black_id=target.member_id)
+    games : list[Game] = Game.select(white=target.member_id, black=Or(target.member_id)).limit(args.limit).all()
     games_data = []
 
     # Convert it to json
     for game in games:
-        white : list[Member] = Member.select(member_id=game.white_id)
-        black : list[Member] = Member.select(member_id=game.black_id)
+        white : Member = Member.select(member_id=game.white).first()
+        black : Member = Member.select(member_id=game.black).first()
 
-        data = game.to_dict(exclude=["white_id", "black_id"])
-        data["white"] = white[0].username if white else "DELETED"
-        data["black"] = black[0].username if black else "DELETED"
+        data = game.to_dict(exclude=["white", "black"])
+        data["white"] = white.username if white else "DELETED"
+        data["black"] = black.username if black else "DELETED"
 
         games_data.append(data)
 
@@ -84,8 +82,8 @@ SETTINGS = [
     Setting(name="password", type=str, requires_password=True, set_value=lambda _, auth, value: auth.set_password(value))
 ]
 @profile.route("/update", methods=["POST"])
-@requires_arguments(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
-@requires_authentication(type=Member)
+@requires_args(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
+@requires_auth()
 def update(target : str, user : Member, args):
     """
     Update the user information
@@ -98,7 +96,7 @@ def update(target : str, user : Member, args):
     for setting in filter(lambda setting: not setting.requires_password and args[setting.name] != None, SETTINGS):
         setting.set_value(user, args[setting.name])
 
-    if user.authentication_method == AuthenticationMethods.WEBSITE:
+    if user.auth_method == AuthMethods.WEBSITE:
         # Get every setting that requries password confirmation and was given a new value
         requires_password = list(filter(lambda setting: setting.requires_password and args[setting.name] != None, SETTINGS))
         if requires_password:
@@ -114,7 +112,7 @@ def update(target : str, user : Member, args):
     return "Updated", 200
 
 @profile.route("/upload_profile_picture", methods=["POST"])
-@requires_authentication(type=Member)
+@requires_auth()
 def upload_profile_picture(target : str, user : Member):
     """
     Upload a new profile picture

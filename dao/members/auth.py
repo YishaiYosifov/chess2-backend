@@ -1,20 +1,19 @@
 from enum import Enum
 
 from werkzeug.exceptions import BadRequest
-from pydantic import BaseModel
 
 import bcrypt
 
-from .database_model import DatabaseModel
+from ..database_model import DatabaseModel
 
-class AuthenticationMethods(Enum):
+class AuthMethods(Enum):
     WEBSITE = "website"
     GMAIL = "gmail"
     GUEST = "guest"
 
-class WebsiteAuth(BaseModel, DatabaseModel):
-    _table = "website_authentication"
-    _primary = "website_auth_id"
+class WebsiteAuth(DatabaseModel):
+    __tablename__ = "website_auth"
+    __primary__ = "website_auth_id"
 
     website_auth_id : int = None
     member_id : int = None
@@ -32,10 +31,10 @@ class WebsiteAuth(BaseModel, DatabaseModel):
         :raises BadRequest: the password doesn't match the password requirements
         """
 
-        from util import STRONG_PASSWORD_REG
+        from extensions import STRONG_PASSWORD_REG
 
         if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
         hash = bcrypt.hashpw(password, bcrypt.gensalt())
         self.hash = hash
 
-    def check_password(self, password : str) -> bool: return bcrypt.checkpw(password, self.hash)
+    def check_password(self, password : str) -> bool: return bcrypt.checkpw(password.encode(), self.hash.encode())

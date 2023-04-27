@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 from .assets import assets
 
-from dao import AuthenticationMethods
-from util import *
+from util import try_get_user_from_session
+from dao import AuthMethods, Member
 
 frontend = Blueprint("frontend", __name__, template_folder="templates")
 frontend.register_blueprint(assets)
@@ -16,7 +16,6 @@ class AuthReq(Enum):
     OPTIONAL = 0
     REQUIRED = 1
     NOT_AUTHED = 2
-    
 
 class Template(BaseModel):
     route : str
@@ -27,24 +26,19 @@ class Template(BaseModel):
     helper : Callable = None
 
 def change_password_helper(**kwargs):
-    member = get_user_from_session(False)
-    if not member:
-        session["alert"] = {"message": "Your session expired, please log in again!", "color": "danger"}
-        return redirect("/login")
-    elif member.authentication_method != AuthenticationMethods.WEBSITE: return redirect("/settings")
+    member = try_get_user_from_session()
+    if member.auth_method != AuthMethods.WEBSITE: return redirect("/settings")
 
     return {"context": {}}
 
 def member_helper(**kwargs):
     username = kwargs.get("username")
     if not username:
-        member = get_user_from_session(False)
-        if not member:
-            session["alert"] = {"message": "Your session expired, please log in again!", "color": "danger"}
-            return redirect("/login")
-
+        member = try_get_user_from_session(False)
+        if not member: return redirect("/")
+        
         return redirect(f"/member/{member.username}")
-    elif not Member.select(username=username): return redirect("/")
+    elif not Member.select(username=username).first(): return redirect("/")
 
     return {"context": {}}
 
@@ -52,7 +46,7 @@ def index_helper(**kwargs):
     alert = session.get("alert")
     if alert: session.pop("alert")
 
-    if "session_token" in session: return render_template("index-authorized.html", alert=alert)
+    if try_get_user_from_session(must_logged_in=False): return render_template("index-authorized.html", alert=alert)
     else: return render_template("index-unauthorized.html", alert=alert)
 
 TEMPLATES = [
@@ -71,9 +65,8 @@ TEMPLATES = [
 ]
 
 def default_template(template : Template, **kwargs):
-    logged_in = "session_token" in session
-    if (template.auth_req == AuthReq.REQUIRED and not logged_in) or \
-        (template.auth_req == AuthReq.NOT_AUTHED and logged_in): return redirect("/")
+    if template.auth_req == AuthReq.REQUIRED: try_get_user_from_session()
+    elif template.auth_req == AuthReq.NOT_AUTHED and try_get_user_from_session(must_logged_in=False): return redirect("/")
     
     context = {}
     if template.helper:

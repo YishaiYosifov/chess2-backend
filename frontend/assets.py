@@ -1,4 +1,3 @@
-import json
 import io
 import os
 
@@ -7,7 +6,7 @@ from werkzeug.exceptions import NotFound
 
 from PIL import Image
 
-from util import COUNTRIES
+from extensions import COUNTRIES
 
 assets = Blueprint("assets", __name__)
 
