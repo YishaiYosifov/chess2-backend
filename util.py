@@ -95,11 +95,15 @@ def requires_args(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def socketio_db(function):
+def requires_db(function):
     def wrapper(*args, **kwargs):
         request.pool_conn = PoolConn()
-        function(*args, **kwargs)
+        func_return = function(*args, **kwargs)
         if hasattr(request, "pool_conn") and not request.pool_conn._closed: request.pool_conn.close()
+
+        return func_return
+
+    wrapper.__name__ = function.__name__
     return wrapper
 
 def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> Member | None:

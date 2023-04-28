@@ -5,12 +5,13 @@ from flask_socketio import emit
 from flask import Blueprint
 
 from dao import OutgoingGame, Game, Rating, Member, AuthMethods
-from util import requires_args, requires_auth
+from util import requires_args, requires_auth, requires_db
 from extensions import CONFIG
 
 game = Blueprint("game", __name__, url_prefix="/game")
 
 @game.route("/pool/start", methods=["POST"])
+@requires_db
 @requires_args(Argument("mode", type=str, required=True), Argument("time_control", type=int, required=True))
 @requires_auth()
 def start_pool_game(user : Member, args):
@@ -48,6 +49,7 @@ def start_pool_game(user : Member, args):
     return "Added to the pool", 200
 
 @game.route("/cancel", methods=["POST"])
+@requires_db
 @requires_auth()
 def cancel_pool_game(user : Member):
     outgoing = OutgoingGame.select(from_id=user.member_id).first()

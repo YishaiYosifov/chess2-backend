@@ -12,12 +12,13 @@ from pydantic import BaseModel
 
 from PIL import Image
 
-from util import requires_args, requires_auth, try_get_user_from_session
+from util import requires_args, requires_auth, requires_db, try_get_user_from_session
 from dao import Game, AuthMethods, Member, Or
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
 
 @profile.route("/get_info", methods=["POST"])
+@requires_db
 def get_info(target : str):
     """
     Get a user's information
@@ -36,6 +37,7 @@ def get_info(target : str):
     return user.get_public_info(), 200
 
 @profile.route("/get_games", methods=["POST"])
+@requires_db
 @requires_args(Argument("limit", type=int, default=10))
 def get_games(target : str, args):
     """
@@ -82,6 +84,7 @@ SETTINGS = [
     Setting(name="password", type=str, requires_password=True, set_value=lambda _, auth, value: auth.set_password(value))
 ]
 @profile.route("/update", methods=["POST"])
+@requires_db
 @requires_args(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
 @requires_auth()
 def update(target : str, user : Member, args):
@@ -112,6 +115,7 @@ def update(target : str, user : Member, args):
     return "Updated", 200
 
 @profile.route("/upload_profile_picture", methods=["POST"])
+@requires_db
 @requires_auth()
 def upload_profile_picture(target : str, user : Member):
     """

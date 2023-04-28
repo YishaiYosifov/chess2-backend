@@ -17,7 +17,7 @@ import google.auth.transport.requests
 import requests
 
 from dao import LessThan, Member, AuthMethods, SessionToken, EmailVerification
-from util import try_get_user_from_session, requires_auth, socketio_db
+from util import try_get_user_from_session, requires_auth, requires_db
 
 from frontend import frontend, TEMPLATES, default_template
 from api import api
@@ -29,6 +29,7 @@ from app import app, socketio
 # region google auth
 
 @app.route("/google_login_callback", methods=["GET"])
+@requires_db
 def google_signup():
     """
     This function will run when a user logs in using google.
@@ -58,6 +59,7 @@ def google_signup():
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])
+@requires_db
 def google_login():
     """
     Redirect the user to the google log in page
@@ -92,19 +94,14 @@ def http_error_handler(exception : HTTPException):
     return exception.description, exception.code
 
 @socketio.on("connected")
-@socketio_db
+@requires_db
 @requires_auth()
 def connected(user : Member):
     user.sid = request.sid
     user.update()
 
 @app.before_request
-def before_request():
-    session.permanent = True
-    request.pool_conn = PoolConn()
-@app.teardown_request
-def teardown_request(_):
-    if hasattr(request, "pool_conn") and not request.pool_conn._closed: request.pool_conn.close()
+def before_request(): session.permanent = True
 
 if __name__ == "__main__":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"

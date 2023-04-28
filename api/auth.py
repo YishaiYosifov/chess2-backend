@@ -5,12 +5,13 @@ from flask_restful.reqparse import Argument
 
 import shutil
 
-from util import send_verification_email, requires_args, requires_auth, try_get_user_from_session
-from dao import WebsiteAuth, AuthMethods, Member, PoolConn
+from util import send_verification_email, requires_args, requires_auth, requires_db, try_get_user_from_session
+from dao import WebsiteAuth, AuthMethods, Member
 
 auth = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth.route("/signup", methods=["POST"])
+@requires_db
 @requires_args(Argument("username", type=str, required=True), Argument("password", type=str, required=True), Argument("email", type=str, required=True))
 def signup(args):
     """
@@ -47,6 +48,7 @@ def signup(args):
     return "Signed Up", 200
 
 @auth.route("/login", methods=["POST"])
+@requires_db
 @requires_args(Argument("selector", type=str, required=True), Argument("password", type=str, required=True))
 def login(args):
     """
@@ -75,9 +77,11 @@ def login(args):
     return "Logged In", 200
 
 @auth.route("/is_logged_in", methods=["POST"])
+@requires_db
 def is_logged_in(): return jsonify(bool(try_get_user_from_session(must_logged_in=False, raise_on_session_expired=False))), 200
 
 @auth.route("/logout", methods=["POST", "GET"])
+@requires_db
 @requires_auth()
 def logout(user : Member):
     """
@@ -88,6 +92,7 @@ def logout(user : Member):
     return redirect("/")
 
 @auth.route("/delete", methods=["POST"])
+@requires_db
 @requires_auth()
 def delete(user : Member):
     """
