@@ -1,13 +1,10 @@
-from datetime import datetime
+from app import db
 
-from .database_model import DatabaseModel
-
-class EmailVerification(DatabaseModel):
+class EmailVerification(db.Model):
     __tablename__ = "email_verifications"
-    __primary__ = "verification_id"
 
-    verification_id : int = None
-    member_id : int
+    verification_id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
 
-    token : str
-    created_at : datetime = "CURRENT_TIMESTAMP"
+    token = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

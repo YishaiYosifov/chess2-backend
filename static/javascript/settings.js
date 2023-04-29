@@ -31,7 +31,7 @@ async function main() {
     });
 
     for (const [setting, data] of Object.entries(settings)) {
-        if (data.forAuth != "all" && data.forAuth != userInfo["authentication_method"]) {
+        if (data.forAuth != "all" && data.forAuth != userInfo["auth_method"]) {
             $(`#setting-${setting}`).remove();
             continue;
         }

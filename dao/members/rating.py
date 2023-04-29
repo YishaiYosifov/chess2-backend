@@ -1,13 +1,10 @@
-from typing import Literal
+from app import db
 
-from ..database_model import DatabaseModel
-
-class Rating(DatabaseModel):
+class Rating(db.Model):
     __tablename__ = "ratings"
-    __primary__ = "rating_id"
 
-    rating_id : int = None
-    member_id : int
+    rating_id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
 
-    mode : Literal["anarchy"] | Literal["chss"] | Literal["fog of war"]
-    elo : int = 800
+    mode = db.Column(db.String(50))
+    elo = db.Column(db.Integer, default=800)

@@ -1,35 +1,35 @@
-from datetime import datetime
-from typing import Literal
-
 import random
 import uuid
 
-from ..database_model import DatabaseModel
 from ..members.member import Member
+from app import db
 
-class Game(DatabaseModel):
+class Game(db.Model):
     def __init__(self, **data):
         super().__init__(**data)
 
     __tablename__ = "games"
-    __primary__ = "game_id"
 
-    game_id : int = None
-    token : str
+    game_id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.Text)
     
-    white : Member | int
-    black : Member | int
-    winner : Literal["white"] | Literal["black"] = None
+    white_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
+    black_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
 
-    mode : str
-    time_control : int
+    white = db.relationship("Member", foreign_keys=[white_id], uselist=False)
+    black = db.relationship("Member", foreign_keys=[black_id], uselist=False)
 
-    moves : str = ""
-    white_wins : int = 0
-    black_wins : int = 0
+    winner = db.Column(db.String(10))
 
-    is_over : bool = False
-    created_at : datetime = "CURRENT_TIMESTAMP"
+    mode = db.Column(db.String(50))
+    time_control = db.Column(db.Integer)
+
+    moves = db.Column(db.Text, default="")
+    white_wins = db.Column(db.Integer, default=0)
+    black_wins = db.Column(db.Integer, default=0)
+
+    is_over = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def to_dict(self, exclude = []) -> dict[str: any]:
         results = super().to_dict(exclude=exclude)
@@ -59,16 +59,14 @@ class Game(DatabaseModel):
             white, black = players
         else:
             # If it's not, give each player the opposite color they were in the last game
-            if players[0].member.last_color == "black": white, black = players
+            if players[0].last_color == "black": white, black = players
             else: black, white = players
         
         # Update the last color for each user
         white.last_color = "white"
         black.last_color = "black"
-        white.update()
-        black.update()
 
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
-        cls(token=token, white=white, black=black, mode=mode, time_control=time_control).insert()
+        db.session.add(cls(token=token, white=white, black=black, mode=mode, time_control=time_control))
         return token

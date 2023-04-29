@@ -5,31 +5,27 @@ import time
 import os
 
 from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized
+from flask import redirect, session, request
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 
 from pip._vendor import cachecontrol
 
-from flask import redirect, session, request
-
 import google.auth.transport.requests
 import requests
 
-from dao import LessThan, Member, AuthMethods, SessionToken, EmailVerification
-from util import try_get_user_from_session, requires_auth, requires_db
-
 from frontend import frontend, TEMPLATES, default_template
-from api import api
-
+from util import try_get_user_from_session, requires_auth
 from extensions import GOOGLE_CLIENT_ID, CONFIG
-from dao import PoolConn
+
 from app import app, socketio
+from api import api
+from dao import *
 
 # region google auth
 
 @app.route("/google_login_callback", methods=["GET"])
-@requires_db
 def google_signup():
     """
     This function will run when a user logs in using google.
@@ -52,14 +48,14 @@ def google_signup():
     )
 
     # Generate the session token and log the user in
-    member : Member = Member.select(email=id_info["email"]).first()
+    member : Member = Member.query.filter_by(email=id_info["email"]).first()
     if member: member.gen_session_token()
     else: Member(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL).insert()
+    db.session.commit()
     
     return redirect("/")
 
 @app.route("/google_login", methods=["GET"])
-@requires_db
 def google_login():
     """
     Redirect the user to the google log in page
@@ -76,13 +72,11 @@ def google_login():
 # Delete expired columns
 def delete_expired():
     while True:
-        pool_conn = PoolConn()
+        with app.app_context():
+            now = datetime.now()
+            SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
+            EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S"))
 
-        now = datetime.now()
-        SessionToken.delete_all(pool_conn=pool_conn, last_used=LessThan((now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")))
-        EmailVerification.delete_all(pool_conn=pool_conn, created_at=LessThan((now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")))
-
-        pool_conn.close()
         time.sleep(60)
 
 @app.errorhandler(HTTPException)
@@ -94,11 +88,10 @@ def http_error_handler(exception : HTTPException):
     return exception.description, exception.code
 
 @socketio.on("connected")
-@requires_db
 @requires_auth()
 def connected(user : Member):
     user.sid = request.sid
-    user.update()
+    db.session.commit()
 
 @app.before_request
 def before_request(): session.permanent = True
@@ -123,6 +116,7 @@ if __name__ == "__main__":
     app.register_blueprint(frontend)
     app.register_blueprint(api)
 
+    with app.app_context(): db.create_all()
     threading.Thread(target=delete_expired, daemon=True).start()
 
     socketio.run(app, "0.0.0.0", debug=CONFIG["debug"])

@@ -12,13 +12,13 @@ from pydantic import BaseModel
 
 from PIL import Image
 
-from util import requires_args, requires_auth, requires_db, try_get_user_from_session
-from dao import Game, AuthMethods, Member, Or
+from util import requires_args, requires_auth, try_get_user_from_session
+from dao import Game, AuthMethods, Member, WebsiteAuth
+from app import db
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
 
 @profile.route("/get_info", methods=["POST"])
-@requires_db
 def get_info(target : str):
     """
     Get a user's information
@@ -30,14 +30,13 @@ def get_info(target : str):
         return user.get_private_info()
     
     # Select the user using the given username
-    user : Member = Member.select(username=target).first()
+    user : Member = Member.query.filter_by(username=target).first()
     if not user: raise NotFound("User Not Found")
     
     # Return the public info
     return user.get_public_info(), 200
 
 @profile.route("/get_games", methods=["POST"])
-@requires_db
 @requires_args(Argument("limit", type=int, default=10))
 def get_games(target : str, args):
     """
@@ -45,23 +44,20 @@ def get_games(target : str, args):
     """
 
     # Find the target user
-    target : Member = Member.select(username=target).first()
+    target : Member = Member.query.filter_by(username=target).first()
     if not target: raise NotFound("User Not Found")
 
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.select(white=target.member_id, black=Or(target.member_id)).limit(args.limit).all()
+    games : list[Game] = Game.query.filter((Game.is_over == True) & ((Game.white == target) | (Game.black == target))).limit(args.limit).all()
     games_data = []
 
     # Convert it to json
     for game in games:
-        white : Member = Member.select(member_id=game.white).first()
-        black : Member = Member.select(member_id=game.black).first()
-
         data = game.to_dict(exclude=["white", "black"])
-        data["white"] = white.username if white else "DELETED"
-        data["black"] = black.username if black else "DELETED"
+        data["white"] = game.white.username if game.white else "DELETED"
+        data["black"] = game.black.username if game.black else "DELETED"
 
         games_data.append(data)
 
@@ -84,7 +80,6 @@ SETTINGS = [
     Setting(name="password", type=str, requires_password=True, set_value=lambda _, auth, value: auth.set_password(value))
 ]
 @profile.route("/update", methods=["POST"])
-@requires_db
 @requires_args(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
 @requires_auth()
 def update(target : str, user : Member, args):
@@ -104,18 +99,16 @@ def update(target : str, user : Member, args):
         requires_password = list(filter(lambda setting: setting.requires_password and args[setting.name] != None, SETTINGS))
         if requires_password:
             # If there are any, get the user's website auth and check the password
-            auth = user.get_website_auth()
+            auth : WebsiteAuth = WebsiteAuth.query.filter_by(member=user).first()
             if not auth.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
 
             # Set the new value
-            for setting in requires_password: setting.set_value(user, auth, args[setting])
-            auth.update()
+            for setting in requires_password: setting.set_value(user, auth, args[setting.name])
 
-    user.update()
+    db.session.commit()
     return "Updated", 200
 
 @profile.route("/upload_profile_picture", methods=["POST"])
-@requires_db
 @requires_auth()
 def upload_profile_picture(target : str, user : Member):
     """

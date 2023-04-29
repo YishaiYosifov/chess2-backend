@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Literal
+
+from datetime import datetime, timedelta
+from enum import Enum
 
 import uuid
-import time
 import os
 
 from werkzeug.exceptions import BadRequest, Conflict, TooManyRequests
@@ -14,14 +15,15 @@ from .auth import AuthMethods, WebsiteAuth
 from .session_token import SessionToken
 from .rating import Rating
 
-from ..database_model import DatabaseModel
+from extensions import CONFIG, EMAIL_REG, COUNTRIES
+from app import db
 
 PUBLIC_INFO = ["member_id", "username", "about", "country", "country_alpha"]
 PRIVATE_INFO = ["email", "auth_method", "username_last_changed"]
 
-awaiting_verification : dict[str:dict["expires": str, "auth": WebsiteAuth]] = {}
+class Member(db.Model):
+    __tablename__ = "members"
 
-class Member(DatabaseModel):
     def __init__(self, **data):
         try:
             ip = request.headers.getlist("X-Forwarded-For")
@@ -36,59 +38,65 @@ class Member(DatabaseModel):
         
         super().__init__(**data)
 
-    __tablename__ = "members"
-    __primary__ = "member_id"
+    member_id = db.Column(db.Integer, primary_key=True)
+    sid = db.Column(db.Text)
 
-    member_id : int = None
-    sid : str = None
+    username = db.Column(db.String(30))
+    email = db.Column(db.String(256))
 
-    username : str = None
-    email : str = None
+    country = db.Column(db.String(100), default="International")
+    country_alpha = db.Column(db.String(5), default="INTR")
 
-    country : str = "International"
-    country_alpha : str = "INTR"
+    about = db.Column(db.Text)
+    last_color = db.Column(db.String(10), default="white")
 
-    about : str = ""
-    last_color : Literal["white"] | Literal["black"] = "white"
+    auth_method = db.Column(db.Enum(AuthMethods))
+    username_last_changed = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-    auth_method : AuthMethods
-    username_last_changed : int = None
+    # Relationships
+    rating = db.relationship("Rating", backref="member", uselist=False, cascade="all, delete-orphan")
+    session_tokens = db.relationship("SessionToken", backref="member", cascade="all, delete-orphan")
 
-    def get_public_info(self) -> dict: return super().get(PUBLIC_INFO)
-    def get_private_info(self) -> dict: return self.get_public_info() | super().get(PRIVATE_INFO)
-    def get_website_auth(self) -> WebsiteAuth:
+    email_verification = db.relationship("EmailVerification", uselist=False, backref="member", cascade="all, delete-orphan")
+
+    outgoing_game = db.relationship("OutgoingGame", backref="member", uselist=False, cascade="all, delete-orphan")
+
+    def get_public_info(self) -> dict: return self._get(PUBLIC_INFO)
+    def get_private_info(self) -> dict: return self.get_public_info() | self._get(PRIVATE_INFO)
+
+    def _get(self, attributes : list) -> dict[str:any]:
         """
-        Get the website auth
-        
-        :raises Conflict: the user is not a website auth user
-        """
-        if self.auth_method != AuthMethods.WEBSITE: raise Conflict("Not Website Auth")
+        Get attributes from the object
 
-        return WebsiteAuth.select(member_id=self.member_id).first()
+        :param attributes: the attribute to get
+        """
+        results = {}
+        for attribute in attributes:
+            value = getattr(self, attribute)
+            if isinstance(value, Enum): value = value.value
+            results[attribute] = value
+        return results
 
     def delete(self):
-        super().delete()
         self.logout()
 
-        try:
-            auth = self.get_website_auth()
-            auth.delete()
-        except Conflict: pass
+        if self.auth_method == AuthMethods.WEBSITE: WebsiteAuth.query.filter_by(member=self).delete()
 
-        Rating.delete_all(member_id=self.member_id)
-        SessionToken.delete_all(member_id=self.member_id)
+        Rating.query.filter_by(member=self).delete()
+        SessionToken.query.filter_by(member=self).delete()
+
+        db.session.delete(self)
     
     def insert(self):
         """
         Create user
         """
         
-        super().insert()
-
-        from extensions import CONFIG
+        db.session.add(self)
+        db.session.flush()
 
         if not os.path.exists(f"static/uploads/{self.member_id}"): os.makedirs(f"static/uploads/{self.member_id}")
-        for mode in CONFIG["modes"]: Rating(member_id=self.member_id, mode=mode).insert()
+        for mode in CONFIG["modes"]: db.session.add(Rating(member=self, mode=mode))
 
     def set_username(self, username : str):
         """
@@ -101,13 +109,14 @@ class Member(DatabaseModel):
         :raises Conflict: the username is taken
         """
 
-        if self.username_last_changed and (self.username_last_changed + 60 * 60 * 24 * 30) - time.time() > 0: raise TooManyRequests("Username Changed Recently")
+        now = datetime.now()
+        if self.username_last_changed and self.username_last_changed < now - timedelta(weeks=4) > 0: raise TooManyRequests("Username Changed Recently")
         elif len(username) > 30: raise BadRequest("Username Too Long")
         elif len(username) < 1: raise BadRequest("Username Too Short")
         elif " " in username: raise BadRequest("Username can't include a space")
-        elif Member.select(username=username).first(): raise Conflict("Username Taken")
+        elif Member.query.filter_by(username=username).first(): raise Conflict("Username Taken")
 
-        self.username_last_changed = int(time.time())
+        self.username_last_changed = now
         self.username = username
 
     def set_email(self, email : str, send_verification = True):
@@ -119,23 +128,24 @@ class Member(DatabaseModel):
 
         :raises BadRequest: the email is not valid
         :raises Conflict: the email address is taken
+        :raises Conflict: not website auth
         """
 
         from util import send_verification_email
-        from extensions import EMAIL_REG
 
-        # Get the website auth
-        auth = self.get_website_auth()
+        if self.auth_method != AuthMethods.WEBSITE: raise Conflict("Not Website Auth")
 
         # Check if the email address is valid and not taken
         email_match = EMAIL_REG.match(email)
         if not email_match or email_match.group(0) != email: raise BadRequest("Invalid Email Address")
-        elif Member.select(email=email).first(): raise Conflict("Email Taken")
+        elif Member.query.filter_by(email=email).first(): raise Conflict("Email Taken")
 
         self.email = email
 
         if send_verification:
             # Send the verification email
+
+            auth : WebsiteAuth = WebsiteAuth.query.filter_by(member=self).first()
             send_verification_email(email, auth)
             auth.verified = False
     
@@ -147,8 +157,6 @@ class Member(DatabaseModel):
 
         :raises BadRequest: invalid country
         """
-
-        from extensions import COUNTRIES
 
         country = COUNTRIES.get(alpha)
         if not country: raise BadRequest("Invalid Country")
@@ -163,12 +171,10 @@ class Member(DatabaseModel):
 
         token = uuid.uuid4().hex
         session["session_token"] = token
-        SessionToken(member_id=self.member_id, token=token).insert()
+        db.session.add(SessionToken(member=self, token=token))
     
     def logout(self):
-        token : SessionToken = SessionToken.select(token=session["session_token"]).first()
-        if token: token.delete()
-
+        SessionToken.query.filter_by(token=session["session_token"]).delete()
         session.clear()
     
     @classmethod

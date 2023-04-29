@@ -4,8 +4,6 @@ import re
 
 from dotenv import load_dotenv
 
-import mysql.connector.pooling
-
 load_dotenv()
 
 # Constants
@@ -21,16 +19,12 @@ with open("config.json", "r") as f: CONFIG : dict = json.load(f)
 
 # Initilize MySQL
 
-cnx_pool = mysql.connector.pooling.MySQLConnectionPool(
-    pool_size=CONFIG["mysql_pool_size"],
-    user=os.getenv("MYSQL_DATABASE_USER"),
-    password=os.getenv("MYSQL_DATABASE_PASSWORD"),
-    host=os.getenv("MYSQL_DATABASE_HOST"),
-    database=os.getenv("MYSQL_DATABASE_DB")
-)
-
 class BaseType:
-    def __init__(self, value): self._value = value
-    
-    def __str__(self) -> str: return str(self._value)
-    def __eq__(self, to): return self._value == to
+    def __init__(self, value):
+        self.types = [type(self)]
+
+        if isinstance(value, BaseType):
+            self._value = value._value
+            self.types += value.types
+        else:
+            self.statement = {"value": value}

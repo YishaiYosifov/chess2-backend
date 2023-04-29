@@ -1,17 +1,14 @@
-from datetime import datetime
+from app import db
 
-from ..database_model import DatabaseModel
-
-class OutgoingGame(DatabaseModel):
+class OutgoingGame(db.Model):
     __tablename__ = "outgoing_games"
-    __primary__ = "outgoing_game_id"
 
-    outgoing_game_id : int = None
-    from_id : int
+    outgoing_game_id = db.Column(db.Integer, primary_key=True)
+    
+    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
 
-    rating : int
-    mode : str
-    time_control : int
+    mode = db.Column(db.String(50))
+    time_control = db.Column(db.Integer)
 
-    created_at : datetime = "CURRENT_TIMESTAMP"
-    is_pool : bool = False
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    is_pool = db.Column(db.Boolean, default=False)

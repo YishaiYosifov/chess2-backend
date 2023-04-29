@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from .assets import assets
 
-from util import try_get_user_from_session, requires_db
+from util import try_get_user_from_session
 from dao import AuthMethods, Member
 
 frontend = Blueprint("frontend", __name__, template_folder="templates")
@@ -38,7 +38,7 @@ def member_helper(**kwargs):
         if not member: return redirect("/")
         
         return redirect(f"/member/{member.username}")
-    elif not Member.select(username=username).first(): return redirect("/")
+    elif not Member.query.filter_by(username=username).first(): return redirect("/")
 
     return {"context": {}}
 
@@ -64,7 +64,6 @@ TEMPLATES = [
     Template(route="/play", template="play.html")
 ]
 
-@requires_db
 def default_template(template : Template, **kwargs):
     if template.auth_req == AuthReq.REQUIRED: try_get_user_from_session()
     elif template.auth_req == AuthReq.NOT_AUTHED and try_get_user_from_session(must_logged_in=False): return redirect("/")

@@ -4,23 +4,23 @@ from werkzeug.exceptions import BadRequest
 
 import bcrypt
 
-from ..database_model import DatabaseModel
+from extensions import STRONG_PASSWORD_REG
+from app import db
 
 class AuthMethods(Enum):
     WEBSITE = "website"
     GMAIL = "gmail"
     GUEST = "guest"
 
-class WebsiteAuth(DatabaseModel):
-    __tablename__ = "website_auth"
-    __primary__ = "website_auth_id"
+class WebsiteAuth(db.Model):
+    __tablename__ = "website_auths"
 
-    website_auth_id : int = None
-    member_id : int = None
+    website_auth_id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
+    member = db.relationship("Member", uselist=False)
     
-    verified : bool = False
-
-    hash : str = None
+    verified = db.Column(db.Boolean, default=False)
+    hash = db.Column(db.Text)
 
     def set_password(self, password : str):
         """
@@ -31,10 +31,8 @@ class WebsiteAuth(DatabaseModel):
         :raises BadRequest: the password doesn't match the password requirements
         """
 
-        from extensions import STRONG_PASSWORD_REG
-
         if not STRONG_PASSWORD_REG.findall(password): raise BadRequest("Invalid Password")
-        hash = bcrypt.hashpw(password, bcrypt.gensalt())
+        hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
         self.hash = hash
 
     def check_password(self, password : str) -> bool: return bcrypt.checkpw(password.encode(), self.hash.encode())

@@ -1,13 +1,10 @@
-from datetime import datetime
+from app import db
 
-from ..database_model import DatabaseModel
-
-class SessionToken(DatabaseModel):
+class SessionToken(db.Model):
     __tablename__ = "session_tokens"
-    __primary__ = "token_id"
+    
+    token_id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
 
-    token_id : int = None
-    member_id : int
-
-    token : str
-    last_used : datetime = "CURRENT_TIMESTAMP"
+    token = db.Column(db.Text)
+    last_used = db.Column(db.DateTime, default=db.func.current_timestamp())

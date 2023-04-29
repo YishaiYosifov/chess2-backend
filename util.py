@@ -1,8 +1,6 @@
-from contextlib import contextmanager
 from datetime import datetime
 
 import base64
-import time
 import uuid
 import os
 
@@ -20,8 +18,9 @@ from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
 
-from dao import EmailVerification, SessionToken, WebsiteAuth, Member, PoolConn
+from dao import EmailVerification, SessionToken, WebsiteAuth, Member
 from extensions import EMAIL_VERIFICATION_MESSAGE
+from app import db
 
 def requires_auth(allow_guests : bool=False):
     """
@@ -95,17 +94,6 @@ def requires_args(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def requires_db(function):
-    def wrapper(*args, **kwargs):
-        request.pool_conn = PoolConn()
-        func_return = function(*args, **kwargs)
-        if hasattr(request, "pool_conn") and not request.pool_conn._closed: request.pool_conn.close()
-
-        return func_return
-
-    wrapper.__name__ = function.__name__
-    return wrapper
-
 def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> Member | None:
     """
     Get the user object from the session.
@@ -120,7 +108,7 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
         else: return
 
     # Select the token
-    token : SessionToken = SessionToken.select(token=session["session_token"]).first()
+    token : SessionToken = SessionToken.query.filter_by(token=session["session_token"]).first()
     if not token:
         # If it doesn't find the token, it means the session token has expired
         session.clear()
@@ -128,8 +116,9 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
         return
     
     token.last_used = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    token.update()
-    return Member.select(member_id=token.member_id).first()
+    db.session.commit()
+
+    return token.member
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file
@@ -173,17 +162,17 @@ def send_verification_email(to : str, auth : WebsiteAuth):
     """
 
     # Check if there is already an active verification email
-    verification_data : EmailVerification = EmailVerification.select(member_id=auth.member_id).first()
+    verification_data : EmailVerification = EmailVerification.query.filter_by(member_id=auth.member_id).first()
     if verification_data:
         # If there is one, it will reset the expiry date
         token = verification_data.token
         
-        verification_data.created_at = "CURRENT_TIMESTAMP"
-        verification_data.update()
+        verification_data.created_at = datetime.now()
     else:
         # If there isn't one, it'll generate an id and save it
         token = uuid.uuid4().hex
-        EmailVerification(member_id=auth.member_id, token=token).insert()
+        db.session.add(EmailVerification(member=auth.member, token=token))
+    db.session.commit()
 
     # Create the email object
     message = MIMEMultipart("alternative")
