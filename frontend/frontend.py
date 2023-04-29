@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from .assets import assets
 
 from util import try_get_user_from_session
-from dao import AuthMethods, Member
+from dao import AuthMethods, User
 
 frontend = Blueprint("frontend", __name__, template_folder="templates")
 frontend.register_blueprint(assets)
@@ -26,19 +26,19 @@ class Template(BaseModel):
     helper : Callable = None
 
 def change_password_helper(**kwargs):
-    member = try_get_user_from_session()
-    if member.auth_method != AuthMethods.WEBSITE: return redirect("/settings")
+    user = try_get_user_from_session()
+    if user.auth_method != AuthMethods.WEBSITE: return redirect("/settings")
 
     return {"context": {}}
 
-def member_helper(**kwargs):
+def user_helper(**kwargs):
     username = kwargs.get("username")
     if not username:
-        member = try_get_user_from_session(False)
-        if not member: return redirect("/")
+        user = try_get_user_from_session(False)
+        if not user: return redirect("/")
         
-        return redirect(f"/member/{member.username}")
-    elif not Member.query.filter_by(username=username).first(): return redirect("/")
+        return redirect(f"/user/{user.username}")
+    elif not User.query.filter_by(username=username).first(): return redirect("/")
 
     return {"context": {}}
 
@@ -55,8 +55,8 @@ TEMPLATES = [
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),
 
-    Template(route="/member/<username>", template="member.html", helper=member_helper),
-    Template(route="/member", template="member.html", helper=member_helper),
+    Template(route="/user/<username>", template="user.html", helper=user_helper),
+    Template(route="/user", template="user.html", helper=user_helper),
 
     Template(route="/settings", template="settings.html", auth_req=AuthReq.REQUIRED),
     Template(route="/settings/password", template="change-password.html", auth_req=AuthReq.REQUIRED, helper=change_password_helper),

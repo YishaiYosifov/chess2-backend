@@ -1,7 +1,7 @@
 import random
 import uuid
 
-from ..members.member import Member
+from ..users.user import User
 from app import db
 
 class Game(db.Model):
@@ -13,11 +13,11 @@ class Game(db.Model):
     game_id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.Text)
     
-    white_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
-    black_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
+    white_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
+    black_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
-    white = db.relationship("Member", foreign_keys=[white_id], uselist=False)
-    black = db.relationship("Member", foreign_keys=[black_id], uselist=False)
+    white = db.relationship("User", foreign_keys=[white_id], uselist=False)
+    black = db.relationship("User", foreign_keys=[black_id], uselist=False)
 
     winner = db.Column(db.String(10))
 
@@ -31,15 +31,8 @@ class Game(db.Model):
     is_over = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-    def to_dict(self, exclude = []) -> dict[str: any]:
-        results = super().to_dict(exclude=exclude)
-        #results["white"] = results["white"].member_id
-        #results["black"] = results["black"].member_id
-
-        return results
-
     @classmethod
-    def start_game(cls, *players : Member, mode : str, time_control : int) -> int:
+    def start_game(cls, *players : User, mode : str, time_control : int) -> int:
         """
         Start a game
 

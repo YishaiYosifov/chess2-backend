@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import urllib.parse
 import flask
 
+from extensions import CONFIG
+
 load_dotenv()
 
 app = flask.Flask(__name__)
@@ -17,6 +19,9 @@ DB_PASSWORD = urllib.parse.quote_plus(os.getenv("MYSQL_DATABASE_PASSWORD"))
 DB_HOST = os.getenv("MYSQL_DATABASE_HOST")
 DB_DATABASE = os.getenv("MYSQL_DATABASE_DB")
 app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_DATABASE}"
+
+app.config["SQLALCHEMY_POOL_SIZE"] = CONFIG["MYSQL_POOL_SIZE"]
+app.config["SQLALCHEMY_MAX_OVERFLOW"] = CONFIG["MYSQL_MAX_OVERFLOW"]
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app)

@@ -1,4 +1,4 @@
 from .email_verification import *
 
-from .members import *
+from .users import *
 from .games import *

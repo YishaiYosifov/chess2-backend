@@ -18,7 +18,7 @@ from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
 
-from dao import EmailVerification, SessionToken, WebsiteAuth, Member
+from dao import EmailVerification, SessionToken, WebsiteAuth, User
 from extensions import EMAIL_VERIFICATION_MESSAGE
 from app import db
 
@@ -28,7 +28,7 @@ def requires_auth(allow_guests : bool=False):
 
     .. code-block:: python
         @app.route("...")
-        @requires_authentication(type=Member | Player, allow_guests=...)
+        @requires_authentication(type=User | Player, allow_guests=...)
         def route(...)
     
     :param type: the type of user you want to authenticate
@@ -38,8 +38,14 @@ def requires_auth(allow_guests : bool=False):
     def decorator(function):
         def wrapper(*args, **kwargs):
             # Create a guest user / get the user from the session
-            if allow_guests: user = Member.create_guest()
-            else: user = try_get_user_from_session()
+            if allow_guests: user = User.create_guest()
+            else:
+                try: user = try_get_user_from_session()
+                except:
+                    if request.path == "/socket.io/":
+                        emit("exception", SocketIOExceptions.UNAUTHORIZED)
+                        return
+                    raise
 
             return function(*args, user=user, **kwargs)
 
@@ -94,7 +100,7 @@ def requires_args(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> Member | None:
+def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> User | None:
     """
     Get the user object from the session.
 
@@ -118,7 +124,7 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
     token.last_used = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
 
-    return token.member
+    return token.user
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file
@@ -162,7 +168,7 @@ def send_verification_email(to : str, auth : WebsiteAuth):
     """
 
     # Check if there is already an active verification email
-    verification_data : EmailVerification = EmailVerification.query.filter_by(member_id=auth.member_id).first()
+    verification_data : EmailVerification = EmailVerification.query.filter_by(user_id=auth.user_id).first()
     if verification_data:
         # If there is one, it will reset the expiry date
         token = verification_data.token
@@ -171,7 +177,7 @@ def send_verification_email(to : str, auth : WebsiteAuth):
     else:
         # If there isn't one, it'll generate an id and save it
         token = uuid.uuid4().hex
-        db.session.add(EmailVerification(member=auth.member, token=token))
+        db.session.add(EmailVerification(user=auth.user, token=token))
     db.session.commit()
 
     # Create the email object
@@ -186,3 +192,4 @@ def send_verification_email(to : str, auth : WebsiteAuth):
 
 class SocketIOExceptions:
     BAD_ARGUMENT = 0
+    UNAUTHORIZED = 1

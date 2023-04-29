@@ -24,7 +24,7 @@
         "auth_req": 1,
         "side": "top",
 
-        "path": "member"
+        "path": "user"
     },
     {
         "label": "Settings",

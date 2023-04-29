@@ -18,11 +18,11 @@ from .rating import Rating
 from extensions import CONFIG, EMAIL_REG, COUNTRIES
 from app import db
 
-PUBLIC_INFO = ["member_id", "username", "about", "country", "country_alpha"]
+PUBLIC_INFO = ["user_id", "username", "about", "country", "country_alpha"]
 PRIVATE_INFO = ["email", "auth_method", "username_last_changed"]
 
-class Member(db.Model):
-    __tablename__ = "members"
+class User(db.Model):
+    __tablename__ = "users"
 
     def __init__(self, **data):
         try:
@@ -38,7 +38,7 @@ class Member(db.Model):
         
         super().__init__(**data)
 
-    member_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
     sid = db.Column(db.Text)
 
     username = db.Column(db.String(30))
@@ -54,12 +54,13 @@ class Member(db.Model):
     username_last_changed = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     # Relationships
-    rating = db.relationship("Rating", backref="member", uselist=False, cascade="all, delete-orphan")
-    session_tokens = db.relationship("SessionToken", backref="member", cascade="all, delete-orphan")
+    rating = db.relationship("Rating", backref="user", uselist=False, cascade="all, delete-orphan")
+    session_tokens = db.relationship("SessionToken", backref="user", cascade="all, delete-orphan")
 
-    email_verification = db.relationship("EmailVerification", uselist=False, backref="member", cascade="all, delete-orphan")
+    email_verification = db.relationship("EmailVerification", uselist=False, backref="user", cascade="all, delete-orphan")
 
-    outgoing_game = db.relationship("OutgoingGame", backref="member", uselist=False, cascade="all, delete-orphan")
+    outgoing_game = db.relationship("OutgoingGames", backref="inviter", foreign_keys="OutgoingGames.inviter_id", uselist=False, cascade="all, delete-orphan")
+    incoming_games = db.relationship("OutgoingGames", backref="recipient", foreign_keys="OutgoingGames.recipient_id", cascade="all, delete-orphan")
 
     def get_public_info(self) -> dict: return self._get(PUBLIC_INFO)
     def get_private_info(self) -> dict: return self.get_public_info() | self._get(PRIVATE_INFO)
@@ -80,10 +81,10 @@ class Member(db.Model):
     def delete(self):
         self.logout()
 
-        if self.auth_method == AuthMethods.WEBSITE: WebsiteAuth.query.filter_by(member=self).delete()
+        if self.auth_method == AuthMethods.WEBSITE: WebsiteAuth.query.filter_by(user=self).delete()
 
-        Rating.query.filter_by(member=self).delete()
-        SessionToken.query.filter_by(member=self).delete()
+        Rating.query.filter_by(user=self).delete()
+        SessionToken.query.filter_by(user=self).delete()
 
         db.session.delete(self)
     
@@ -95,8 +96,8 @@ class Member(db.Model):
         db.session.add(self)
         db.session.flush()
 
-        if not os.path.exists(f"static/uploads/{self.member_id}"): os.makedirs(f"static/uploads/{self.member_id}")
-        for mode in CONFIG["modes"]: db.session.add(Rating(member=self, mode=mode))
+        if not os.path.exists(f"static/uploads/{self.user_id}"): os.makedirs(f"static/uploads/{self.user_id}")
+        for mode in CONFIG["MODES"]: db.session.add(Rating(user=self, mode=mode))
 
     def set_username(self, username : str):
         """
@@ -114,7 +115,7 @@ class Member(db.Model):
         elif len(username) > 30: raise BadRequest("Username Too Long")
         elif len(username) < 1: raise BadRequest("Username Too Short")
         elif " " in username: raise BadRequest("Username can't include a space")
-        elif Member.query.filter_by(username=username).first(): raise Conflict("Username Taken")
+        elif User.query.filter_by(username=username).first(): raise Conflict("Username Taken")
 
         self.username_last_changed = now
         self.username = username
@@ -138,14 +139,14 @@ class Member(db.Model):
         # Check if the email address is valid and not taken
         email_match = EMAIL_REG.match(email)
         if not email_match or email_match.group(0) != email: raise BadRequest("Invalid Email Address")
-        elif Member.query.filter_by(email=email).first(): raise Conflict("Email Taken")
+        elif User.query.filter_by(email=email).first(): raise Conflict("Email Taken")
 
         self.email = email
 
         if send_verification:
             # Send the verification email
 
-            auth : WebsiteAuth = WebsiteAuth.query.filter_by(member=self).first()
+            auth : WebsiteAuth = WebsiteAuth.query.filter_by(user=self).first()
             send_verification_email(email, auth)
             auth.verified = False
     
@@ -171,7 +172,7 @@ class Member(db.Model):
 
         token = uuid.uuid4().hex
         session["session_token"] = token
-        db.session.add(SessionToken(member=self, token=token))
+        db.session.add(SessionToken(user=self, token=token))
     
     def logout(self):
         SessionToken.query.filter_by(token=session["session_token"]).delete()

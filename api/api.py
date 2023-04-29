@@ -6,7 +6,7 @@ from .auth import auth
 from .game import game
 
 from util import requires_auth, send_verification_email
-from dao import WebsiteAuth, Member, EmailVerification
+from dao import WebsiteAuth, User, EmailVerification
 from app import db
 
 api = Blueprint("api", __name__, url_prefix="/api")
@@ -27,9 +27,8 @@ def verify_email(token):
         return redirect("/")
 
     # Get the user auth and set verified to true
-    WebsiteAuth.query.filter_by(member=verification_data.member).verified = True
+    WebsiteAuth.query.filter_by(user=verification_data.user).verified = True
     db.session.delete(verification_data)
-
     db.session.commit()
 
     session["alert"] = {"message": "Email Verified!", "color": "success"}
@@ -37,12 +36,12 @@ def verify_email(token):
 
 @api.route("/send_verification_email", methods=["POST"])
 @requires_auth()
-def send_verification_email_route(user : Member):
+def send_verification_email_route(user : User):
     """
     Send a verification email
     """
 
-    auth : WebsiteAuth = WebsiteAuth.query.filter_by(member_id=user.member_id).first()
+    auth : WebsiteAuth = WebsiteAuth.query.filter_by(user_id=user.user_id).first()
     if auth.verified: raise Conflict("Already Verified")
 
     send_verification_email(user.email, auth)

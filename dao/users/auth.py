@@ -16,8 +16,8 @@ class WebsiteAuth(db.Model):
     __tablename__ = "website_auths"
 
     website_auth_id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer, db.ForeignKey("members.member_id"))
-    member = db.relationship("Member", uselist=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
+    user = db.relationship("User", uselist=False)
     
     verified = db.Column(db.Boolean, default=False)
     hash = db.Column(db.Text)

@@ -6,7 +6,7 @@ from flask_restful.reqparse import Argument
 import shutil
 
 from util import send_verification_email, requires_args, requires_auth, try_get_user_from_session
-from dao import WebsiteAuth, AuthMethods, Member
+from dao import WebsiteAuth, AuthMethods, User
 from app import db
 
 auth = Blueprint("auth", __name__, url_prefix="/auth")
@@ -23,17 +23,17 @@ def signup(args):
     password = args.password
     email = args.email
     
-    # Create a member object and add all the information
-    member = Member(auth_method=AuthMethods.WEBSITE)
-    member.set_username(username)
-    member.set_email(email, False)
+    # Create a user object and add all the information
+    user = User(auth_method=AuthMethods.WEBSITE)
+    user.set_username(username)
+    user.set_email(email, False)
 
     # Insert the user into the database
-    member.insert()
+    user.insert()
     db.session.commit()
 
     # Create a website auth object and add the password
-    auth = WebsiteAuth(member=member)
+    auth = WebsiteAuth(user=user)
     auth.set_password(password)
 
     # Insert the website auth into the database
@@ -58,19 +58,19 @@ def login(args):
     password = args.password
 
     # Select the user using the assuming the selector is the username, if it doesn't find the user select assuming the selector is the email address
-    member : Member = Member.query.filter_by(username=selector).first()
-    if not member:
-        member : Member = Member.query.filter_by(email=selector).first()
-        if not member: raise Unauthorized("Unknown email / username / password")
+    user : User = User.query.filter_by(username=selector).first()
+    if not user:
+        user : User = User.query.filter_by(email=selector).first()
+        if not user: raise Unauthorized("Unknown email / username / password")
     
-    if member.auth_method != AuthMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
+    if user.auth_method != AuthMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
 
     # Check the password
-    auth : WebsiteAuth = WebsiteAuth.query.filter_by(member=member).first()
+    auth : WebsiteAuth = WebsiteAuth.query.filter_by(user=user).first()
     if not auth.check_password(password): raise Unauthorized("Unknown email / username / password")
 
     # Generate the session token
-    member.gen_session_token()
+    user.gen_session_token()
     db.session.commit()
 
     return "Logged In", 200
@@ -80,7 +80,7 @@ def is_logged_in(): return jsonify(bool(try_get_user_from_session(must_logged_in
 
 @auth.route("/logout", methods=["POST", "GET"])
 @requires_auth()
-def logout(user : Member):
+def logout(user : User):
     """
     Logout a user
     """
@@ -90,13 +90,13 @@ def logout(user : Member):
 
 @auth.route("/delete", methods=["POST"])
 @requires_auth()
-def delete(user : Member):
+def delete(user : User):
     """
     Delete a user's account
     """
     
     user.delete()
     db.session.commit()
-    shutil.rmtree(f"static/uploads/{user.member_id}")
+    shutil.rmtree(f"static/uploads/{user.user_id}")
     
     return "Deleted", 200

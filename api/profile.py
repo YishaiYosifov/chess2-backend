@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from PIL import Image
 
 from util import requires_args, requires_auth, try_get_user_from_session
-from dao import Game, AuthMethods, Member, WebsiteAuth
+from dao import Game, AuthMethods, User, WebsiteAuth
 from app import db
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
@@ -26,11 +26,11 @@ def get_info(target : str):
 
     if target == "me":
         # If the target is the logged in user, get the user from the session and return the private information
-        user : Member = try_get_user_from_session()
+        user : User = try_get_user_from_session()
         return user.get_private_info()
     
     # Select the user using the given username
-    user : Member = Member.query.filter_by(username=target).first()
+    user : User = User.query.filter_by(username=target).first()
     if not user: raise NotFound("User Not Found")
     
     # Return the public info
@@ -44,7 +44,7 @@ def get_games(target : str, args):
     """
 
     # Find the target user
-    target : Member = Member.query.filter_by(username=target).first()
+    target : User = User.query.filter_by(username=target).first()
     if not target: raise NotFound("User Not Found")
 
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
@@ -82,7 +82,7 @@ SETTINGS = [
 @profile.route("/update", methods=["POST"])
 @requires_args(*([Argument(setting.name, type=setting.type) for setting in SETTINGS] + [Argument("password_confirmation", type=str, default="")]))
 @requires_auth()
-def update(target : str, user : Member, args):
+def update(target : str, user : User, args):
     """
     Update the user information
     """
@@ -99,7 +99,7 @@ def update(target : str, user : Member, args):
         requires_password = list(filter(lambda setting: setting.requires_password and args[setting.name] != None, SETTINGS))
         if requires_password:
             # If there are any, get the user's website auth and check the password
-            auth : WebsiteAuth = WebsiteAuth.query.filter_by(member=user).first()
+            auth : WebsiteAuth = WebsiteAuth.query.filter_by(user=user).first()
             if not auth.check_password(args.password_confirmation): raise Unauthorized("Wrong Password Confirmation")
 
             # Set the new value
@@ -110,7 +110,7 @@ def update(target : str, user : Member, args):
 
 @profile.route("/upload_profile_picture", methods=["POST"])
 @requires_auth()
-def upload_profile_picture(target : str, user : Member):
+def upload_profile_picture(target : str, user : User):
     """
     Upload a new profile picture
     """
@@ -154,6 +154,6 @@ def upload_profile_picture(target : str, user : Member):
     image = image.resize((160, 160))
 
     # Save it
-    image.save(f"static/uploads/{user.member_id}/profile-picture.jpeg")
+    image.save(f"static/uploads/{user.user_id}/profile-picture.jpeg")
 
     return "Uploaded", 200

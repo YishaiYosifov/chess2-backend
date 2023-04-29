@@ -48,9 +48,9 @@ def google_signup():
     )
 
     # Generate the session token and log the user in
-    member : Member = Member.query.filter_by(email=id_info["email"]).first()
-    if member: member.gen_session_token()
-    else: Member(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL).insert()
+    user : User = User.query.filter_by(email=id_info["email"]).first()
+    if user: user.gen_session_token()
+    else: User(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL).insert()
     db.session.commit()
     
     return redirect("/")
@@ -75,7 +75,9 @@ def delete_expired():
         with app.app_context():
             now = datetime.now()
             SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
-            EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S"))
+            EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
+            OutgoingGames.query.filter(OutgoingGames.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
+            db.session.commit()
 
         time.sleep(60)
 
@@ -89,7 +91,7 @@ def http_error_handler(exception : HTTPException):
 
 @socketio.on("connected")
 @requires_auth()
-def connected(user : Member):
+def connected(user : User):
     user.sid = request.sid
     db.session.commit()
 
@@ -119,4 +121,4 @@ if __name__ == "__main__":
     with app.app_context(): db.create_all()
     threading.Thread(target=delete_expired, daemon=True).start()
 
-    socketio.run(app, "0.0.0.0", debug=CONFIG["debug"])
+    socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"])

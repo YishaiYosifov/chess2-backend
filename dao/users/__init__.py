@@ -1,4 +1,4 @@
 from .session_token import *
-from .member import *
+from .user import *
 from .rating import *
 from .auth import *
