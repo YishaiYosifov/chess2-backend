@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Member - Chess 2</title>
+        <title>User - Chess 2</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Google Charts -->
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
         <!-- SocketIO CDN -->
         <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
@@ -20,6 +23,7 @@
 
         <!-- Local Imports -->
         <link href="../static/css/main.css" rel="stylesheet">
+        <link href="../static/css/user.css" rel="stylesheet">
 
         <script src="../static/javascript/addons.js" alert="{{alert}}"></script>
         <script src="../static/javascript/active-socketio.js"></script>
@@ -27,10 +31,10 @@
     <body onload="setProfilePirctureSize()" onresize="setProfilePirctureSize()">
         <div class="container mt-3">
             <div class="row">
-                <div class="card col-11 col-sm-11 col-md-7 mx-auto text-light shadow">
+                <div class="card col-11 col-md-10 col-lg-9 col-xl-7 mx-auto text-white border-3 border-black" id="profile">
                     <div class="card-body row">
                         <div class="col-lg-4 d-flex align-items-center justify-content-center">
-                            <img id="profile-picture" class="rounded border border-dark border-4 img-fluid" alt="Profile Picture" style="width: 100%; height: 100%; max-height: 200px; max-width: 200px;">
+                            <img id="profile-picture" class="rounded border border-white border-3 img-fluid bg-black bg-gradient">
                         </div>
                         <div class="col">
                             <h4 class="mt-3" id="username-group"><img id="country" class="rounded img-fluid" alt="Country" data-bs-placement="top"> </h4>
@@ -39,33 +43,39 @@
                     </div>
                 </div>
             </div>
-
-            <div class="row mt-3 mb-5">
-                <div class="card col-11 col-sm-11 col-md-7 mx-auto text-light shadow">
-                    <div class="card-body">
-                        <div class="text-center mt-5 mb-5" id="no-games" style="display: none;">
-                            <h2 class="text-danger">This user hasn't played any games yet!</h2>
-                            <a class="btn btn-outline-info" href="/play">Click here to start a game</a>
-                        </div>
-                        <table class="table text-light" id="games" style="display: none;">
-                            <thead>
-                                <tr class="text-white-50">
-                                    <th scope="col">Mode</th>
-                                    <th scope="col">Players</th>
-                                    <th scope="col">Results</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-
-                            </tbody>
-                        </table>
-                    </div>
+        </div>
+        
+        <div class="container-fluid mt-3" style="background-color: rgb(30, 30, 30);">
+            <div class="row pt-3 pb-5 justify-content-center">
+                <div class="col-11 col-lg-10 col-xl-8 table-responsive" style="max-width: 850px;">
+                    <table class="table text-light" id="games">
+                        <thead>
+                            <tr class="text-white-50 text-start">
+                                <th scope="col">Mode</th>
+                                <th scope="col">Players</th>
+                                <th scope="col">Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="col-11 text-start text-secondary no-games" style="display: none;">
+                                <td><div class="empty-td"></div></td>
+                                <td><div class="empty-td"></div></td>
+                                <td><div class="empty-td"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <h4 class="no-games text-danger text-center" style="display: none;">This user hasn't played any games yet!</h4>
                 </div>
             </div>
         </div>
 
+        <div class="container-fluid extend-bottom" style="background-color: var(--dark-secondary);">
+            <div class="row justify-content-center pb-5 pt-5" id="ratings" style="display: none;">
+                
+            </div>
+        </div>
         <script src="../static/javascript/util.js"></script>
         <script src="../static/javascript/navbar.js"></script>
-        <script src="../static/javascript/member.js" username="{{username}}"></script>
+        <script src="../static/javascript/user.js" username="{{username}}"></script>
     </body>
 </html>

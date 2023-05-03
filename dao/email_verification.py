@@ -7,4 +7,4 @@ class EmailVerification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
     token = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))

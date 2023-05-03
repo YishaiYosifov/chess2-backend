@@ -11,5 +11,5 @@ class OutgoingGames(db.Model):
     mode = db.Column(db.String(50))
     time_control = db.Column(db.Integer)
 
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    is_pool = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
+    is_pool = db.Column(db.Boolean, server_default=db.text("FALSE"))

@@ -19,7 +19,7 @@ class WebsiteAuth(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     user = db.relationship("User", uselist=False)
     
-    verified = db.Column(db.Boolean, default=False)
+    verified = db.Column(db.Boolean, server_default=db.text("FALSE"))
     hash = db.Column(db.Text)
 
     def set_password(self, password : str):

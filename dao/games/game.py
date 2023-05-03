@@ -24,12 +24,12 @@ class Game(db.Model):
     mode = db.Column(db.String(50))
     time_control = db.Column(db.Integer)
 
-    moves = db.Column(db.Text, default="")
-    white_wins = db.Column(db.Integer, default=0)
-    black_wins = db.Column(db.Integer, default=0)
+    moves = db.Column(db.Text, server_default=db.text("('')"))
+    white_wins = db.Column(db.Integer, server_default=db.text("0"))
+    black_wins = db.Column(db.Integer, server_default=db.text("0"))
 
-    is_over = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    is_over = db.Column(db.Boolean, server_default=db.text("FALSE"))
+    created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
 
     @classmethod
     def start_game(cls, *players : User, mode : str, time_control : int) -> int:

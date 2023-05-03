@@ -19,3 +19,13 @@
     #buttons-desktop { display: flex; }
     #buttons-mobile { display: none; }
 }
+
+#buttons-desktop a {
+    height: 150px;
+    width: 150px;
+    border-bottom: 4px solid dimgray;
+}
+
+#buttons-mobile a {
+    border-bottom: 4px solid dimgray;
+}

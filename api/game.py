@@ -4,7 +4,7 @@ from flask_restful.reqparse import Argument
 from flask_socketio import emit
 from flask import Blueprint
 
-from dao import OutgoingGames, Game, User, AuthMethods
+from dao import OutgoingGames, Game, User, AuthMethods, RatingArchive
 from util import requires_args, requires_auth
 from extensions import CONFIG
 from app import db
@@ -27,6 +27,8 @@ def start_pool_game(user : User, args):
     if not mode in CONFIG["MODES"]: raise BadRequest("Invalid Mode")
     if not time_control in CONFIG["TIME_CONTROLS"]: raise BadRequest("Invalid Time Control")
 
+    rating : RatingArchive = user.rating(mode)
+
     # Loop over the game pool, if a game with a similar rating is in the pool, start the game
     pool : list[OutgoingGames] = OutgoingGames.query.filter_by(mode=mode, time_control=time_control, is_pool=True).order_by(OutgoingGames.created_at).all()
     for outgoing in pool:
@@ -34,7 +36,7 @@ def start_pool_game(user : User, args):
         if not opponent or \
                 (opponent.auth_method == AuthMethods.GUEST and not user.auth_method == AuthMethods.GUEST): continue
         
-        if abs(opponent.rating.elo - user.rating.elo) <= CONFIG["ACCEPTABLE_RATING_DIFFERENCE"]:
+        if abs(opponent.rating(mode).elo - rating.elo) <= CONFIG["ACCEPTABLE_RATING_DIFFERENCE"]:
             # Start the game
             game_id = Game.start_game(user, opponent, mode=mode, time_control=time_control)
             db.session.delete(outgoing)

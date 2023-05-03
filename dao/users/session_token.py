@@ -7,4 +7,4 @@ class SessionToken(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
     token = db.Column(db.Text)
-    last_used = db.Column(db.DateTime, default=db.func.current_timestamp())
+    last_used = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))

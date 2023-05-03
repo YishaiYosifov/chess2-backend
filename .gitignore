@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# vscode
+.vs/
+
 # gmail tokens
-google_tokens/
+.google_tokens/

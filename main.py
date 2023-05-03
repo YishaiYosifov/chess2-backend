@@ -49,8 +49,10 @@ def google_signup():
 
     # Generate the session token and log the user in
     user : User = User.query.filter_by(email=id_info["email"]).first()
-    if user: user.gen_session_token()
-    else: User(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL).insert()
+    if not user:
+        user = User(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL)
+        user.insert()
+    user.gen_session_token()
     db.session.commit()
     
     return redirect("/")
@@ -73,7 +75,7 @@ def google_login():
 def delete_expired():
     while True:
         with app.app_context():
-            now = datetime.now()
+            now = datetime.utcnow()
             SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             OutgoingGames.query.filter(OutgoingGames.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()

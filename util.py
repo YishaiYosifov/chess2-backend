@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 
 import base64
 import uuid
@@ -121,7 +122,7 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
         if raise_on_session_expired: raise Unauthorized("Session Expired")
         return
     
-    token.last_used = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    token.last_used = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
 
     return token.user
@@ -173,7 +174,7 @@ def send_verification_email(to : str, auth : WebsiteAuth):
         # If there is one, it will reset the expiry date
         token = verification_data.token
         
-        verification_data.created_at = datetime.now()
+        verification_data.created_at = datetime.utcnow()
     else:
         # If there isn't one, it'll generate an id and save it
         token = uuid.uuid4().hex
@@ -189,6 +190,27 @@ def send_verification_email(to : str, auth : WebsiteAuth):
 
     # Send the email
     gmail_service.users().messages().send(userId="me", body={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()}).execute()
+
+def column_to_dict(column, exclude = []) -> dict[str:any]:
+    attributes = [attribute for attribute, value in column.__dict__.items()
+        if value != None and \
+        not attribute in exclude and \
+        not attribute.startswith("_")
+    ]
+    return get_from_column(column, attributes)
+def get_from_column(column, attributes : list) -> dict[str:any]:
+    """
+    Get attributes from the object
+
+    :param attributes: the attribute to get
+    """
+    results = {}
+    for attribute in attributes:
+        value = getattr(column, attribute)
+        if isinstance(value, Enum): value = value.value
+        elif isinstance(value, datetime): value = value.isoformat()
+        results[attribute] = value
+    return results
 
 class SocketIOExceptions:
     BAD_ARGUMENT = 0

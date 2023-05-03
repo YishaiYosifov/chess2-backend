@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Callable
 
 import numpy
@@ -12,8 +13,8 @@ from pydantic import BaseModel
 
 from PIL import Image
 
-from util import requires_args, requires_auth, try_get_user_from_session
-from dao import Game, AuthMethods, User, WebsiteAuth
+from util import requires_args, requires_auth, try_get_user_from_session, column_to_dict
+from dao import Game, AuthMethods, User, WebsiteAuth, RatingArchive
 from app import db
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
@@ -44,24 +45,52 @@ def get_games(target : str, args):
     """
 
     # Find the target user
-    target : User = User.query.filter_by(username=target).first()
-    if not target: raise NotFound("User Not Found")
+    user : User = User.query.filter_by(username=target).first()
+    if not user: raise NotFound("User Not Found")
 
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.query.filter((Game.is_over == True) & ((Game.white == target) | (Game.black == target))).limit(args.limit).all()
+    games : list[Game] = Game.query.filter((Game.is_over == True) & ((Game.white == user) | (Game.black == user))).limit(args.limit).all()
     games_data = []
 
     # Convert it to json
     for game in games:
-        data = game.to_dict(exclude=["white", "black"])
+        data = column_to_dict(game, ["white_id", "black_id"])
         data["white"] = game.white.username if game.white else "DELETED"
         data["black"] = game.black.username if game.black else "DELETED"
 
         games_data.append(data)
 
     return jsonify(games_data), 200
+
+@profile.route("/get_ratings", methods=["POST"])
+@requires_args(Argument("mode", type=str, required=True), Argument("since", type=int, required=True))
+def get_ratings(target : str, args):
+    """
+    Get rating information for a certain user
+    """
+
+    # Find the target user
+    user : User = User.query.filter_by(username=target).first()
+    if not user: raise NotFound("User Not Found")
+
+    since = datetime.utcfromtimestamp(args.since)
+
+    filter_by = (RatingArchive.user == user) & (RatingArchive.achieved_at >= since)
+    if args.mode != "all": filter_by &= (RatingArchive.mode == args.mode)
+    ratings : list[RatingArchive] = RatingArchive.query.filter(filter_by).order_by(RatingArchive.achieved_at).all()
+
+    formatted = {}
+    for rating in ratings:
+        if not rating.mode in formatted:
+            max_rating = db.session.query(db.func.max(RatingArchive.elo)).filter(filter_by & (RatingArchive.mode == rating.mode)).scalar()
+            min_rating = db.session.query(db.func.min(RatingArchive.elo)).filter(filter_by & (RatingArchive.mode == rating.mode)).scalar()
+            formatted[rating.mode] = {"max": max_rating, "min": min_rating, "archive": []}
+
+        formatted[rating.mode]["archive"].append(column_to_dict(rating))
+
+    return jsonify(formatted), 200
 
 class Setting(BaseModel):
     name : str

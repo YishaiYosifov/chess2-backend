@@ -1,8 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Secular+One&display=swap");
 
 :root {
-    --dark-primary: #212121;
-    --dark-secondary: #302e2c;
+    --dark-primary: #2A2A2A;
+    --dark-secondary: #1A1A1A;
+
+    --soft-green: #87b59a;
 }
 
 body {

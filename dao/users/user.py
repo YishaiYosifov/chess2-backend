@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from enum import Enum
 
 import uuid
 import os
@@ -12,8 +11,8 @@ from flask import request, session
 import requests
 
 from .auth import AuthMethods, WebsiteAuth
+from .rating_archive import RatingArchive
 from .session_token import SessionToken
-from .rating import Rating
 
 from extensions import CONFIG, EMAIL_REG, COUNTRIES
 from app import db
@@ -44,17 +43,16 @@ class User(db.Model):
     username = db.Column(db.String(30))
     email = db.Column(db.String(256))
 
-    country = db.Column(db.String(100), default="International")
-    country_alpha = db.Column(db.String(5), default="INTR")
+    country = db.Column(db.String(100), server_default="International")
+    country_alpha = db.Column(db.String(5), server_default="INTR")
 
     about = db.Column(db.Text)
-    last_color = db.Column(db.String(10), default="white")
+    last_color = db.Column(db.String(10), server_default="white")
 
     auth_method = db.Column(db.Enum(AuthMethods))
-    username_last_changed = db.Column(db.DateTime, default=db.func.current_timestamp())
+    username_last_changed = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
 
     # Relationships
-    rating = db.relationship("Rating", backref="user", uselist=False, cascade="all, delete-orphan")
     session_tokens = db.relationship("SessionToken", backref="user", cascade="all, delete-orphan")
 
     email_verification = db.relationship("EmailVerification", uselist=False, backref="user", cascade="all, delete-orphan")
@@ -62,28 +60,21 @@ class User(db.Model):
     outgoing_game = db.relationship("OutgoingGames", backref="inviter", foreign_keys="OutgoingGames.inviter_id", uselist=False, cascade="all, delete-orphan")
     incoming_games = db.relationship("OutgoingGames", backref="recipient", foreign_keys="OutgoingGames.recipient_id", cascade="all, delete-orphan")
 
-    def get_public_info(self) -> dict: return self._get(PUBLIC_INFO)
-    def get_private_info(self) -> dict: return self.get_public_info() | self._get(PRIVATE_INFO)
+    def get_public_info(self) -> dict:
+        from util import get_from_column
+        return get_from_column(self, PUBLIC_INFO)
+    def get_private_info(self) -> dict:
+        from util import get_from_column
+        return self.get_public_info() | get_from_column(self, PRIVATE_INFO)
 
-    def _get(self, attributes : list) -> dict[str:any]:
-        """
-        Get attributes from the object
-
-        :param attributes: the attribute to get
-        """
-        results = {}
-        for attribute in attributes:
-            value = getattr(self, attribute)
-            if isinstance(value, Enum): value = value.value
-            results[attribute] = value
-        return results
+    def rating(self, mode : str): return RatingArchive.query.filter_by(user=self, mode=mode).order_by(RatingArchive.rating_id.desc()).first()
 
     def delete(self):
         self.logout()
 
         if self.auth_method == AuthMethods.WEBSITE: WebsiteAuth.query.filter_by(user=self).delete()
 
-        Rating.query.filter_by(user=self).delete()
+        RatingArchive.query.filter_by(user=self).delete()
         SessionToken.query.filter_by(user=self).delete()
 
         db.session.delete(self)
@@ -97,7 +88,7 @@ class User(db.Model):
         db.session.flush()
 
         if not os.path.exists(f"static/uploads/{self.user_id}"): os.makedirs(f"static/uploads/{self.user_id}")
-        for mode in CONFIG["MODES"]: db.session.add(Rating(user=self, mode=mode))
+        for mode in CONFIG["MODES"]: db.session.add(RatingArchive(user=self, mode=mode))
 
     def set_username(self, username : str):
         """
@@ -110,7 +101,7 @@ class User(db.Model):
         :raises Conflict: the username is taken
         """
 
-        now = datetime.now()
+        now = datetime.utcnow()
         if self.username_last_changed and self.username_last_changed < now - timedelta(weeks=4) > 0: raise TooManyRequests("Username Changed Recently")
         elif len(username) > 30: raise BadRequest("Username Too Long")
         elif len(username) < 1: raise BadRequest("Username Too Short")

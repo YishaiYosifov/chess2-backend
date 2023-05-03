@@ -25,7 +25,7 @@ async function main() {
         const dropdown = $("[input-for-setting='country']");
         for (const [alpha, country] of Object.entries(countries)) {
             let option = $(`<option value="${alpha}">${country}</option>`);
-            if (alpha == userInfo["country_alpha"]) option.prop("selected", true)
+            if (alpha == userInfo["country_alpha"]) option.prop("selected", true);
             dropdown.append(option);
         }
     });
@@ -36,10 +36,10 @@ async function main() {
             continue;
         }
 
-        let settingInput = $(`[input-for-setting="${setting}"]`)
+        let settingInput = $(`[input-for-setting="${setting}"]`);
         settingInput.val(userInfo[setting]);
 
-        if (data.enabledByButton) settingInput.prop("disabled", true)
+        if (data.enabledByButton) settingInput.prop("disabled", true);
     }
 
     const username = $("#username");
@@ -47,7 +47,7 @@ async function main() {
     username.attr("title", userInfo["username"]);
     new bootstrap.Tooltip(username);
 
-    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["member_id"]}/profile-picture.jpeg"`);
+    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.jpeg"`);
 }
 main()
 
@@ -61,7 +61,7 @@ async function selectProfilePicture() {
         showAlert("Something went wrong.");
         return;
     }
-    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["member_id"]}/profile-picture.jpeg?${new Date().getTime()}"`);
+    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.jpeg?${new Date().getTime()}"`);
     showAlert("Profile Picture Updated", "success");
 }
 
@@ -130,7 +130,7 @@ function getChangedSettings() {
 }
 
 $("#account-deletion-confirm").on("hidden.bs.modal", () => {
-    $("#account-deletion-stage-1").show()
+    $("#account-deletion-stage-1").show();
     $("#account-deletion-stage-2").hide();
 });
 
@@ -152,5 +152,5 @@ $("#delete-account").click(async () => {
         return;
     }
 
-    window.location.replace("/?a=account-deleted")
+    window.location.replace("/?a=account-deleted");
 })
