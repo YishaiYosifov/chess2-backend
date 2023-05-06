@@ -52,6 +52,8 @@ class User(db.Model):
     auth_method = db.Column(db.Enum(AuthMethods))
     username_last_changed = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
 
+    created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
+
     # Relationships
     session_tokens = db.relationship("SessionToken", backref="user", cascade="all, delete-orphan")
 
@@ -87,7 +89,7 @@ class User(db.Model):
         db.session.add(self)
         db.session.flush()
 
-        if not os.path.exists(f"static/uploads/{self.user_id}"): os.makedirs(f"static/uploads/{self.user_id}")
+        if self.auth_method != AuthMethods.GUEST and not os.path.exists(f"static/uploads/{self.user_id}"): os.makedirs(f"static/uploads/{self.user_id}")
         for mode in CONFIG["MODES"]: db.session.add(RatingArchive(user=self, mode=mode))
 
     def set_username(self, username : str):
@@ -166,11 +168,16 @@ class User(db.Model):
         db.session.add(SessionToken(user=self, token=token))
     
     def logout(self):
-        SessionToken.query.filter_by(token=session["session_token"]).delete()
-        session.clear()
+        try:
+            SessionToken.query.filter_by(token=session["session_token"]).delete()
+            session.clear()
+        except RuntimeError: pass
     
     @classmethod
     def create_guest(cls):
         guest = cls(username=f"guest-{uuid.uuid4().hex[:8]}", auth_method=AuthMethods.GUEST)
         guest.insert()
+
+        guest.gen_session_token()
+
         return guest

@@ -13,7 +13,7 @@ game = Blueprint("game", __name__, url_prefix="/game")
 
 @game.route("/pool/start", methods=["POST"])
 @requires_args(Argument("mode", type=str, required=True), Argument("time_control", type=int, required=True), Argument("increment", type=int, required=True))
-@requires_auth()
+@requires_auth(allow_guests=True)
 def start_pool_game(user : User, args):
     """
     Start a game with a random
@@ -94,7 +94,7 @@ def accept_invite(user : User, args):
     return game_id
 
 @game.route("/cancel", methods=["POST"])
-@requires_auth()
+@requires_auth(allow_guests=True)
 def cancel_outgoing(user : User):
     if not user.outgoing_game: raise NotFound("No Outgoing Games")
 
@@ -104,5 +104,5 @@ def cancel_outgoing(user : User):
     return "Request Deleted", 200
 
 @game.route("/has_outgoing", methods=["POST"])
-@requires_auth()
+@requires_auth(allow_guests=True)
 def has_outgoing(user : User): return jsonify(user.outgoing_game != None)

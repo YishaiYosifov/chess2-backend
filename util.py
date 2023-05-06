@@ -19,7 +19,7 @@ from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
 
-from dao import EmailVerification, SessionToken, WebsiteAuth, User
+from dao import EmailVerification, SessionToken, WebsiteAuth, User, AuthMethods
 from extensions import EMAIL_VERIFICATION_MESSAGE
 from app import db
 
@@ -38,15 +38,21 @@ def requires_auth(allow_guests : bool=False):
 
     def decorator(function):
         def wrapper(*args, **kwargs):
+            session.permanent = True
+            
             # Create a guest user / get the user from the session
-            if allow_guests: user = User.create_guest()
-            else:
-                try: user = try_get_user_from_session()
-                except:
+            try: user = try_get_user_from_session(allow_guests=allow_guests)
+            except:
+                if allow_guests:
+                    user = User.create_guest()
+                    db.session.commit()
+                else:
                     if request.path == "/socket.io/":
-                        emit("exception", SocketIOExceptions.UNAUTHORIZED)
+                        emit("exception", SocketIOExceptions.UNAUTHORIZED, request.path)
                         return
                     raise
+            else:
+                if not allow_guests and user.auth_method == AuthMethods.GUEST: raise Unauthorized("Not Logged In")
 
             return function(*args, user=user, **kwargs)
 
@@ -101,7 +107,7 @@ def requires_args(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True) -> User | None:
+def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True, allow_guests=False) -> User | None:
     """
     Get the user object from the session.
 
@@ -112,14 +118,18 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
     # Check if the user is logged in
     if not "session_token" in session:
         if must_logged_in: raise Unauthorized("Not Logged In")
-        else: return
+        return
 
     # Select the token
     token : SessionToken = SessionToken.query.filter_by(token=session["session_token"]).first()
     if not token:
         # If it doesn't find the token, it means the session token has expired
         session.clear()
+        if must_logged_in and token.user.auth_method == AuthMethods.GUEST: raise Unauthorized("Not Logged In")
         if raise_on_session_expired: raise Unauthorized("Session Expired")
+        return
+    elif not allow_guests and token.user.auth_method == AuthMethods.GUEST:
+        if must_logged_in: raise Unauthorized("Not Logged In")
         return
     
     token.last_used = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")

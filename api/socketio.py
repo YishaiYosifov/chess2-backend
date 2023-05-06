@@ -6,7 +6,7 @@ from app import socketio, db
 from dao import User
 
 @socketio.on("connected")
-@requires_auth()
+@requires_auth(allow_guests=True)
 def connected(user : User):
     user.sid = request.sid
     db.session.commit()

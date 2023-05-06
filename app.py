@@ -2,6 +2,7 @@ import os
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
+from flask_session import Session
 from dotenv import load_dotenv
 
 import urllib.parse
@@ -12,7 +13,6 @@ from extensions import CONFIG
 load_dotenv()
 
 app = flask.Flask(__name__)
-app.secret_key = "bb5c8af0e15d4d0195e37fa995430280"
 
 DB_USERNAME = os.getenv("MYSQL_DATABASE_USER")
 DB_PASSWORD = urllib.parse.quote_plus(os.getenv("MYSQL_DATABASE_PASSWORD"))
@@ -24,4 +24,9 @@ app.config["SQLALCHEMY_POOL_SIZE"] = CONFIG["MYSQL_POOL_SIZE"]
 app.config["SQLALCHEMY_MAX_OVERFLOW"] = CONFIG["MYSQL_MAX_OVERFLOW"]
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app)
+
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SECRET_KEY"] = "bb5c8af0e15d4d0195e37fa995430280"
+Session(app)
+
+socketio = SocketIO(app, manage_session=False)

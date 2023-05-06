@@ -76,6 +76,12 @@ def delete_expired():
     while True:
         with app.app_context():
             now = datetime.utcnow()
+
+            expired_guests : list[SessionToken] = SessionToken.query.filter(SessionToken.last_used < (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")) \
+                .join(User).filter_by(auth_method=AuthMethods.GUEST).all()
+            print(expired_guests)
+            for guest in expired_guests: guest.user.delete()
+            
             SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             OutgoingGames.query.filter(OutgoingGames.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
@@ -90,9 +96,6 @@ def http_error_handler(exception : HTTPException):
             if exception.description == "Session Expired": return redirect("/login?a=session-expired")
             else: return redirect("/login")
     return exception.description, exception.code
-
-@app.before_request
-def before_request(): session.permanent = True
 
 if __name__ == "__main__":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"

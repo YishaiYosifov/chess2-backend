@@ -38,7 +38,9 @@ def user_helper(**kwargs):
         if not user: return redirect("/")
         
         return redirect(f"/user/{user.username}")
-    elif not User.query.filter_by(username=username).first(): return redirect("/")
+    
+    user : User = User.query.filter_by(username=username).first()
+    if not user or user.auth_method == AuthMethods.GUEST: return redirect("/")
 
     return {"context": {}}
 
