@@ -16,8 +16,8 @@ import google.auth.transport.requests
 import requests
 
 from frontend import frontend, TEMPLATES, default_template
-from util import try_get_user_from_session, requires_auth
 from extensions import GOOGLE_CLIENT_ID, CONFIG
+from util import try_get_user_from_session
 
 from app import app, socketio
 from api import api
@@ -90,12 +90,6 @@ def http_error_handler(exception : HTTPException):
             if exception.description == "Session Expired": return redirect("/login?a=session-expired")
             else: return redirect("/login")
     return exception.description, exception.code
-
-@socketio.on("connected")
-@requires_auth()
-def connected(user : User):
-    user.sid = request.sid
-    db.session.commit()
 
 @app.before_request
 def before_request(): session.permanent = True

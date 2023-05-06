@@ -130,6 +130,7 @@ dmypy.json
 
 # vscode
 .vs/
+.vscode/
 
 # gmail tokens
 .google_tokens/

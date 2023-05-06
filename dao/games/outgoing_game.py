@@ -8,8 +8,8 @@ class OutgoingGames(db.Model):
     inviter_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     recipient_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
-    mode = db.Column(db.String(50))
-    time_control = db.Column(db.Integer)
+    game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
+    game_settings = db.relationship("GameSettings", uselist=False)
 
     created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
     is_pool = db.Column(db.Boolean, server_default=db.text("FALSE"))

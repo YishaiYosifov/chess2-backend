@@ -56,9 +56,10 @@ def get_games(target : str, args):
 
     # Convert it to json
     for game in games:
-        data = column_to_dict(game, ["white_id", "black_id"])
+        data = column_to_dict(game, ["white_id", "black_id", "game_settings"])
         data["white"] = game.white.username if game.white else "DELETED"
         data["black"] = game.black.username if game.black else "DELETED"
+        data["game_settings"] = column_to_dict(game.game_settings, ["game_settings_id"])
 
         games_data.append(data)
 

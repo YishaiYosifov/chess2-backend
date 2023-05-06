@@ -71,44 +71,48 @@ async function main() {
 
     // Game Archive
     const games = await (await apiRequest(`/profile/${username}/get_games`, {"limit": 10})).json();
-    if (games.length) {
-        const tableBody = $("#games").find("tbody");
-        $("#ratings").show();
-        for (const game of games) {
-            let gameElement = gameHTML.clone();
-
-            let whiteUsername = gameElement.find("#white-username");
-            whiteUsername.text(game["white"]);
-            if (game["white"] != "DELETED") whiteUsername.attr("onclick", `window.location.replace("/user/${game["white"]}")`);
-
-            let blackUsername = gameElement.find("#black-username");
-            blackUsername.text(game["black"]);
-            if (game["black"] != "DELETED") blackUsername.attr("onclick", `window.location.replace("/user/${game["black"]}")`);
-
-            let modeImage = gameElement.find("#mode-image");
-            modeImage.prop("src", `../static/assets/modes/${game["mode"]}.png`);
-            modeImage.prop("title", game["mode"]);
-            new bootstrap.Tooltip(modeImage);
-
-            gameElement.find("#white-wins").text(game["white_wins"]);
-            gameElement.find("#black-wins").text(game["black_wins"]);
-
-            let results = gameElement.find("#results");
-            if ((game["winner"] == "white" && game["white"] == username) ||
-                (game["winner"] == "black" && game["black"] == username)) {
-                results.addClass("bi-plus-square");
-                results.addClass("text-success");
-            }
-            else {
-                results.addClass("bi-dash-square");
-                results.addClass("text-danger");
-            }
-
-            tableBody.append(gameElement);
-        }
-    } else {
+    if (games.length) initilizePage(username, games)
+    else {
         $(".no-games").show();
         $("#games").find("tbody").addClass("no-last-border-table");
+    }
+}
+main();
+
+async function initilizePage(username, games) {
+    const tableBody = $("#games").find("tbody");
+    $("#ratings").show();
+    for (const game of games) {
+        let gameElement = gameHTML.clone();
+
+        let whiteUsername = gameElement.find("#white-username");
+        whiteUsername.text(game["white"]);
+        if (game["white"] != "DELETED") whiteUsername.attr("onclick", `window.location.replace("/user/${game["white"]}")`);
+
+        let blackUsername = gameElement.find("#black-username");
+        blackUsername.text(game["black"]);
+        if (game["black"] != "DELETED") blackUsername.attr("onclick", `window.location.replace("/user/${game["black"]}")`);
+
+        let modeImage = gameElement.find("#mode-image");
+        modeImage.prop("src", `../static/assets/modes/${game["game_settings"]["mode"]}.png`);
+        modeImage.prop("title", game["game_settings"]["mode"]);
+        new bootstrap.Tooltip(modeImage);
+
+        gameElement.find("#white-wins").text(game["white_wins"]);
+        gameElement.find("#black-wins").text(game["black_wins"]);
+
+        let results = gameElement.find("#results");
+        if ((game["winner"] == "white" && game["white"] == username) ||
+            (game["winner"] == "black" && game["black"] == username)) {
+            results.addClass("bi-plus-square");
+            results.addClass("text-success");
+        }
+        else {
+            results.addClass("bi-dash-square");
+            results.addClass("text-danger");
+        }
+
+        tableBody.append(gameElement);
     }
 
     // Rating Archive
@@ -151,16 +155,10 @@ async function main() {
         let data = ratingData["archive"].map(rating => {
             return [new Date(rating["achieved_at"]), rating["elo"]];
         });
-        if (data.length == 1) data.push([new Date(), rating]);
+        data.push([new Date(), rating]);
         
         google.charts.setOnLoadCallback(() => create_chart(ratingElement.find(".chart")[0], [["Date", "Elo"]].concat(data)));
     }
-}
-main();
-
-function setProfilePirctureSize() {
-    let picture = $("#profile-picture");
-    picture.height(picture.width());
 }
 
 function create_chart(element, data) {

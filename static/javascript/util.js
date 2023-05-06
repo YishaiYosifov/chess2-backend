@@ -27,6 +27,18 @@ async function apiUpload(route, name, file) {
     });
 }
 
+async function setCookie(name, value, expires) { document.cookie = `${name}=${value || ""}; path=/; SameSite=Lax; max-age=${expires}`; }
+
+async function getCookie(name) {
+    var cookies = document.cookie.split(";");
+    for(var i=0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.startsWith(name)) return cookie.split("=")[1];
+    }
+}
+
+async function eraseCookie(name) { document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax"; }
+
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 function togglePasswordVisibility(toggleButton) {
@@ -46,5 +58,7 @@ function togglePasswordVisibility(toggleButton) {
         icon.removeClass("bi-eye-fill");
     }
 };
+
+function isDigit(text) { return /^\d+$/.test(text); }
 
 document.querySelectorAll(".tt").forEach(tooltip => new bootstrap.Tooltip(tooltip));

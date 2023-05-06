@@ -21,8 +21,8 @@ class Game(db.Model):
 
     winner = db.Column(db.String(10))
 
-    mode = db.Column(db.String(50))
-    time_control = db.Column(db.Integer)
+    game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
+    game_settings = db.relationship("GameSettings", uselist=False)
 
     moves = db.Column(db.Text, server_default=db.text("('')"))
     white_wins = db.Column(db.Integer, server_default=db.text("0"))
@@ -32,7 +32,7 @@ class Game(db.Model):
     created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
 
     @classmethod
-    def start_game(cls, *players : User, mode : str, time_control : int) -> int:
+    def start_game(cls, *players : User, settings) -> int:
         """
         Start a game
 
@@ -61,5 +61,5 @@ class Game(db.Model):
 
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
-        db.session.add(cls(token=token, white=white, black=black, mode=mode, time_control=time_control))
+        db.session.add(cls(token=token, white=white, black=black, game_settings=settings))
         return token
