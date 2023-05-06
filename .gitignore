@@ -133,4 +133,7 @@ dmypy.json
 .vscode/
 
 # gmail tokens
-.google_tokens/
+google_tokens/
+
+# flask session
+flask_session/
