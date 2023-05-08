@@ -62,6 +62,10 @@ class User(db.Model):
     outgoing_game = db.relationship("OutgoingGames", backref="inviter", foreign_keys="OutgoingGames.inviter_id", uselist=False, cascade="all, delete-orphan")
     incoming_games = db.relationship("OutgoingGames", backref="recipient", foreign_keys="OutgoingGames.recipient_id", cascade="all, delete-orphan")
 
+    def __eq__(self, to):
+        if not isinstance(to, User): return False
+        return to.user_id == self.user_id
+
     def get_public_info(self) -> dict:
         from util import get_from_column
         return get_from_column(self, PUBLIC_INFO)

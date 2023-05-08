@@ -37,19 +37,15 @@ def requires_auth(allow_guests : bool=False):
     """
 
     def decorator(function):
-        def wrapper(*args, **kwargs):
-            session.permanent = True
-            
+        def wrapper(*args, **kwargs):            
             # Create a guest user / get the user from the session
             try: user = try_get_user_from_session(allow_guests=allow_guests)
-            except:
+            except Unauthorized as exception:
                 if allow_guests:
                     user = User.create_guest()
                     db.session.commit()
                 else:
-                    if request.path == "/socket.io/":
-                        emit("exception", SocketIOExceptions.UNAUTHORIZED, request.path)
-                        return
+                    if request.path == "/socket.io/": raise SocketIOException(SocketIOErrors.UNAUTHORIZED, exception.description)
                     raise
             else:
                 if not allow_guests and user.auth_method == AuthMethods.GUEST: raise Unauthorized("Not Logged In")
@@ -88,9 +84,7 @@ def requires_args(*arguments : reqparse.Argument):
             except BadRequest as error:
                 # If there are any missing / bad arguments, return them through socket io / http request
                 message = "\n".join([f"{argument}: {help}" for argument, help in error.data["message"].items()])
-                if is_socket:
-                    emit("exception", SocketIOExceptions.BAD_ARGUMENT)
-                    return
+                if is_socket: raise SocketIOException(SocketIOErrors.BAD_ARGUMENT, message)
                 else: raise BadRequest("Missing Arguments:\n" + message)
 
             # If there are any empty arguments with a default value, set the arg to the default value
@@ -222,6 +216,26 @@ def get_from_column(column, attributes : list) -> dict[str:any]:
         results[attribute] = value
     return results
 
-class SocketIOExceptions:
+class SocketIOErrors(Enum):
     BAD_ARGUMENT = 0
     UNAUTHORIZED = 1
+
+    BAD_REQUEST = 2
+    CONFLICT = 3
+
+    MOVE_ERROR = 4
+class SocketIOException(Exception):
+    def __init__(self, code : SocketIOErrors, message : str):
+        super().__init__(message)
+        
+        self.code = code.value
+        self.message = message
+
+def socket_error_handler(function):
+    def wrapper(*args, **kwargs):
+        try: return function(*args, **kwargs)
+        except SocketIOException as e:
+            print(e.code, e.message)
+            emit("exception", {"code": e.code, "message": e.message}, namespace="/")
+    wrapper.__name__ = function.__name__
+    return wrapper

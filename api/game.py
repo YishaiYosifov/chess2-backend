@@ -28,6 +28,7 @@ def start_pool_game(user : User, args):
     if not mode in CONFIG["MODES"]: raise BadRequest("Invalid Mode")
     if not time_control in CONFIG["TIME_CONTROLS"]: raise BadRequest("Invalid Time Control")
     if not increment in CONFIG["INCREMENTS"]: raise BadRequest("Invalid Increment")
+    time_control *= 60
 
     rating : RatingArchive = user.rating(mode)
 
@@ -72,7 +73,7 @@ def invite(user : User, args):
     if not time_control in CONFIG["TIME_CONTROLS"]: raise BadRequest("Invalid Time Control")
     if not increment in CONFIG["INCREMENTS"]: raise BadRequest("Invalid Increment")
 
-    game_settings = GameSettings(mode=mode, time_control=time_control, increment=increment)
+    game_settings = GameSettings(mode=mode, time_control=time_control * 60, increment=increment)
     db.session.add_all([game_settings, OutgoingGames(inviter=user, recipient=opponent, game_settings=game_settings)])
     db.session.commit()
 

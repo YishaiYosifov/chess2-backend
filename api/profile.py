@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from PIL import Image
 
 from util import requires_args, requires_auth, try_get_user_from_session, column_to_dict
-from dao import Game, AuthMethods, User, WebsiteAuth, RatingArchive
+from dao import MatchArchive, AuthMethods, User, WebsiteAuth, RatingArchive
 from app import db
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
@@ -51,7 +51,7 @@ def get_games(target : str, args):
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.query.filter((Game.is_over == True) & ((Game.white == user) | (Game.black == user))).limit(args.limit).all()
+    games : list[MatchArchive] = MatchArchive.query.filter((MatchArchive.white == user) | (MatchArchive.black == user)).limit(args.limit).all()
     games_data = []
 
     # Convert it to json

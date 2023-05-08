@@ -6,6 +6,7 @@ import os
 
 from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized
 from flask import redirect, session, request
+from flask_socketio import emit
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -16,9 +17,10 @@ import google.auth.transport.requests
 import requests
 
 from frontend import frontend, TEMPLATES, default_template
+from util import try_get_user_from_session, requires_auth
 from extensions import GOOGLE_CLIENT_ID, CONFIG
-from util import try_get_user_from_session
 
+from modes.game_base import GameBase
 from app import app, socketio
 from api import api
 from dao import *
@@ -71,6 +73,14 @@ def google_login():
 
 # endregion
 
+@socketio.on("connected")
+@requires_auth(allow_guests=True)
+def connected(user : User):
+    user.sid = request.sid
+    db.session.commit()
+
+    if user.incoming_games: emit("incoming_games", [game.inviter_id for game in user.incoming_games])
+
 # Delete expired columns
 def delete_expired():
     while True:
@@ -79,7 +89,6 @@ def delete_expired():
 
             expired_guests : list[SessionToken] = SessionToken.query.filter(SessionToken.last_used < (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")) \
                 .join(User).filter_by(auth_method=AuthMethods.GUEST).all()
-            print(expired_guests)
             for guest in expired_guests: guest.user.delete()
             
             SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
@@ -117,7 +126,10 @@ if __name__ == "__main__":
     app.register_blueprint(frontend)
     app.register_blueprint(api)
 
-    with app.app_context(): db.create_all()
+    with app.app_context():
+        db.create_all()
+
+        for active_game in Game.query.all(): active_games[active_game.token] = GameBase(active_game)
     threading.Thread(target=delete_expired, daemon=True).start()
 
-    socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"])
+    socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"], use_reloader=False)

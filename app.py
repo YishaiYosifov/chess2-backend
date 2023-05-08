@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import os
 
 from flask_sqlalchemy import SQLAlchemy
@@ -27,6 +29,7 @@ db = SQLAlchemy(app)
 
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SECRET_KEY"] = "bb5c8af0e15d4d0195e37fa995430280"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(weeks=2)
 Session(app)
 
 socketio = SocketIO(app, manage_session=False)

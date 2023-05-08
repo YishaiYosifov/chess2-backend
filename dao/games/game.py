@@ -1,12 +1,48 @@
+from typing import Literal
+
 import random
+import numpy
 import uuid
 
+from pydantic import BaseModel
+
+from .game_settings import GameSettings
 from ..users.user import User
+from extensions import CONFIG
 from app import db
 
+class Piece(BaseModel):
+    name : str
+    color : Literal["white"] | Literal["black"]
+
+# Initilize default board
+SET_HEIGHT = len(CONFIG["PIECE_SET"])
+
+parsed_pieces_white = numpy.empty((SET_HEIGHT, 8), Piece)
+parsed_pieces_black = numpy.empty((SET_HEIGHT, 8), Piece)
+for row_index, row in enumerate(CONFIG["PIECE_SET"]):
+    for piece_index, piece in enumerate(row):
+        parsed_pieces_white[row_index][piece_index] = Piece(name=piece, color="white")
+        parsed_pieces_black[row_index][piece_index] = Piece(name=piece, color="black")
+parsed_pieces_black = parsed_pieces_black[::-1]
+
+BOARD = numpy.concatenate((
+    parsed_pieces_white,
+    numpy.empty((4, 8), Piece),
+    parsed_pieces_black
+))
+
+active_games = {}
 class Game(db.Model):
     def __init__(self, **data):
         super().__init__(**data)
+
+        self.turn = self.white
+        self.clocks = {
+            data["white"].user_id: self.game_settings.time_control,
+            data["black"].user_id: self.game_settings.time_control
+        }
+        db.session.commit()
 
     __tablename__ = "games"
 
@@ -16,23 +52,22 @@ class Game(db.Model):
     white_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     black_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
-    white = db.relationship("User", foreign_keys=[white_id], uselist=False)
-    black = db.relationship("User", foreign_keys=[black_id], uselist=False)
-
-    winner = db.Column(db.String(10))
+    white = db.relationship("User", foreign_keys=[white_id], lazy="subquery", uselist=False)
+    black = db.relationship("User", foreign_keys=[black_id], lazy="subquery", uselist=False)
 
     game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
-    game_settings = db.relationship("GameSettings", uselist=False)
+    game_settings = db.relationship("GameSettings", lazy="subquery", uselist=False)
 
-    moves = db.Column(db.Text, server_default=db.text("('')"))
-    white_wins = db.Column(db.Integer, server_default=db.text("0"))
-    black_wins = db.Column(db.Integer, server_default=db.text("0"))
+    turn_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
+    turn = db.relationship("User", foreign_keys=[turn_id], lazy="subquery", uselist=False)
 
-    is_over = db.Column(db.Boolean, server_default=db.text("FALSE"))
+    board = db.Column(db.PickleType, default=BOARD)
+    clocks = db.Column(db.PickleType)
+
     created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
 
     @classmethod
-    def start_game(cls, *players : User, settings) -> int:
+    def start_game(cls, *players : User, settings : GameSettings) -> int:
         """
         Start a game
 
