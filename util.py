@@ -119,7 +119,6 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
     if not token:
         # If it doesn't find the token, it means the session token has expired
         session.clear()
-        if must_logged_in and token.user.auth_method == AuthMethods.GUEST: raise Unauthorized("Not Logged In")
         if raise_on_session_expired: raise Unauthorized("Session Expired")
         return
     elif not allow_guests and token.user.auth_method == AuthMethods.GUEST:

@@ -17,45 +17,83 @@ with open("email_verification.html", "r") as f: EMAIL_VERIFICATION_MESSAGE = f.r
 with open("static/countries.json", "r") as f: COUNTRIES : dict = json.load(f)
 with open("config.json", "r") as f: CONFIG : dict = json.load(f)
 
+# Pieces movement
 straight_movement = lambda origin, destination: origin["x"] == destination["x"] or origin["y"] == destination["y"]
 diagonal_movement = lambda origin, destination: abs(origin["x"] - destination["x"]) == abs(origin["y"] - destination["y"])
 knight_movement = lambda origin, destination: (abs(origin["y"] - destination["y"]) == 2 and abs(origin["x"] - destination["x"]) == 1) or \
                                                 (abs(origin["y"] - destination["y"]) == 1 and abs(origin["x"] - destination["x"]) == 2)
 
-# Pieces movement
 PIECE_MOVEMENT = {
     "rook": {
-        "move": straight_movement
+        "move": {
+            "validator": straight_movement,
+            "collisions": ["straight"]
+        }
     },
     "bishop": {
-        "move": diagonal_movement
+        "move": {
+            "validator": diagonal_movement,
+            "collisions": ["diagonal"]
+        }
     },
     "knight": {
-        "move": knight_movement
+        "move": {
+            "validator": knight_movement
+        }
     },
     "king": {
-        "move": lambda origin, destination: abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1
+        "move": {
+            "validator": lambda origin, destination: abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1,
+            "collisions": ["straight", "diagonal"]
+        }
     },
     "queen": {
-        "move": straight_movement or diagonal_movement
+        "move": {
+            "validator": straight_movement or diagonal_movement,
+            "collisions": ["straight", "diagonal"]
+        }
     },
     "diagook": {
-        "move": straight_movement,
-        "capture": diagonal_movement
+        "move": {
+            "validator": straight_movement,
+            "collisions": ["straight"]
+        },
+        "capture": {
+            "validator": diagonal_movement,
+            "collisions": ["diagonal"]
+        }
     },
     "archbishop": {
-        "move": diagonal_movement,
-        "capture": straight_movement
+        "move": {
+            "validator": diagonal_movement,
+            "collisions": ["diagonal"]
+        },
+        "capture": {
+            "validator": straight_movement,
+            "collisions": ["straight"]
+        }
     },
     "knook": {
-        "move": straight_movement,
-        "capture": knight_movement
+        "move": {
+            "validator": straight_movement,
+        },
+        "capture": {
+            "validator": knight_movement
+        }
     },
     "pawn": {
-        "move": lambda origin, destination: origin["x"] == destination["x"] and destination["y"] - origin["y"] == 1,
-        "capture": lambda origin, destination: abs(origin["y"] - destination["y"]) == 1 and origin["x"] != destination["x"],
+        "move": {
+            "validator": lambda origin, destination: origin["x"] == destination["x"] and destination["y"] - origin["y"] == 1,
+            "collisions": ["straight"]
+        },
+        "capture": {
+            "validator": lambda origin, destination: abs(origin["y"] - destination["y"]) == 1 and origin["x"] != destination["x"]
+        },
     },
     "child_pawn": {
-        "move": lambda origin, destination: origin["x"] == destination["x"] and destination["y"] - origin["y"] == 1
+        "move": {
+            "validator": lambda origin, destination: origin["x"] == destination["x"] and destination["y"] - origin["y"] == 1,
+            "collisions": ["straight"]
+        }
     }
 }

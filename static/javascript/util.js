@@ -10,7 +10,7 @@ async function apiRequest(route, json=null) {
     );
 
     var responseCopy = response.clone();
-    if (responseCopy.status == 401 && await responseCopy.text() == "Session Expired") {
+    if (authInfo["auth_method"] != "guest" && responseCopy.status == 401 && await responseCopy.text() == "Session Expired") {
         window.location.replace("/login?a=session-expired");
         throw new Error("Session Token Expired");
     }
@@ -27,17 +27,14 @@ async function apiUpload(route, name, file) {
     });
 }
 
-async function setCookie(name, value, expires) { document.cookie = `${name}=${value || ""}; path=/; SameSite=Lax; max-age=${expires}`; }
+function getLocalStorage(name, _default) {
+    value = localStorage.getItem(name);
+    if (!value) return _default;
 
-async function getCookie(name) {
-    var cookies = document.cookie.split(";");
-    for(var i=0; i < cookies.length; i++) {
-        var cookie = cookies[i].trim();
-        if (cookie.startsWith(name)) return cookie.split("=")[1];
-    }
+    try { value = JSON.parse(value); }
+    catch (e) {}
+    return value;
 }
-
-async function eraseCookie(name) { document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax"; }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -61,4 +58,18 @@ function togglePasswordVisibility(toggleButton) {
 
 function isDigit(text) { return /^\d+$/.test(text); }
 
-document.querySelectorAll(".tt").forEach(tooltip => new bootstrap.Tooltip(tooltip));
+var authInfo;
+async function loadAuthInfo() {
+    authInfo = await getLocalStorage("auth-info", {});
+    if (Object.keys(authInfo).length) return;
+
+    const request = await apiRequest("/profile/me/get_info", {"include": ["user_id", "auth_method"]});
+    if (!request.ok) {
+        if (request.status == 401) return;
+        window.location.replace("/api/auth/logout");
+    }
+
+    authInfo = await request.json();
+    localStorage.setItem("auth-info", JSON.stringify(authInfo));
+}
+loadAuthInfo();

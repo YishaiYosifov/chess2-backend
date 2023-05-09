@@ -59,6 +59,7 @@ def index():
     else: return render_template("index-unauthorized.html", alert=alert)
 
 TEMPLATES = [
+    Template(route="/test", template="test.html"),
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),
 

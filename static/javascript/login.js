@@ -6,3 +6,5 @@ $("#login").click(async () => {
     if (!response.ok) showAlert("Wrong username / password");
     else window.location.replace("/");
 });
+
+localStorage.removeItem("auth-info");

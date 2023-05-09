@@ -11,11 +11,8 @@ async function main() {
     }
     else $("#play").show();
 
-    let savedSettings = await getCookie("game-settings");
-    if (savedSettings) {
-        try { settings = JSON.parse(savedSettings); }
-        catch {}
-    }
+    let savedSettings = getLocalStorage("game-settings");
+    if (savedSettings) settings = savedSettings;
 
     for (const [setting, value] of Object.entries(settings)) {
         $(`[setting="${setting}"]`).find("button").filter(function() {
@@ -38,7 +35,7 @@ $(".setting-button").click(function() {
     let setting = parent.attr("setting");
     settings[setting] = value;
     
-    setCookie("game-settings", JSON.stringify(settings));
+    localStorage.setItem("game-settings", JSON.stringify(settings));
 });
 
 $("#play").click(async function() {

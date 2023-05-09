@@ -26,32 +26,35 @@ const navbar = $($.parseHTML(
     </nav>`
 ));
 
-const root = location.protocol + "//" + location.host
-$.getJSON(`${root}/static/navbar.json`, async navbarItems => {
-    const isLoggedIn = await (await apiRequest("/auth/is_logged_in")).json()
-
-    const bodyTop = navbar.find(".offcanvas-body").find("#body-top");
-    const bodyBottom = navbar.find(".offcanvas-body").find("#body-bottom");
-    for (item of navbarItems) {
-        if ((item["auth_req"] == 1 && !isLoggedIn) ||
-            (item["auth_req"] == 2 && isLoggedIn)) continue;
-
-        let navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
-
-        let itemText = $("<a></a>");
-        itemText.addClass("nav-link");
-        if (item["path"] == window.location.pathname.split("/")[1]) itemText.addClass("active");
-
-        itemText.attr("href", root + "/" + item["path"]);
-        itemText.html(`<i class="bi ${item["icon"]}"></i> ㅤ ${item["label"]}`);
-        navbarItem.append(itemText);
-
-        if (item["side"] == "top") bodyTop.append(navbarItem);
-        else if (item["side"] == "bottom") {
-            if (bodyBottom.is(":hidden")) bodyBottom.show();
-            
-            bodyBottom.append(navbarItem);
-        }
-    };
-    $("body").prepend(navbar);
-});
+function loadNavbar() {
+    const root = location.protocol + "//" + location.host
+    $.getJSON(`${root}/static/navbar.json`, async navbarItems => {
+        const isLoggedIn = authInfo["auth_method"] != "guest";
+    
+        const bodyTop = navbar.find(".offcanvas-body").find("#body-top");
+        const bodyBottom = navbar.find(".offcanvas-body").find("#body-bottom");
+        for (item of navbarItems) {
+            if ((item["auth_req"] == 1 && !isLoggedIn) ||
+                (item["auth_req"] == 2 && isLoggedIn)) continue;
+    
+            let navbarItem = $($.parseHTML("<li class='nav-item rounded'></li>"));
+    
+            let itemText = $("<a></a>");
+            itemText.addClass("nav-link");
+            if (item["path"] == window.location.pathname.split("/")[1]) itemText.addClass("active");
+    
+            itemText.attr("href", root + "/" + item["path"]);
+            itemText.html(`<i class="bi ${item["icon"]}"></i> ㅤ ${item["label"]}`);
+            navbarItem.append(itemText);
+    
+            if (item["side"] == "top") bodyTop.append(navbarItem);
+            else if (item["side"] == "bottom") {
+                if (bodyBottom.is(":hidden")) bodyBottom.show();
+                
+                bodyBottom.append(navbarItem);
+            }
+        };
+        $("body").prepend(navbar);
+    });
+}
+loadAuthInfo().then(loadNavbar);

@@ -5,6 +5,7 @@ from dao import User, Game, active_games
 from app import socketio
 
 def requires_game(function):
+    @requires_auth(allow_guests=True)
     def wrapper(*args, **kwargs):
         user = kwargs.get("user")
         if not user: user = try_get_user_from_session(allow_guests=True)
@@ -18,8 +19,6 @@ def requires_game(function):
 
 @socketio.on("move", namespace="/game")
 @socket_error_handler
-
-@requires_auth(allow_guests=True)
 @requires_args(
     Argument("from_x", type=int, required=True), Argument("from_y", type=int, required=True),
     Argument("to_x", type=int, required=True), Argument("to_y", type=int, required=True)

@@ -75,9 +75,6 @@ def login(args):
 
     return "Logged In", 200
 
-@auth.route("/is_logged_in", methods=["POST"])
-def is_logged_in(): return jsonify(bool(try_get_user_from_session(must_logged_in=False, raise_on_session_expired=False))), 200
-
 @auth.route("/logout", methods=["POST", "GET"])
 @requires_auth()
 def logout(user : User):

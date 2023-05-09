@@ -20,22 +20,26 @@ from app import db
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
 
 @profile.route("/get_info", methods=["POST"])
-def get_info(target : str):
+@requires_args(Argument("include", type=str, action='append'))
+def get_info(target : str, args):
     """
     Get a user's information
     """
 
     if target == "me":
         # If the target is the logged in user, get the user from the session and return the private information
-        user : User = try_get_user_from_session()
-        return user.get_private_info()
+        user : User = try_get_user_from_session(allow_guests=True)
+        data = user.get_private_info()
+    else:
+        # Select the user using the given username
+        user : User = User.query.filter_by(username=target).first()
+        if not user: raise NotFound("User Not Found")
+        data = user.get_public_info()
     
-    # Select the user using the given username
-    user : User = User.query.filter_by(username=target).first()
-    if not user: raise NotFound("User Not Found")
+    if args.include: data = {name:value for name, value in data.items() if name in args.include}
     
-    # Return the public info
-    return user.get_public_info(), 200
+    # Return the data
+    return jsonify(data), 200
 
 @profile.route("/get_games", methods=["POST"])
 @requires_args(Argument("limit", type=int, default=10))

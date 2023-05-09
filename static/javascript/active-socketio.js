@@ -12,7 +12,7 @@ $(window).bind("pageshow", e => {
 
 socket.on("connect", () => {
     socket.emit("connected");
-    io("/game").emit("move", {"from_x": 0, "from_y": 2, "to_x": 0, "to_y": 3});
+    io("/game").emit("move", {"from_x": 0, "from_y": 0, "to_x": 0, "to_y": 5});
 });
 
 socket.on("game_started", game_data => { window.location.replace(`/game/${game_data["game_id"]}`); });

@@ -92,7 +92,7 @@ def accept_invite(user : User, args):
     db.session.commit()
 
     emit("game_started", {"game_id": game_id}, room=inviter.sid, namespace="/")
-    return game_id
+    return game_id, 200
 
 @game.route("/cancel", methods=["POST"])
 @requires_auth(allow_guests=True)
@@ -107,3 +107,16 @@ def cancel_outgoing(user : User):
 @game.route("/has_outgoing", methods=["POST"])
 @requires_auth(allow_guests=True)
 def has_outgoing(user : User): return jsonify(user.outgoing_game != None)
+
+@game.route("/get_game", methods=["POST"])
+@requires_args(Argument("game_token", type=str, required=True))
+def get_board(args):
+    game : Game = Game.query.filter_by(token=args.game_token).first()
+    if not game: raise NotFound("Game Not Found")
+
+    return jsonify({
+        "white": game.white.user_id,
+        "black": game.black.user_id,
+        "turn": game.turn.user_id,
+        "board": [[piece.__dict__ if piece else None for piece in row] for row in game.board]
+    }), 200

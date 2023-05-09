@@ -1,0 +1,37 @@
+.square-light {
+    background-color: #f1e1b3;
+}
+
+.square-dark {
+    background-color: #997349;
+}
+
+.square {
+    height: 10%;
+    width: 12.5%;
+    max-height: 100vmin;
+    max-width: 100vmin;
+
+    user-select: none;
+
+    float: left;
+    padding: 0;
+    margin: auto;
+}
+
+#board {
+    max-height: 1060px;
+    max-width: 850px;
+
+    text-align: center;
+    width: 70vmin;
+    height: 87vmin;
+    margin: auto;
+}
+
+@media (max-width: 768px) {
+    #board {
+        width: 90vmin;
+        height: 107vmin;
+    }
+}

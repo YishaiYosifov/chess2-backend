@@ -21,7 +21,7 @@ async function main() {
     $("#save").prop("disabled", true);
 
     userInfo = await(await apiRequest("/profile/me/get_info")).json();
-    $.getJSON(`${root}/static/countries.json`, async countries => {
+    $.getJSON(`${location.origin}/static/countries.json`, async countries => {
         const dropdown = $("[input-for-setting='country']");
         for (const [alpha, country] of Object.entries(countries)) {
             let option = $(`<option value="${alpha}">${country}</option>`);
