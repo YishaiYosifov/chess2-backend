@@ -13,6 +13,7 @@ import requests
 from .auth import AuthMethods, WebsiteAuth
 from .rating_archive import RatingArchive
 from .session_token import SessionToken
+from ..games import Game
 
 from extensions import CONFIG, EMAIL_REG, COUNTRIES
 from app import db
@@ -65,6 +66,8 @@ class User(db.Model):
     def __eq__(self, to):
         if not isinstance(to, User): return False
         return to.user_id == self.user_id
+    
+    def get_active_game(self) -> Game: return Game.query.filter((Game.white == self) | (Game.black == self)).first()
 
     def get_public_info(self) -> dict:
         from util import get_from_column

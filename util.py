@@ -43,6 +43,7 @@ def requires_auth(allow_guests : bool=False):
             except Unauthorized as exception:
                 if allow_guests:
                     user = User.create_guest()
+                    request.cached_session_user = user
                     db.session.commit()
                 else:
                     if request.path == "/socket.io/": raise SocketIOException(SocketIOErrors.UNAUTHORIZED, exception.description)
@@ -109,6 +110,8 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
     :param raise_on_session_expired: raise unauthorized exception when the user is logged in but the sesion expired
     """
 
+    if hasattr(request, "cached_session_user"): return request.cached_session_user
+
     # Check if the user is logged in
     if not "session_token" in session:
         if must_logged_in: raise Unauthorized("Not Logged In")
@@ -128,6 +131,7 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
     token.last_used = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
 
+    request.cached_session_user = token.user
     return token.user
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):

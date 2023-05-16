@@ -3,10 +3,8 @@ import time
 
 from flask_socketio import emit
 
-import numpy
-
 from util import SocketIOException, SocketIOErrors
-from extensions import PIECE_MOVEMENT
+from game.pieces import PIECE_MOVEMENT
 from dao import Game, User, Piece
 from app import app, db
 
@@ -17,6 +15,7 @@ class GameBase:
         #threading.Thread(target=self._clock).start()
 
     def move(self, user, origin : dict, destination : dict):
+        self.game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
 
         # Check if both the origin and the destination squares are valid
@@ -36,35 +35,29 @@ class GameBase:
             move_check = piece_data.get("capture", piece_data["move"])
         else: move_check = piece_data["move"]
         # Check if the given move is possible
-        if not move_check["validator"](origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
+        if not move_check["validator"](self.game.board, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
 
         # Check if there are any pieces in the way
-        collision_checks = {"straight": self._straight_collision, "diagonal": self._diagonal_collision}
-        for collision in move_check.get("collisions", []):
-            in_between = collision_checks[collision](origin, destination)
-
-            # If this is a capture, we don't want to check if there is a piece at the end
-            if destination_piece: in_between = in_between[:-1]
-            if not all(not square for square in in_between): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
+        if move_check.get("collisions"):
+            for collision_check in move_check["collisions"]:
+                collision = collision_check(self.game.board, origin, destination)
+                if len([square for square in collision if square]) <= 1: break
+            else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
 
         # Move the piece to the new position and replace the old piece
         self.game.board[destination["y"], destination["x"]] = origin_piece
         self.game.board[origin["y"], origin["x"]] = None
+        origin_piece.moved += 1
 
-        #self.game.turn = self._get_opponent(user)
+        # Looks bad but I have to do this to make sqlalchemy update the board
+        self.game.board = self.game.board
 
-        #db.session.merge(self.game)
-        #db.session.commit()
+        emit("move", {"origin": origin, "destination": destination}, include_self=False, to=self.game.token)
+
+        self.game.turn = self._get_opponent(user)
+        db.session.commit()
     
     # region Helpers
-
-    def _straight_collision(self, origin : dict, destination : dict) -> numpy.ndarray:
-        x1, y1 = origin.values()
-        x2, y2 = destination.values()
-
-        if x1 == x2: return self.game.board[y1 + 1:y2 + 1, x1 + 1:x2 + 1]
-        else: return self.game.board[y1 + 1:y2 + 1, x1:x2 + 1]
-    def _diagonal_collision(self, origin : dict, destination : dict) -> numpy.ndarray: return self._straight_collision(origin, destination).diagonal()
 
     def _get_opponent(self, user : User) -> User:
         if user == self.game.white: return self.game.black

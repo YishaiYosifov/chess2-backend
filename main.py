@@ -6,7 +6,7 @@ import os
 
 from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized
 from flask import redirect, session, request
-from flask_socketio import emit
+from flask_socketio import emit, join_room
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -20,7 +20,7 @@ from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
 from extensions import GOOGLE_CLIENT_ID, CONFIG
 
-from modes.game_base import GameBase
+from game.game_base import GameBase
 from app import app, socketio
 from api import api
 from dao import *
@@ -80,6 +80,12 @@ def connected(user : User):
     db.session.commit()
 
     if user.incoming_games: emit("incoming_games", [game.inviter_id for game in user.incoming_games])
+
+@socketio.on("connect", namespace="/game")
+@requires_auth(allow_guests=True)
+def game_connected(user : User):
+    game = user.get_active_game()
+    if game: join_room(game.token)
 
 # Delete expired columns
 def delete_expired():

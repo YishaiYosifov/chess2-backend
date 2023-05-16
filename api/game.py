@@ -20,6 +20,7 @@ def start_pool_game(user : User, args):
     """
 
     if user.outgoing_game: raise Conflict("You already have an outgoing game")
+    elif user.get_active_game(): raise Conflict("You already have an active game")
 
     # Check if the mode and the time control are valid
     mode : str = args.mode.lower()
@@ -60,6 +61,7 @@ def start_pool_game(user : User, args):
 @requires_auth()
 def invite(user : User, args):
     if user.outgoing_game: raise Conflict("You already have an outgoing game")
+    elif user.get_active_game(): raise Conflict("You already have an active game")
 
     opponent : User = User.query.filter_by(user_id=args.recipient_id).first()
     if not opponent: raise NotFound("Opponent Not Found")
@@ -86,6 +88,7 @@ def invite(user : User, args):
 def accept_invite(user : User, args):
     inviter : User = User.query.filter_by(user_id=args.inviter_id).first()
     if not inviter or inviter.outgoing_game.recipient != user: raise BadRequest("User Not Invited")
+    elif user.get_active_game(): raise Conflict("You already have an active game")
     
     game_id = Game.start_game(user, inviter, settings=inviter.outgoing_game.game_settings)
     db.session.delete(inviter.outgoing_game)

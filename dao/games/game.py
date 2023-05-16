@@ -7,13 +7,14 @@ import uuid
 from pydantic import BaseModel
 
 from .game_settings import GameSettings
-from ..users.user import User
 from extensions import CONFIG
 from app import db
 
 class Piece(BaseModel):
     name : str
     color : Literal["white"] | Literal["black"]
+
+    moved = 0
 
 # Initilize default board
 SET_HEIGHT = len(CONFIG["PIECE_SET"])
@@ -22,6 +23,8 @@ parsed_pieces_white = numpy.empty((SET_HEIGHT, 8), Piece)
 parsed_pieces_black = numpy.empty((SET_HEIGHT, 8), Piece)
 for row_index, row in enumerate(CONFIG["PIECE_SET"]):
     for piece_index, piece in enumerate(row):
+        if not piece: continue
+
         parsed_pieces_white[row_index][piece_index] = Piece(name=piece, color="white")
         parsed_pieces_black[row_index][piece_index] = Piece(name=piece, color="black")
 parsed_pieces_black = parsed_pieces_black[::-1]
@@ -52,14 +55,14 @@ class Game(db.Model):
     white_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     black_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
 
-    white = db.relationship("User", foreign_keys=[white_id], lazy="subquery", uselist=False)
-    black = db.relationship("User", foreign_keys=[black_id], lazy="subquery", uselist=False)
+    white = db.relationship("User", foreign_keys=[white_id], uselist=False)
+    black = db.relationship("User", foreign_keys=[black_id], uselist=False)
 
     game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
-    game_settings = db.relationship("GameSettings", lazy="subquery", uselist=False)
+    game_settings = db.relationship("GameSettings", uselist=False)
 
     turn_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
-    turn = db.relationship("User", foreign_keys=[turn_id], lazy="subquery", uselist=False)
+    turn = db.relationship("User", foreign_keys=[turn_id], uselist=False)
 
     board = db.Column(db.PickleType, default=BOARD)
     clocks = db.Column(db.PickleType)
@@ -67,7 +70,7 @@ class Game(db.Model):
     created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
 
     @classmethod
-    def start_game(cls, *players : User, settings : GameSettings) -> int:
+    def start_game(cls, *players, settings : GameSettings) -> int:
         """
         Start a game
 
@@ -96,5 +99,10 @@ class Game(db.Model):
 
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
-        db.session.add(cls(token=token, white=white, black=black, game_settings=settings))
+        game = cls(token=token, white=white, black=black, game_settings=settings)
+        db.session.add(game)
+
+        from game import GameBase
+        active_games[token] = GameBase(Game.query.filter_by(token=token).first())
+
         return token

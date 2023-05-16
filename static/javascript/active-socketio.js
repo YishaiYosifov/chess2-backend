@@ -1,18 +1,25 @@
-function connect() { socket = io(); }
+var socket;
+var gameNamespace;
+function connect() {
+    socket = io();
+    gameNamespace = io("/game")
+}
+function disconnect() {
+    socket.disconnect();
+    gameNamespace.disconnect();
+}
 connect();
 
-$(window).bind("beforeunload", () => { socket.disconnect(); });
-$(window).bind("pageshow", e => {
+$(window).on("beforeunload", () => { disconnect(); });
+$(window).on("pageshow", e => {
     if (e.persisted) {
-        socket.disconnect();
-        socket = null;
+        disconnect();
         connect();
     }
 });
 
 socket.on("connect", () => {
     socket.emit("connected");
-    io("/game").emit("move", {"from_x": 0, "from_y": 0, "to_x": 0, "to_y": 5});
 });
 
 socket.on("game_started", game_data => { window.location.replace(`/game/${game_data["game_id"]}`); });

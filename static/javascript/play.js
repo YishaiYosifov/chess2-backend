@@ -13,6 +13,7 @@ async function main() {
 
     let savedSettings = getLocalStorage("game-settings");
     if (savedSettings) settings = savedSettings;
+    $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${settings["mode"]}.jpg`)
 
     for (const [setting, value] of Object.entries(settings)) {
         $(`[setting="${setting}"]`).find("button").filter(function() {
@@ -34,6 +35,8 @@ $(".setting-button").click(function() {
 
     let setting = parent.attr("setting");
     settings[setting] = value;
+
+    if (setting == "mode") $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${value}.jpg`);
     
     localStorage.setItem("game-settings", JSON.stringify(settings));
 });
@@ -60,4 +63,4 @@ $("#cancel").click(() => {
     $("#outgoing-game").hide();
     $("#play").show();
     $("*[setting] *").prop("disabled", false);
-})
+});

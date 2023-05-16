@@ -25,7 +25,9 @@ class Template(BaseModel):
 
     helper : Callable = None
 
-def change_password_helper(**kwargs):
+# region helpers
+
+def change_password_helper():
     user = try_get_user_from_session()
     if user.auth_method != AuthMethods.WEBSITE: return redirect("/settings")
 
@@ -50,6 +52,14 @@ def game_helper(**kwargs):
 
     return True
 
+def play_helper():
+    user = try_get_user_from_session(allow_guests=True)
+    active_game = user.get_active_game()
+    if active_game: return redirect(f"/game/{active_game.token}")
+    return True
+
+# endregion
+
 @frontend.route("/")
 def index():
     alert = session.get("alert")
@@ -59,7 +69,6 @@ def index():
     else: return render_template("index-unauthorized.html", alert=alert)
 
 TEMPLATES = [
-    Template(route="/test", template="test.html"),
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),
 
@@ -69,7 +78,7 @@ TEMPLATES = [
     Template(route="/settings", template="settings.html", auth_req=AuthReq.REQUIRED),
     Template(route="/settings/password", template="change-password.html", auth_req=AuthReq.REQUIRED, helper=change_password_helper),
 
-    Template(route="/play", template="play.html"),
+    Template(route="/play", template="play.html", helper=play_helper),
     Template(route="/game/<game_token>", template="game.html", helper=game_helper)
 ]
 
