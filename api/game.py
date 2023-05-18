@@ -117,9 +117,18 @@ def get_board(args):
     game : Game = Game.query.filter_by(token=args.game_token).first()
     if not game: raise NotFound("Game Not Found")
 
+    proccessed_board = []
+    for row in game.board:
+        proccessed_board.append([])
+        for square in row:
+            square = square.__dict__
+            if square["piece"]: square["piece"] = square["piece"].__dict__
+            proccessed_board[-1].append(square)
+
     return jsonify({
         "white": game.white.user_id,
         "black": game.black.user_id,
         "turn": game.turn.user_id,
-        "board": [[piece.__dict__ if piece else None for piece in row] for row in game.board]
+        "board": proccessed_board,
+        "moves": game.moves
     }), 200

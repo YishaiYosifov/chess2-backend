@@ -7,6 +7,7 @@ const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">
 
 const gameToken = window.location.pathname.split("/").pop();
 
+var moves;
 var board;
 var color;
 var isLocalTurn;
@@ -23,12 +24,8 @@ async function main() {
     const gameData = await (await apiRequest("/game/get_game", {"game_token": gameToken})).json();
     color = userID == gameData["white"] ? "white" : "black";
     board = gameData["board"];
+    moves = gameData["moves"];
 
-    board = board.map(
-        (row, rowIndex) => row.map(
-            (column, columnIndex) => ({"x": columnIndex, "y": rowIndex, "piece": column})
-        )
-    );
     boardHeight = board.length;
     boardWidth = board[0].length;
     
@@ -90,8 +87,12 @@ async function move(originElement, destinationElement) {
 
     if (originID == destinationID) return;
 
-    const [originY, originX] = originID.split("-");
-    const [destinationY, destinationX] = destinationID.split("-");
+    let [originY, originX] = originID.split("-");
+    let [destinationY, destinationX] = destinationID.split("-");
+    originX = parseInt(originX);
+    originY = parseInt(originY);
+    destinationX = parseInt(destinationX);
+    destinationY = parseInt(destinationY);
     
     await movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY);
 
@@ -117,12 +118,23 @@ function disableDraggable() {
 }
 
 async function movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY) {
-    let tempBoardPiece = board[originY][originX];
-    board[originY][originX] = {"x": tempBoardPiece["x"], "y": tempBoardPiece["y"]};
+    moves.push({"piece": board[originY][originX]["piece"]["name"], "origin": {"x": originX, "y": originY}, "destination": {"x": destinationX, "y": destinationY}});
+
+    let tempBoardPiece = structuredClone(board[originY][originX]);
+    if (tempBoardPiece["piece"]["name"] == "pawn" && Math.abs(originX - destinationX) > 1) {
+        const yOffset = tempBoardPiece["piece"]["color"] == "white" ? -1 : 1;
+        const enpassantDiagonal = diagonal(originX, originY + yOffset, destinationX, destinationY + yOffset);
+        for (const [index, square] of Object.entries(enpassantDiagonal)) {
+            square["piece"] = null;
+            $(`#${square["y"]}-${square["x"]}`).find(".piece").delay(index * 30).fadeOut(100, function() { $(this).remove(); });
+        }
+    }
+    board[originY][originX]["piece"] = null;
+
     delete tempBoardPiece["x"];
     delete tempBoardPiece["y"];
+    tempBoardPiece["piece"]["moved"] = true
 
-    tempBoardPiece["moved"]++;
     Object.assign(board[destinationY][destinationX], tempBoardPiece);
 
     const tempPiece = originElement.clone();
@@ -154,6 +166,10 @@ gameNamespace.on("move", (data) => {
 
     enableDraggable();
 });
+gameNamespace.on("exception", (data) => {
+    showAlert("Something went wrong. Please refresh the page");
+    console.error(data);
+})
 
 
 function pieceSlice(pieces, capture = true) {
@@ -165,13 +181,22 @@ function pieceSlice(pieces, capture = true) {
     }
     return pieces;
 }
-function diagonal(arr) {
-    let diagonal = []
-    for (const [index, _] of arr.entries()) {
-        let diagonalElement = arr[index][index];
+function diagonal(x1, y1, x2, y2) {
+    let sliced = board.slice(Math.min(y1, y2), Math.max(y1, y2) + 1).map(column => {
+        let columnSlice = column.slice(Math.min(x1, x2), Math.max(x1, x2) + 1);
+        if (x1 > x2) columnSlice.reverse()
+        return columnSlice
+    });
+
+    if (y1 > y2) sliced.reverse();
+
+    let diagonal = [];
+    for (const [index, _] of sliced.entries()) {
+        let diagonalElement = sliced[index][index];
         if (!diagonalElement) break;
         diagonal.push(diagonalElement);
     }
+    if (diagonal.at(-1) == board[y1][x1]) diagonal.reverse();
 
     return diagonal;
 }
@@ -184,26 +209,48 @@ const straightMoves = (x, y) =>
             pieceSlice(board.slice(y, boardHeight).map(column => column[x]))
         );
 const diagonalMoves = (x, y) =>
-    pieceSlice(diagonal(
-        board.slice(y, boardHeight).map(column => column.slice(x, boardWidth))
-    )).concat(
-        pieceSlice(diagonal(
-            board.slice(0, y + 1).map(column => column.slice(0, x + 1).reverse()).reverse()
-        )),
-
-        pieceSlice(diagonal(
-            board.slice(0, y + 1).map(column => column.slice(x, boardWidth)).reverse()
-        )),
-        pieceSlice(diagonal(
-            board.slice(y, boardHeight).map(column => column.slice(0, x + 1).reverse())
-        ))
-  );
+    pieceSlice(diagonal(x, y, boardWidth, boardHeight)).concat(
+        pieceSlice(diagonal(x, y, 0, boardHeight)),
+        pieceSlice(diagonal(x, y, 0, 0)),
+        pieceSlice(diagonal(x, y, boardWidth, 0))
+    );
 
 const pawnMoves = (x, y, amount) => {
-    const piece = board[y][x];
+    let pawnMoves = []
+    let yDirection;
+    if (color == "white") {
+        pawnMoves = pieceSlice(board.slice(y, y + amount + 1).map(column => column[x]), false);
+        yDirection = boardHeight;
+    }
+    else {
+        pawnMoves = pieceSlice(board.slice(y - amount, y + 1).map(column => column[x]).reverse(), false);
+        yDirection = 0;
+    }
+    
+    if (!moves) return pawnMoves;
+    for (const xDirection of [0, boardWidth]) {
+        let diagonalSlice = diagonal(x, y, xDirection, yDirection)
+        diagonalSlice.shift();
+        for (const [index, square] of Object.entries(diagonalSlice)) {
+            if (!square["piece"]) {
+                const enpassantSquare = board[square["y"] + (color == "white" ? -1 : 1)][square["x"]];
 
-    if (piece["piece"]["color"] == "white") return pieceSlice(board.slice(y, y + amount + 1).map(column => column[x]), false);
-    else return pieceSlice(board.slice(y - amount, y + 1).map(column => column[x]).reverse(), false);
+                const lastMove = moves.at(-1);
+                if (!enpassantSquare["piece"] ||
+                    !enpassantSquare["piece"]["name"].includes("pawn") ||
+                    enpassantSquare["piece"]["color"] == color ||
+                    (index == 0 &&
+                        (!isDictEqual(lastMove["destination"], {"x": enpassantSquare["x"], "y": enpassantSquare["y"]}) ||
+                        Math.abs(lastMove["origin"]["y"] - lastMove["destination"]["y"]) < 2)
+                    )) break;
+                pawnMoves.push(square);
+            } else {
+                if (index == 0 && square["piece"]["color"] != color) pawnMoves.push(square);
+                break;
+            }
+        }
+    }
+    return pawnMoves;
 }
 const horseMoves = (x, y) => {
     const piece = board[y][x]["piece"];
@@ -249,10 +296,10 @@ const allLegal = {
         return moves;
     },
     "queen": (x, y) => diagonalMoves(x, y).concat(straightMoves(x, y)),
-    "child-pawn": (x, y) => pawnMoves(x, y, board[y][x]["piece"]["moved"] == 0 ? 2 : 1),
+    "child-pawn": (x, y) => pawnMoves(x, y, !board[y][x]["piece"]["moved"] ? 2 : 1),
     "pawn": (x, y) => {
         let limit = 1;
-        if (board[y][x]["piece"]["moved"] == 0) {
+        if (!board[y][x]["piece"]["moved"]) {
             limit = 2;
             if ((boardWidth % 2 == 0 && (x == (boardWidth / 2) - 1 || x == boardWidth / 2)) || (board % 2 != 0 && x == Math.floor(boardWidth / 2))) limit = 3;
         }

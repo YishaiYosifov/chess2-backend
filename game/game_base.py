@@ -3,9 +3,11 @@ import time
 
 from flask_socketio import emit
 
+import numpy
+
 from util import SocketIOException, SocketIOErrors
 from game.pieces import PIECE_MOVEMENT
-from dao import Game, User, Piece
+from dao import Game, User, Square
 from app import app, db
 
 class GameBase:
@@ -15,44 +17,55 @@ class GameBase:
         #threading.Thread(target=self._clock).start()
 
     def move(self, user, origin : dict, destination : dict):
-        self.game = db.session.merge(self.game)
+        self.game : Game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
 
         # Check if both the origin and the destination squares are valid
         try:
-            origin_piece : Piece = self.game.board[origin["y"], origin["x"]]
-            destination_piece : Piece = self.game.board[destination["y"], destination["x"]]
+            origin_square : Square = self.game.board[origin["y"], origin["x"]]
+            destination_square : Square = self.game.board[destination["y"], destination["x"]]
         except IndexError: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Squares")
+        IS_CAPTURE = destination_square.piece != None
 
         # Check if the origin and destination squares are valid
         user_color = self._get_color(user)
-        if not origin_piece or origin_piece.color != user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Origin Square")
+        if not origin_square.piece or origin_square.piece.color != user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Origin Square")
 
         # Get the movement of the piece
-        piece_data = PIECE_MOVEMENT[origin_piece.name]
-        if destination_piece:
-            if destination_piece.color == user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
-            move_check = piece_data.get("capture", piece_data["move"])
-        else: move_check = piece_data["move"]
-        # Check if the given move is possible
-        if not move_check["validator"](self.game.board, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
+        piece_data : dict = PIECE_MOVEMENT[origin_square.piece.name]
+        if IS_CAPTURE and destination_square.piece.color == user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
 
-        # Check if there are any pieces in the way
-        if move_check.get("collisions"):
-            for collision_check in move_check["collisions"]:
-                collision = collision_check(self.game.board, origin, destination)
-                if len([square for square in collision if square]) <= 1: break
+        if IS_CAPTURE:
+            collisions = piece_data.get("collisions_capture")
+            validator = piece_data.get("validate_capture")
+        else:
+            collisions = piece_data.get("collisions")
+            validator = piece_data.get("validate")
+
+        # Check if the move is possible
+        if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
+
+        # Process the move
+        origin_square.piece.moved = True
+        if collisions:
+            for collision in collisions:
+                sliced = collision(self.game, origin, destination)
+                if isinstance(sliced, bool) and not sliced: continue
+                elif isinstance(sliced, numpy.ndarray):
+                    if len([square for square in sliced if square.piece]) > 1: continue
+                    self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
+                break
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
+        else: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
 
-        # Move the piece to the new position and replace the old piece
-        self.game.board[destination["y"], destination["x"]] = origin_piece
-        self.game.board[origin["y"], origin["x"]] = None
-        origin_piece.moved += 1
+        # Update the board and move history
+        self.game.moves.append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
+        self.game.board[origin["y"], origin["x"]].piece = None
+        db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves})
 
-        # Looks bad but I have to do this to make sqlalchemy update the board
-        self.game.board = self.game.board
-
+        # Emit the move and sync the clock
         emit("move", {"origin": origin, "destination": destination}, include_self=False, to=self.game.token)
+        emit("clock_sync", self.game.clocks, to=self.game.token)
 
         self.game.turn = self._get_opponent(user)
         db.session.commit()

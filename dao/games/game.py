@@ -14,24 +14,28 @@ class Piece(BaseModel):
     name : str
     color : Literal["white"] | Literal["black"]
 
-    moved = 0
+    moved = False
+
+class Square(BaseModel):
+    piece : Piece = None
+
+    x : int
+    y : int
 
 # Initilize default board
 SET_HEIGHT = len(CONFIG["PIECE_SET"])
 
-parsed_pieces_white = numpy.empty((SET_HEIGHT, 8), Piece)
-parsed_pieces_black = numpy.empty((SET_HEIGHT, 8), Piece)
+parsed_pieces_white = numpy.empty((SET_HEIGHT, 8), Square)
+parsed_pieces_black = numpy.empty((SET_HEIGHT, 8), Square)
 for row_index, row in enumerate(CONFIG["PIECE_SET"]):
-    for piece_index, piece in enumerate(row):
-        if not piece: continue
-
-        parsed_pieces_white[row_index][piece_index] = Piece(name=piece, color="white")
-        parsed_pieces_black[row_index][piece_index] = Piece(name=piece, color="black")
+    for column_index, piece in enumerate(row):
+        parsed_pieces_white[row_index][column_index] = Square(piece=Piece(name=piece, color="white") if piece else None, x=column_index, y=row_index)
+        parsed_pieces_black[row_index][column_index] = Square(piece=Piece(name=piece, color="black") if piece else None, x=column_index, y=(SET_HEIGHT + 4) - row_index + 2)
 parsed_pieces_black = parsed_pieces_black[::-1]
 
 BOARD = numpy.concatenate((
     parsed_pieces_white,
-    numpy.empty((4, 8), Piece),
+    [[Square(x=column_index, y=SET_HEIGHT + row_index) for column_index in range(8)] for row_index in range(4)],
     parsed_pieces_black
 ))
 
@@ -64,7 +68,8 @@ class Game(db.Model):
     turn_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     turn = db.relationship("User", foreign_keys=[turn_id], uselist=False)
 
-    board = db.Column(db.PickleType, default=BOARD)
+    moves = db.Column(db.PickleType, default=[], nullable=False)
+    board = db.Column(db.PickleType, default=BOARD, nullable=False)
     clocks = db.Column(db.PickleType)
 
     created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))

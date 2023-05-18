@@ -2,36 +2,73 @@ import math
 
 import numpy
 
-from dao import Piece
+from util import SocketIOException, SocketIOErrors
+from dao import Piece, Game
 
 # Collisions
-def straight_collision(board, origin : dict, destination : dict) -> numpy.ndarray:
+def straight_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
     x1, x2 = min(origin["x"], destination["x"]), max(origin["x"], destination["x"])
     y1, y2 = min(origin["y"], destination["y"]), max(origin["y"], destination["y"])
 
-    if x1 == x2: return board[y1 + 1:y2 + 1, x1]
-    else: return board[y1, x1 + 1:x2 + 1]
-def diagonal_collision(board, origin : dict, destination : dict) -> numpy.ndarray:
+    if x1 == x2:
+        if origin["y"] > destination["y"]: return numpy.flip(game.board[y1:y2, x1])
+        else: return game.board[y1 + 1:y2 + 1, x1]
+    else: return game.board[y1, x1:x2]
+def diagonal_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
     x1, y1 = origin.values()
     x2, y2 = destination.values()
 
-    diagonal = board[min(y1, y2):max(y1, y2) + 1, min(x1, x2):max(x1, x2) + 1]
+    diagonal = game.board[min(y1, y2):max(y1, y2) + 1, min(x1, x2):max(x1, x2) + 1]
     if (x1 > x2 and y1 < y2) or (y1 > y2 and x1 < x2): diagonal = numpy.flipud(diagonal)
     diagonal = diagonal.diagonal()
 
-    diagonal = diagonal[diagonal != board[origin["y"], origin["x"]]]
+    diagonal = diagonal[diagonal != game.board[origin["y"], origin["x"]]]
     return diagonal
 
+def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
+    if not diagonal_movement(game, origin, destination): return straight_collision(game, origin, destination)
+
+    if not game.moves: return []
+    current_piece : Piece = game.board[origin["y"]][origin["x"]].piece
+
+    # regular capture
+    capture_diagonal = diagonal_collision(game, origin, destination)
+    if capture_diagonal[0].piece:
+        if len(capture_diagonal) != 1 or not capture_diagonal[0] or current_piece.color == capture_diagonal[0].piece.color: return False
+        return numpy.asarray([capture_diagonal[0]])
+
+    # en passant
+    if game.moves[-1]["destination"] != {"x": origin["x"] + (-1 if destination["y"] - origin["y"] > 0 else 1), "y": origin["y"]}: return False
+
+    y_offset = -1 if current_piece.color == "white" else 1
+
+    enpassant_origin = origin.copy()
+    enpassant_destination = destination.copy()
+    enpassant_origin["y"] += y_offset
+    enpassant_destination["y"] += y_offset
+
+    enpassant_diagonal = diagonal_collision(game, enpassant_origin, enpassant_destination)
+    for enpassant_square, capture_square in zip(enpassant_diagonal, capture_diagonal):
+        if capture_square.piece or \
+            not enpassant_square.piece or \
+            not "pawn" in enpassant_square.piece.name or \
+            enpassant_square.piece.color == current_piece.color: return False
+        enpassant_square.piece = None
+    game.board[destination["y"], destination["x"]].piece = current_piece
+
+    return True
+        
 # Piece movement
-straight_movement = lambda _, origin, destination: origin["x"] == destination["x"] or origin["y"] == destination["y"]
-diagonal_movement = lambda _, origin, destination: abs(origin["x"] - destination["x"]) == abs(origin["y"] - destination["y"])
-horse_movement = lambda _, origin, destination: (abs(origin["y"] - destination["y"]) == 2 and abs(origin["x"] - destination["x"]) == 1) or \
+straight_movement = lambda game, origin, destination: origin["x"] == destination["x"] or origin["y"] == destination["y"]
+diagonal_movement = lambda game, origin, destination: abs(origin["x"] - destination["x"]) == abs(origin["y"] - destination["y"])
+horse_movement = lambda game, origin, destination: (abs(origin["y"] - destination["y"]) == 2 and abs(origin["x"] - destination["x"]) == 1) or \
                                                 (abs(origin["y"] - destination["y"]) == 1 and abs(origin["x"] - destination["x"]) == 2)
 
-def pawn_movement(board : numpy.ndarray, origin : dict, destination : dict) -> bool:
-    piece : Piece = board[origin["y"], origin["x"]]
-    if piece.moved == 0:
-        board_width = len(board[0])
+def pawn_movement(game : Game, origin : dict, destination : dict) -> bool:
+    piece : Piece = game.board[origin["y"], origin["x"]].piece
+
+    if not piece.moved:
+        board_width = len(game.board[0])
         if (board_width % 2 == 0 and \
                 (origin["x"] == (board_width / 2) - 1 or \
                  origin["x"] == board_width / 2)) or \
@@ -43,76 +80,46 @@ def pawn_movement(board : numpy.ndarray, origin : dict, destination : dict) -> b
 
 PIECE_MOVEMENT = {
     "rook": {
-        "move": {
-            "validator": straight_movement,
-            "collisions": [straight_collision]
-        },
+        "validate": straight_movement,
+        "collisions": [straight_collision]
     },
     "bishop": {
-        "move": {
-            "validator": diagonal_movement,
-            "collisions": [diagonal_collision]
-        }
+        "validate": diagonal_movement,
+        "collisions": [diagonal_collision]
     },
     "horse": {
-        "move": {
-            "validator": horse_movement
-        }
+        "validate": horse_movement
     },
     "king": {
-        "move": {
-            "validator": lambda _, origin, destination: abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1,
-            "collisions": [straight_collision, diagonal_collision]
-        }
+        "validate": lambda game, origin, destination: abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1,
+        "collisions": [straight_collision, diagonal_collision]
     },
     "queen": {
-        "move": {
-            "validator": lambda board, origin, destination: straight_movement(board, origin, destination) or diagonal_movement(board, origin, destination),
-            "collisions": [straight_collision, diagonal_collision]
-        }
+        "validate": lambda game, origin, destination: straight_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
+        "collisions": [straight_collision, diagonal_collision]
     },
     "antiqueen": {
-        "move": {
-            "validator": horse_movement,
-        }
+        "validate": horse_movement,
     },
     "xook": {
-        "move": {
-            "validator": diagonal_movement,
-            "collisions": [diagonal_collision]
-        }
+        "validate": diagonal_movement,
+        "collisions": [diagonal_collision]
     },
     "knook": {
-        "move": {
-            "validator": horse_movement
-        },
-        "capture": {
-            "validator": straight_movement,
-            "collisions": [straight_collision]
-        }
+        "validator": straight_movement,
+        "validator_capture": horse_movement,
+        "validator_capture": [straight_collision]
     },
     "pawn": {
-        "move": {
-            "validator": lambda board, origin, destination: pawn_movement(board, origin, destination),
-            "collisions": [straight_collision]
-        },
-        "capture": {
-            "validator": lambda _, origin, destination: abs(origin["y"] - destination["y"]) == 1 and origin["x"] != destination["x"]
-        },
+        "validate": lambda game, origin, destination: pawn_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
+        "collisions": [pawn_collision],
     },
     "child-pawn": {
-        "move": {
-            "validator": lambda board, origin, destination: pawn_movement(board, origin, destination),
-            "collisions": [straight_collision]
-        },
-        "capture": {
-            "validator": lambda _, origin, destination: abs(origin["y"] - destination["y"]) == 1 and origin["x"] != destination["x"]
-        },
+        "validate": lambda game, origin, destination: pawn_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
+        "collisions": [pawn_collision],
     },
     "archbishop": {
-        "move": {
-            "validator": lambda _, origin, destination: (abs(origin["x"] - destination["x"]) + abs(origin["y"] - destination["y"])) % 2 == 0,
-            "collisions": [straight_collision]
-        }
+        "validate": lambda game, origin, destination: (abs(origin["x"] - destination["x"]) + abs(origin["y"] - destination["y"])) % 2 == 0,
+        "collisions": [straight_collision]
     }
 }

@@ -239,6 +239,6 @@ def socket_error_handler(function):
         try: return function(*args, **kwargs)
         except SocketIOException as e:
             print(e.code, e.message)
-            emit("exception", {"code": e.code, "message": e.message}, namespace="/")
+            emit("exception", {"code": e.code, "message": e.message})
     wrapper.__name__ = function.__name__
     return wrapper

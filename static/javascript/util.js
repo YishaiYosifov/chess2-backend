@@ -73,3 +73,13 @@ async function loadAuthInfo() {
     localStorage.setItem("auth-info", JSON.stringify(authInfo));
 }
 loadAuthInfo();
+
+function isDictEqual(dict1, dict2) {
+    const dict1Keys = Object.keys(dict1)
+    if (dict1Keys.length != Object.keys(dict2).length) return false;
+    for (const key of dict1Keys) {
+        if (dict1[key] != dict2[key]) return false;
+    }
+
+    return true;
+}
