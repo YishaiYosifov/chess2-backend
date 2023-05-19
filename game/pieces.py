@@ -2,8 +2,30 @@ import math
 
 import numpy
 
-from util import SocketIOException, SocketIOErrors
-from dao import Piece, Game
+from dao import Piece, Square, Game
+
+# Forced moves
+# @returns
+# 0: not forced
+# 1: forced, not played
+# 2: played
+def enpassant_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> int:
+    if not game.moves: return 0
+
+    y_offset = 1 if square.piece.color == "white" else -1
+    found_move = False
+    for x_offset in [-1, 1]:
+        if not _can_enpassant(game, square, x_offset): continue
+        elif origin["x"] != square.x or origin["y"] != square.y: return 1
+        found_move = True
+        
+        m = ((square.y + y_offset) - square.y) / ((square.x + x_offset) - square.x)
+        b = square.y - m * square.x
+        expected_y = m * destination["x"] + b
+        if expected_y == destination["y"]: return 2
+    return 1 if found_move else 0
+
+def bishop_childpawn_forced_status(game : Game, origin : dict, destination : dict) -> bool: pass
 
 # Collisions
 def straight_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
@@ -29,7 +51,8 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
     if not diagonal_movement(game, origin, destination): return straight_collision(game, origin, destination)
 
     if not game.moves: return []
-    current_piece : Piece = game.board[origin["y"]][origin["x"]].piece
+    current_square : Piece = game.board[origin["y"]][origin["x"]]
+    current_piece = current_square.piece
 
     # regular capture
     capture_diagonal = diagonal_collision(game, origin, destination)
@@ -38,7 +61,10 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
         return numpy.asarray([capture_diagonal[0]])
 
     # en passant
-    if game.moves[-1]["destination"] != {"x": origin["x"] + (-1 if destination["y"] - origin["y"] > 0 else 1), "y": origin["y"]}: return False
+    if origin["y"] - destination["y"] > 0: x_offset = 1 if current_piece.color == "white" else -1
+    elif origin["y"] - destination["y"] < 0: x_offset = -1 if current_piece.color == "white" else 1
+
+    if not _can_enpassant(game, current_square, x_offset): return False
 
     y_offset = -1 if current_piece.color == "white" else 1
 
@@ -55,8 +81,19 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
             enpassant_square.piece.color == current_piece.color: return False
         enpassant_square.piece = None
     game.board[destination["y"], destination["x"]].piece = current_piece
-
     return True
+
+def _can_enpassant(game : Game, square : Square, side : int) -> bool:
+    if not game.moves: return False
+
+    last_move = game.moves[-1]
+    try: return "pawn" in last_move["piece"] and \
+            game.board[square.y, square.x + side].piece and \
+            last_move["destination"] == {"x": square.x + side, "y": square.y} and \
+            abs(last_move["destination"]["y"] - last_move["origin"]["y"]) > 1 and \
+            last_move["origin"]["x"] == last_move["destination"]["x"]
+    except IndexError: return False
+
         
 # Piece movement
 straight_movement = lambda game, origin, destination: origin["x"] == destination["x"] or origin["y"] == destination["y"]
@@ -78,14 +115,16 @@ def pawn_movement(game : Game, origin : dict, destination : dict) -> bool:
 
     return origin["x"] == destination["x"] and abs(destination["y"] - origin["y"]) <= limit
 
-PIECE_MOVEMENT = {
+PIECE_DATA = {
     "rook": {
         "validate": straight_movement,
         "collisions": [straight_collision]
     },
     "bishop": {
         "validate": diagonal_movement,
-        "collisions": [diagonal_collision]
+        "collisions": [diagonal_collision],
+
+        #"forced": {forced_bishop_childpawn: 1}
     },
     "horse": {
         "validate": horse_movement
@@ -108,15 +147,19 @@ PIECE_MOVEMENT = {
     "knook": {
         "validator": straight_movement,
         "validator_capture": horse_movement,
-        "validator_capture": [straight_collision]
+        "collisions_capture": [straight_collision]
     },
     "pawn": {
         "validate": lambda game, origin, destination: pawn_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
         "collisions": [pawn_collision],
+
+        "forced": {enpassant_forced_status: math.inf}
     },
     "child-pawn": {
         "validate": lambda game, origin, destination: pawn_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
         "collisions": [pawn_collision],
+
+        "forced": {enpassant_forced_status: math.inf}
     },
     "archbishop": {
         "validate": lambda game, origin, destination: (abs(origin["x"] - destination["x"]) + abs(origin["y"] - destination["y"])) % 2 == 0,

@@ -96,7 +96,6 @@ async function move(originElement, destinationElement) {
     
     await movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY);
 
-    $(".valid-move").hide();
     disableDraggable();
 
     gameNamespace.emit("move", {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
@@ -114,6 +113,7 @@ function enableDraggable() {
 
 function disableDraggable() {
     isLocalTurn = false;
+    $(".valid-move").hide();
     $(`img[color="${color}"]`).draggable().draggable("disable");
 }
 
@@ -164,7 +164,8 @@ gameNamespace.on("move", (data) => {
     const destinationElement = $(`#${data["destination"]["y"]}-${data["destination"]["x"]}`);
     movePiece(originElement, destinationElement, data["origin"]["x"], data["origin"]["y"], data["destination"]["x"], data["destination"]["y"])
 
-    enableDraggable();
+    if (data["turn"] == color) enableDraggable();
+    else disableDraggable();
 });
 gameNamespace.on("exception", (data) => {
     showAlert("Something went wrong. Please refresh the page");

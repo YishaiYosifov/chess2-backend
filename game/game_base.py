@@ -6,7 +6,7 @@ from flask_socketio import emit
 import numpy
 
 from util import SocketIOException, SocketIOErrors
-from game.pieces import PIECE_MOVEMENT
+from game.pieces import PIECE_DATA
 from dao import Game, User, Square
 from app import app, db
 
@@ -32,7 +32,7 @@ class GameBase:
         if not origin_square.piece or origin_square.piece.color != user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Origin Square")
 
         # Get the movement of the piece
-        piece_data : dict = PIECE_MOVEMENT[origin_square.piece.name]
+        piece_data : dict = PIECE_DATA[origin_square.piece.name]
         if IS_CAPTURE and destination_square.piece.color == user_color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
 
         if IS_CAPTURE:
@@ -41,6 +41,21 @@ class GameBase:
         else:
             collisions = piece_data.get("collisions")
             validator = piece_data.get("validate")
+        
+        # Forced moves
+        max_priority = 0
+        max_priority_played = 0
+        for row in self.game.board:
+            for square in row:
+                if not square.piece or square.piece.color != user_color: continue
+
+                for find_forced, priority in PIECE_DATA[square.piece.name].get("forced", {}).items():
+                    forced_results = find_forced(self.game, square, origin, destination)
+                    if not forced_results: continue
+                    elif forced_results == 2 and max_priority_played < priority: max_priority_played = priority
+
+                    if max_priority < priority: max_priority = priority
+        if max_priority > max_priority_played: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Forced move not played")
 
         # Check if the move is possible
         if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
@@ -64,10 +79,11 @@ class GameBase:
         db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves})
 
         # Emit the move and sync the clock
-        emit("move", {"origin": origin, "destination": destination}, include_self=False, to=self.game.token)
+        opponent = self._get_opponent(user)
+        emit("move", {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}, include_self=False, to=self.game.token)
         emit("clock_sync", self.game.clocks, to=self.game.token)
 
-        self.game.turn = self._get_opponent(user)
+        self.game.turn = opponent
         db.session.commit()
     
     # region Helpers
