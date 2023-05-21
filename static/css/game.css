@@ -7,6 +7,7 @@
 }
 
 .piece {
+    z-index: 1;
     filter: drop-shadow(0px 0px 3px #222);
 }
 
@@ -49,6 +50,16 @@
     width: 70vmin;
     height: 87vmin;
     margin: auto;
+
+    position: relative
+}
+
+#arrows-canvas {
+    z-index: 10;
+    top: 0;
+    left: 0;
+    position: absolute;
+    pointer-events: none;
 }
 
 @media (max-width: 768px) {

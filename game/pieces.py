@@ -67,14 +67,9 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
     if not _can_enpassant(game, current_square, x_offset): return False
 
     y_offset = -1 if current_piece.color == "white" else 1
+    for capture_square in capture_diagonal:
+        enpassant_square = game.board[capture_square.y + y_offset][capture_square.x]
 
-    enpassant_origin = origin.copy()
-    enpassant_destination = destination.copy()
-    enpassant_origin["y"] += y_offset
-    enpassant_destination["y"] += y_offset
-
-    enpassant_diagonal = diagonal_collision(game, enpassant_origin, enpassant_destination)
-    for enpassant_square, capture_square in zip(enpassant_diagonal, capture_diagonal):
         if capture_square.piece or \
             not enpassant_square.piece or \
             not "pawn" in enpassant_square.piece.name or \
@@ -83,7 +78,7 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
     game.board[destination["y"], destination["x"]].piece = current_piece
     return True
 
-def _can_enpassant(game : Game, square : Square, side : int) -> bool:
+def _can_enpassant(game : Game, square : Square, side : int) -> list:
     if not game.moves: return False
 
     last_move = game.moves[-1]

@@ -43,8 +43,8 @@ class GameBase:
             validator = piece_data.get("validate")
         
         # Forced moves
-        max_priority = 0
-        max_priority_played = 0
+        max_forced_priority = 0
+        max_forced_priority_played = 0
         for row in self.game.board:
             for square in row:
                 if not square.piece or square.piece.color != user_color: continue
@@ -52,10 +52,10 @@ class GameBase:
                 for find_forced, priority in PIECE_DATA[square.piece.name].get("forced", {}).items():
                     forced_results = find_forced(self.game, square, origin, destination)
                     if not forced_results: continue
-                    elif forced_results == 2 and max_priority_played < priority: max_priority_played = priority
+                    elif forced_results == 2 and max_forced_priority_played < priority: max_forced_priority_played = priority
 
-                    if max_priority < priority: max_priority = priority
-        if max_priority > max_priority_played: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Forced move not played")
+                    if max_forced_priority < priority: max_forced_priority = priority
+        if max_forced_priority > max_forced_priority_played: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Forced move not played")
 
         # Check if the move is possible
         if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")

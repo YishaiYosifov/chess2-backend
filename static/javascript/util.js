@@ -36,7 +36,7 @@ function getLocalStorage(name, _default) {
     return value;
 }
 
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function togglePasswordVisibility(toggleButton) {
     toggleButton = $(toggleButton);
@@ -83,3 +83,5 @@ function isDictEqual(dict1, dict2) {
 
     return true;
 }
+
+const percent = (num, whole) => (num * whole) / 100
