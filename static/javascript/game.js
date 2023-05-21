@@ -65,7 +65,7 @@ async function main() {
     
         movingElement = $(this);
         const id = movingElement.parent().attr("id");
-        var [y, x] = id.split("-");
+        let [y, x] = id.split("-");
         x = parseInt(x);
         y = parseInt(y);
     
@@ -92,7 +92,6 @@ loadAuthInfo().then(main);
 
 async function move(originElement, destinationElement) {
     $(".valid-move").hide();
-    movingElement = null;
     
     const originID = originElement.parent().attr("id");
     const destinationID = destinationElement.attr("id");
@@ -105,42 +104,7 @@ async function move(originElement, destinationElement) {
     originY = parseInt(originY);
     destinationX = parseInt(destinationX);
     destinationY = parseInt(destinationY);
-    
-    let maxForced = {"priority": 0};
-    let maxPlayedPriority = 0;
-    for (const row of board) {
-        for (const square of row) {
-            if (!square.piece || square.piece.color != color || !(square.piece.name in forcedMoves)) continue;
 
-            const priority = forcedMoves[square.piece.name].priority;
-            const [results, foundForcedMoves] = forcedMoves[square.piece.name].checker(square, destinationX, destinationY);
-            if (!results) continue;
-            else if (results == 2 && priority > maxPlayedPriority) maxPlayedPriority = priority;
-
-            if (priority > maxForced.priority) maxForced = {"priority": priority, "toSquare": foundForcedMoves};
-            else if (priority == maxForced.priority) maxForced["toSquare"] = maxForced["toSquare"].concat(foundForcedMoves);
-        }
-    }
-    if (maxForced.priority > maxPlayedPriority) {
-        for (let i = 0; i < 2; i++) {
-            if (movingElement) return;
-
-            for (const [fromSquare, toSquare] of maxForced["toSquare"]) {
-                const fromElement = $(`#${fromSquare.y}-${fromSquare.x}`);
-                const toElement = $(`#${toSquare.y}-${toSquare.x}`);
-                fromElement.css("background-color", "#C27356");
-                toElement.css("background-color", "#C27356");
-                drawArrow(fromElement, toElement);
-            }
-            await sleep(250);
-            clearArrows();
-            $(".square").css("background-color", "");
-            await sleep(250);
-        }
-        return;
-    }
-
-    await movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY);
     disableDraggable();
 
     gameNamespace.emit("move", {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
@@ -151,7 +115,8 @@ function enableDraggable() {
     $(`img[color="${color}"]`).draggable({
         containment: $("#board"),
         cursor: "grabbing",
-        stop: (event) =>  $(event.target).css("top", "").css("left", ""),
+        revert: "invalid",
+        revertDuration: 100,
         zIndex: 1
     }).draggable("enable");
 }
@@ -167,7 +132,7 @@ async function movePiece(originElement, destinationElement, originX, originY, de
     moves.push({"piece": board[originY][originX].piece.name, "origin": {"x": originX, "y": originY}, "destination": {"x": destinationX, "y": destinationY}});
 
     let tempBoardPiece = structuredClone(board[originY][originX]);
-    if (tempBoardPiece.piece.name == "pawn" && Math.abs(originX - destinationX) > 1) {
+    if (tempBoardPiece.piece.name.includes("pawn") && Math.abs(originX - destinationX) >= 1) {
         const yOffset = tempBoardPiece.piece.color == "white" ? -1 : 1;
         const enpassantDiagonal = diagonal(originX, originY + yOffset, destinationX, destinationY + yOffset);
         for (const [index, square] of Object.entries(enpassantDiagonal)) {
@@ -202,20 +167,46 @@ async function movePiece(originElement, destinationElement, originX, originY, de
     destinationElement.find(".piece").remove();
 
     tempPiece.remove();
+    originElement.css("left", "").css("top", "");
     originElement.appendTo(destinationElement);
 }
 
-gameNamespace.on("move", (data) => {
+gameNamespace.on("move", async (data) => {
     const originElement = $(`#${data.origin.y}-${data.origin.x}`).find(".piece");
     const destinationElement = $(`#${data.destination.y}-${data.destination.x}`);
-    movePiece(originElement, destinationElement, data.origin.x, data.origin.y, data.destination.x, data.destination.y);
+    await movePiece(originElement, destinationElement, data.origin.x, data.origin.y, data.destination.x, data.destination.y);
 
     if (data.turn == color) enableDraggable();
     else disableDraggable();
 });
-gameNamespace.on("exception", (data) => {
-    showAlert("Something went wrong. Please refresh the page");
+gameNamespace.on("exception", async data => {
     console.error(data);
+
+    if (data["code"] == 5) {
+        movingElement.animate({
+            "top": "0px",
+            "left": "0px"
+        }, 100);
+        enableDraggable();
+
+        movingElement = null;
+        forcedMoves = data["message"];
+        for (let i = 0; i < 2; i++) {
+            if (movingElement) return;
+
+            for (const [fromSquare, toSquare] of forcedMoves) {
+                const fromElement = $(`#${fromSquare.y}-${fromSquare.x}`);
+                const toElement = $(`#${toSquare.y}-${toSquare.x}`);
+                fromElement.css("background-color", "#C27356");
+                toElement.css("background-color", "#C27356");
+                drawArrow(fromElement, toElement);
+            }
+            await sleep(250);
+            clearArrows();
+            $(".square").css("background-color", "");
+            await sleep(250);
+        }
+    } else showAlert("Something went wrong. Please refresh the page");
 })
 
 
@@ -374,40 +365,6 @@ const allLegal = {
     "xook": diagonalMoves,
     "antiqueen": horseMoves,
     "knook": (x, y) => straightMoves(x, y).filter(move => move.piece).concat(horseMoves(x, y).filter(move => !move.piece))
-};
-
-// Forced Moves
-// @returns
-// 0: not forced
-// 1: forced, not played
-// 2: played
-function forcedEnPassantMoves(square, destinationX, destinationY) {
-    if (!moves) return [0, null];
-
-    let yOffset = color == "white" ? 1 : -1;
-    let enpassantMoves = [];
-    for (const xOffset of [-1, 1]) {
-        if (!isValidEnPassant(square, xOffset)) continue;
-        enpassantMoves.push([square, board[square.y + yOffset][square.x + xOffset]]);
-
-        const m = ((square.y + yOffset) - square.y) / ((square.x + xOffset) - square.x);
-        const b = square.y - m * square.x;
-        const expectedY = m * destinationX + b;
-        if (expectedY == destinationY) return [2, null];
-    }
-
-    if (enpassantMoves.length) return [1, enpassantMoves]
-    return [0, null];
-}
-const forcedMoves = {
-    "pawn": {
-        "priority": Infinity,
-        "checker": forcedEnPassantMoves
-    },
-    "child-pawn": {
-        "priority": Infinity,
-        "checker": forcedEnPassantMoves
-    }
 };
 
 // Arrow

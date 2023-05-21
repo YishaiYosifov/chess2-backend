@@ -9,23 +9,25 @@ from dao import Piece, Square, Game
 # 0: not forced
 # 1: forced, not played
 # 2: played
-def enpassant_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> int:
-    if not game.moves: return 0
+def enpassant_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> list[int, list]:
+    if not game.moves: return 0, []
 
     y_offset = 1 if square.piece.color == "white" else -1
-    found_move = False
+    moves = []
     for x_offset in [-1, 1]:
         if not _can_enpassant(game, square, x_offset): continue
-        elif origin["x"] != square.x or origin["y"] != square.y: return 1
-        found_move = True
-        
-        m = ((square.y + y_offset) - square.y) / ((square.x + x_offset) - square.x)
+
+        check_square = game.board[square.y + y_offset, square.x + x_offset]
+        moves.append([square.to_dict(), check_square.to_dict()])
+        if origin["x"] != square.x or origin["y"] != square.y: continue
+
+        m = (check_square.y - square.y) / (check_square.x - square.x)
         b = square.y - m * square.x
         expected_y = m * destination["x"] + b
-        if expected_y == destination["y"]: return 2
-    return 1 if found_move else 0
+        if expected_y == destination["y"]: return 2, []
+    return (1, moves) if moves else (0, [])
 
-def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> int:
+def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> list[int, list]:
     board_width, board_height = len(game.board[0]), len(game.board)
     check_directions = [
         [board_width, board_height],
@@ -33,16 +35,17 @@ def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, 
         [0, 0],
         [board_width, 0]
     ]
+    moves = []
     for x, y in check_directions:
-        for check_square in diagonal_collision(game, {"x": square.x, "y": square.y}, {"x": x, "y": y})[1:]:
+        for check_square in diagonal_collision(game, {"x": square.x, "y": square.y}, {"x": x, "y": y}):
             if check_square.piece:
-                if check_square.piece.name == "child-pawn": return 1 if \
-                        check_square.x != destination["x"] or \
-                        check_square.y != destination["y"] or \
-                        origin["x"] != square.x or origin["y"] != square.y \
-                    else 2
+                if check_square.piece.name == "child-pawn":
+                    moves.append([square.to_dict(), check_square.to_dict()])
+                    if check_square.x == destination["x"] and \
+                        check_square.y == destination["y"] and \
+                        origin["x"] == square.x and origin["y"] == square.y: return 2, []
                 break
-    return 0
+    return (1, moves) if moves else (0, [])
 
 # Collisions
 def straight_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
@@ -63,6 +66,7 @@ def diagonal_collision(game : Game, origin : dict, destination : dict) -> numpy.
 
     diagonal = sliced.diagonal()
     if diagonal[-1] == game.board[y1, x1]: diagonal = numpy.flip(diagonal)
+    diagonal = diagonal[1:]
 
     return diagonal
 

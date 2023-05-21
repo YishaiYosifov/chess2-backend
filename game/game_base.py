@@ -43,19 +43,20 @@ class GameBase:
             validator = piece_data.get("validate")
         
         # Forced moves
-        max_forced_priority = 0
+        max_forced = {"priority": 0}
         max_forced_priority_played = 0
         for row in self.game.board:
             for square in row:
                 if not square.piece or square.piece.color != user_color: continue
 
                 for find_forced, priority in PIECE_DATA[square.piece.name].get("forced", {}).items():
-                    forced_results = find_forced(self.game, square, origin, destination)
+                    forced_results, moves = find_forced(self.game, square, origin, destination)
                     if not forced_results: continue
                     elif forced_results == 2 and max_forced_priority_played < priority: max_forced_priority_played = priority
 
-                    if max_forced_priority < priority: max_forced_priority = priority
-        if max_forced_priority > max_forced_priority_played: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Forced move not played")
+                    if max_forced["priority"] < priority: max_forced = {"priority": priority, "moves": moves}
+                    elif max_forced["priority"] == priority: max_forced["moves"] += moves
+        if max_forced["priority"] > max_forced_priority_played: raise SocketIOException(SocketIOErrors.FORCED_MOVE_ERROR, max_forced["moves"])
 
         # Check if the move is possible
         if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
@@ -80,7 +81,7 @@ class GameBase:
 
         # Emit the move and sync the clock
         opponent = self._get_opponent(user)
-        emit("move", {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}, include_self=False, to=self.game.token)
+        emit("move", {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}, to=self.game.token)
         emit("clock_sync", self.game.clocks, to=self.game.token)
 
         self.game.turn = opponent

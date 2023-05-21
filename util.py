@@ -227,6 +227,7 @@ class SocketIOErrors(Enum):
     CONFLICT = 3
 
     MOVE_ERROR = 4
+    FORCED_MOVE_ERROR = 5
 class SocketIOException(Exception):
     def __init__(self, code : SocketIOErrors, message : str):
         super().__init__(message)

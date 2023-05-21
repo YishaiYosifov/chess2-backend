@@ -22,6 +22,11 @@ class Square(BaseModel):
     x : int
     y : int
 
+    def to_dict(self) -> dict:
+        results = self.__dict__.copy()
+        if self.piece: results["piece"] = self.piece.__dict__
+        return results
+
 # Initilize default board
 SET_HEIGHT = len(CONFIG["PIECE_SET"])
 
