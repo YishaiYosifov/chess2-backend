@@ -434,14 +434,11 @@ function drawArrow(fromElement, toElement) {
 
     const context = document.querySelector("#arrows-canvas").getContext("2d");
     context.beginPath();
+
     context.lineWidth = percent(1.5, viewportMin);
     context.strokeStyle = "orange";
     context.fillStyle = "orange";
     context.lineCap = "round"
-    
-    let radians = Math.atan((y2 - y1) / (x2 - x1));
-    if (x1 == x2) radians += 90 * Math.PI / 180
-    else radians += ((x2 > x1) ? 90 : -90) * Math.PI / 180;
     
     context.moveTo(x1, y1);
     context.lineTo(x2, y2);
@@ -449,6 +446,10 @@ function drawArrow(fromElement, toElement) {
 
     context.save();
     context.beginPath();
+        
+    let radians = Math.atan((y2 - y1) / (x2 - x1));
+    if (x1 == x2) radians += 90 * Math.PI / 180
+    else radians += ((x2 > x1) ? 90 : -90) * Math.PI / 180;
 
     context.translate(x2, y2);
     context.rotate(radians);

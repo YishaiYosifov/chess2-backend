@@ -25,7 +25,24 @@ def enpassant_forced_status(game : Game, square : Square, origin : dict, destina
         if expected_y == destination["y"]: return 2
     return 1 if found_move else 0
 
-def bishop_childpawn_forced_status(game : Game, origin : dict, destination : dict) -> bool: pass
+def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> int:
+    board_width, board_height = len(game.board[0]), len(game.board)
+    check_directions = [
+        [board_width, board_height],
+        [0, board_height],
+        [0, 0],
+        [board_width, 0]
+    ]
+    for x, y in check_directions:
+        for check_square in diagonal_collision(game, {"x": square.x, "y": square.y}, {"x": x, "y": y})[1:]:
+            if check_square.piece:
+                if check_square.piece.name == "child-pawn": return 1 if \
+                        check_square.x != destination["x"] or \
+                        check_square.y != destination["y"] or \
+                        origin["x"] != square.x or origin["y"] != square.y \
+                    else 2
+                break
+    return 0
 
 # Collisions
 def straight_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
@@ -40,11 +57,13 @@ def diagonal_collision(game : Game, origin : dict, destination : dict) -> numpy.
     x1, y1 = origin.values()
     x2, y2 = destination.values()
 
-    diagonal = game.board[min(y1, y2):max(y1, y2) + 1, min(x1, x2):max(x1, x2) + 1]
-    if (x1 > x2 and y1 < y2) or (y1 > y2 and x1 < x2): diagonal = numpy.flipud(diagonal)
-    diagonal = diagonal.diagonal()
+    sliced = game.board[min(y1, y2):max(y1, y2) + 1, min(x1, x2):max(x1, x2) + 1]
+    if x1 > x2: sliced = numpy.fliplr(sliced)
+    if y1 > y2: sliced = numpy.flipud(sliced)
 
-    diagonal = diagonal[diagonal != game.board[origin["y"], origin["x"]]]
+    diagonal = sliced.diagonal()
+    if diagonal[-1] == game.board[y1, x1]: diagonal = numpy.flip(diagonal)
+
     return diagonal
 
 def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
@@ -119,7 +138,7 @@ PIECE_DATA = {
         "validate": diagonal_movement,
         "collisions": [diagonal_collision],
 
-        #"forced": {forced_bishop_childpawn: 1}
+        "forced": {bishop_childpawn_forced_status: 1}
     },
     "horse": {
         "validate": horse_movement
