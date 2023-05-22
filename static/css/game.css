@@ -1,9 +1,17 @@
+:root {
+    --square-light: #F1E1B3;
+    --square-dark: #997349;
+
+    --highlight-light: #D7856E;
+    --highlight-dark: #C27356;
+}
+
 .square-light {
-    background-color: #f1e1b3;
+    background-color: var(--square-light);
 }
 
 .square-dark {
-    background-color: #997349;
+    background-color: var(--square-dark);
 }
 
 .piece {
@@ -54,10 +62,8 @@
     position: relative
 }
 
-#arrows-canvas {
+canvas {
     z-index: 10;
-    top: 0;
-    left: 0;
     position: absolute;
     pointer-events: none;
 }

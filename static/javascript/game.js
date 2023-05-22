@@ -6,12 +6,14 @@ const squareHTML = $($.parseHTML(`
 const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`))
 
 const gameToken = window.location.pathname.split("/").pop();
+const CSSProperties = getComputedStyle(document.documentElement, null);
 
 var moves;
 var board;
 var color;
 var isLocalTurn;
 
+var highlightElement;
 var movingElement;
 
 var boardHeight;
@@ -58,7 +60,9 @@ async function main() {
 
     if (isLocalTurn) enableDraggable();
 
-    $(`[color=${color}]`).on("mousedown", function() {
+    $(`[color=${color}]`).mousedown(function(event) {
+        if (event.which != 1) return;
+
         if (!isLocalTurn) return;
 
         $(".valid-move").hide().parent().droppable().droppable("disable");
@@ -79,14 +83,31 @@ async function main() {
         }
     })
 
-    $(".square").click(function() {
-        if ($(this).find(".valid-move").is(":hidden")) return;
-        move(movingElement, $(this));
-    });
+    $(".square").mousedown(function(event) {
+        if (event.which == 1) {
+            clearAllHighlights();
+            clearAllArrows();
+        }
+        else highlightElement = $(this);
+    })
+    $(".square").mouseup(function(event) {
+        if (event.which == 1) {
+            if ($(this).find(".valid-move").is(":hidden")) return;
+            move(movingElement, $(this));
+            return;
+        }
 
-    const arrowsCanvas = document.querySelector("#arrows-canvas");
-    arrowsCanvas.width = boardContainer.width();
-    arrowsCanvas.height = boardContainer.height();
+        const currentSquare = $(this);
+        if (currentSquare.is(highlightElement)) {
+            if (currentSquare.hasClass("highlight")) clearHighlight(currentSquare)
+            else highlightSquare(currentSquare);
+        } else {
+            highlightElementID = highlightElement.attr("id");
+            currentSquareID = currentSquare.attr("id");
+            if (highlightElementID in arrows && currentSquareID in arrows[highlightElementID]) clearArrow(highlightElement, currentSquare);
+            else drawArrow(highlightElement, currentSquare);
+        }
+    })
 }
 loadAuthInfo().then(main);
 
@@ -128,6 +149,7 @@ function disableDraggable() {
 }
 
 async function movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY) {
+    movingElement = null;
     allLegalCache = {};
     moves.push({"piece": board[originY][originX].piece.name, "origin": {"x": originX, "y": originY}, "destination": {"x": destinationX, "y": destinationY}});
 
@@ -181,15 +203,15 @@ gameNamespace.on("move", async (data) => {
 });
 gameNamespace.on("exception", async data => {
     console.error(data);
+    movingElement.animate({
+        "top": "0px",
+        "left": "0px"
+    }, 100);
+    movingElement = null;
 
     if (data["code"] == 5) {
-        movingElement.animate({
-            "top": "0px",
-            "left": "0px"
-        }, 100);
         enableDraggable();
 
-        movingElement = null;
         forcedMoves = data["message"];
         for (let i = 0; i < 2; i++) {
             if (movingElement) return;
@@ -197,17 +219,36 @@ gameNamespace.on("exception", async data => {
             for (const [fromSquare, toSquare] of forcedMoves) {
                 const fromElement = $(`#${fromSquare.y}-${fromSquare.x}`);
                 const toElement = $(`#${toSquare.y}-${toSquare.x}`);
-                fromElement.css("background-color", "#C27356");
-                toElement.css("background-color", "#C27356");
+                highlightSquare(fromElement);
+                highlightSquare(toElement);
                 drawArrow(fromElement, toElement);
             }
             await sleep(250);
-            clearArrows();
-            $(".square").css("background-color", "");
+            clearAllArrows();
+            clearHighlights
             await sleep(250);
         }
     } else showAlert("Something went wrong. Please refresh the page");
 })
+
+function highlightSquare(square) {
+    square.addClass("highlight");
+    square.animate({
+        "background-color": square.hasClass("square-dark") ?
+            CSSProperties.getPropertyValue("--highlight-dark") : CSSProperties.getPropertyValue("--highlight-light")
+        }, 200);
+}
+async function clearHighlight(square) {
+    await square.animate({
+        "background-color": square.hasClass("square-dark") ?
+            CSSProperties.getPropertyValue("--square-dark") : CSSProperties.getPropertyValue("--square-light")
+        }, 200).promise();
+    square.removeClass("highlight");
+    square.css("background-color", "");
+}
+function clearAllHighlights() {
+    $(".highlight").each((i, square) => clearHighlight($(square)));
+}
 
 
 function pieceSlice(pieces, capture = true) {
@@ -368,28 +409,37 @@ const allLegal = {
 };
 
 // Arrow
-arrows = [];
+arrows = {};
 function drawArrow(fromElement, toElement) {
-    const boardOffset = $("#board").offset();
+    const squareWidth = $(".square").width();
+
     let [y1, x1] = Object.values(fromElement.offset());
     let [y2, x2] = Object.values(toElement.offset());
 
-    const squareOffset = $(".square").width() / 2;
-    y1 -= boardOffset.top;
+    const canvas = document.createElement("canvas");
+    canvas.style.top = Math.min(y1, y2) + "px";
+    canvas.style.left = Math.min(x1, x2) + "px";
+    canvas.height = Math.abs(y2 - y1) + squareWidth;
+    canvas.width = (Math.abs(x2 - x1) / squareWidth) * squareWidth + squareWidth;
+    document.body.appendChild(canvas);
+
+    const squareOffset = squareWidth / 2;
+    const canvasRect = canvas.getBoundingClientRect()
+    y1 -= canvasRect.top;
     y1 += squareOffset
 
-    x1 -= boardOffset.left;
+    x1 -= canvasRect.left;
     x1 += squareOffset;
 
-    y2 -= boardOffset.top;
+    y2 -= canvasRect.top;
     y2 += squareOffset;
 
-    x2 -= boardOffset.left;
+    x2 -= canvasRect.left;
     x2 += squareOffset;
 
     const viewportMin = Math.min($(window).width(), $(window).height());
 
-    const context = document.querySelector("#arrows-canvas").getContext("2d");
+    const context = canvas.getContext("2d");
     context.beginPath();
 
     context.lineWidth = percent(1.5, viewportMin);
@@ -419,15 +469,24 @@ function drawArrow(fromElement, toElement) {
     context.restore();
     context.fill();
 
-    arrows.push({"from": fromElement, "to": toElement})
+    fromID = fromElement.attr("id");
+    toID = toElement.attr("id");
+    if (fromID in arrows) arrows[fromID][toID] = canvas;
+    else {
+        arrows[fromID] = {};
+        arrows[fromID][toID] = canvas;
+    }
 }
 
-function clearArrows() {
-    arrows = [];
-
-    const arrowsCanvas = document.querySelector("#arrows-canvas");
-    const context = arrowsCanvas.getContext("2d");
-    context.clearRect(0, 0, arrowsCanvas.width, arrowsCanvas.height);
+function clearArrow(fromElement, toElement) {
+    const fromElementID = fromElement.attr("id");
+    const toElementID = toElement.attr("id");
+    arrows[fromElementID][toElementID].remove();
+    delete arrows[fromElementID][toElementID];
+}
+function clearAllArrows() {
+    arrows = {};
+    $("canvas").remove();
 }
 
 var resizeTimeout;
@@ -435,12 +494,15 @@ $(window).on("resize", () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(function() {
         const boardContainer = $("#board");
-        const arrowsCanvas = document.querySelector("#arrows-canvas");
-        arrowsCanvas.width = boardContainer.width();
-        arrowsCanvas.height = boardContainer.height();
-        for (const [index, arrowData] of Object.entries(arrows)) {
-            arrows.splice(index, 1);
-            drawArrow(arrowData.from, arrowData.to);
+        const canvas = document.getElementsByTagName("canvas");
+        canvas.width = boardContainer.width();
+        canvas.height = boardContainer.height();
+
+        const arrowsCopy = Object.assign({}, arrows);
+        clearAllArrows();
+        for (const [fromElementID, toElementIDs] of Object.entries(arrowsCopy)) {
+            const fromElement = $(`#${fromElementID}`);
+            for (const toElementID of Object.keys(toElementIDs)) drawArrow(fromElement, $(`#${toElementID}`));
         }
     }, 30);
 });
