@@ -91,11 +91,7 @@ async function main() {
         else highlightElement = $(this);
     })
     $(".square").mouseup(function(event) {
-        if (event.which == 1) {
-            if ($(this).find(".valid-move").is(":hidden")) return;
-            move(movingElement, $(this));
-            return;
-        }
+        if (event.which == 1) return;
 
         const currentSquare = $(this);
         if (currentSquare.is(highlightElement)) {
@@ -107,6 +103,11 @@ async function main() {
             if (highlightElementID in arrows && currentSquareID in arrows[highlightElementID]) clearArrow(highlightElement, currentSquare);
             else drawArrow(highlightElement, currentSquare);
         }
+    })
+
+    $(".square").click(function() {
+        if ($(this).find(".valid-move").is(":hidden")) return;
+        move(movingElement, $(this));
     })
 }
 loadAuthInfo().then(main);
@@ -203,11 +204,13 @@ gameNamespace.on("move", async (data) => {
 });
 gameNamespace.on("exception", async data => {
     console.error(data);
-    movingElement.animate({
-        "top": "0px",
-        "left": "0px"
-    }, 100);
-    movingElement = null;
+    if (movingElement) {
+        movingElement.animate({
+            "top": "0px",
+            "left": "0px"
+        }, 100);
+        movingElement = null;
+    }
 
     if (data["code"] == 5) {
         enableDraggable();
@@ -223,10 +226,10 @@ gameNamespace.on("exception", async data => {
                 highlightSquare(toElement);
                 drawArrow(fromElement, toElement);
             }
-            await sleep(250);
+            await sleep(300);
             clearAllArrows();
-            clearHighlights
-            await sleep(250);
+            clearAllHighlights();
+            await sleep(300);
         }
     } else showAlert("Something went wrong. Please refresh the page");
 })
