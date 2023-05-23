@@ -228,6 +228,8 @@ class SocketIOErrors(Enum):
 
     MOVE_ERROR = 4
     FORCED_MOVE_ERROR = 5
+
+    PROMOTION_ERROR = 6
 class SocketIOException(Exception):
     def __init__(self, code : SocketIOErrors, message : str):
         super().__init__(message)

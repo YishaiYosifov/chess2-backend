@@ -16,7 +16,7 @@ class GameBase:
 
         #threading.Thread(target=self._clock).start()
 
-    def move(self, user, origin : dict, destination : dict):
+    def move(self, user, origin : dict, destination : dict, args):
         self.game : Game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
 
@@ -74,14 +74,22 @@ class GameBase:
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
         else: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
 
+        opponent = self._get_opponent(user)
+        move_data = {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}
+        if destination_square.piece.name == "pawn" and (destination_square.y == 0 or destination_square.y == len(self.game.board) - 1):
+            if not args.promote_to: raise SocketIOException(SocketIOErrors.BAD_ARGUMENT, "Missing Argument: promote_to")
+            elif "pawn" in args.promote_to or not args.promote_to in PIECE_DATA: raise SocketIOException(SocketIOErrors.PROMOTION_ERROR, "Invalid Promotion Piece")
+
+            destination_square.piece.name = args.promote_to
+            move_data["promote_to"] = args.promote_to
+
         # Update the board and move history
         self.game.moves.append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
         self.game.board[origin["y"], origin["x"]].piece = None
         db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves})
 
         # Emit the move and sync the clock
-        opponent = self._get_opponent(user)
-        emit("move", {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}, to=self.game.token)
+        emit("move", move_data, to=self.game.token)
         emit("clock_sync", self.game.clocks, to=self.game.token)
 
         self.game.turn = opponent

@@ -35,6 +35,21 @@ async function main() {
     
     isLocalTurn = gameData.turn == userID;
 
+    const promotionCard = $("#promotion-card");
+    for (const piece of Object.keys(allLegal)) {
+        if (piece.includes("pawn") || piece == "king") continue;
+
+        const image = $("<img></img>");
+        image.addClass("img-fluid");
+        image.addClass("promotion-piece");
+
+        image.attr("id", `promotion-${piece}`);
+
+        image.attr("draggable", "false");
+        image.attr("src", `../static/assets/pieces/${piece}-${color}.png`);
+        image.appendTo(promotionCard);
+    }
+
     let tempBoard = structuredClone(board);
     const colorMod = color == "white" ? 1 : 0
     if (color == "white") tempBoard.reverse()
@@ -61,9 +76,7 @@ async function main() {
     if (isLocalTurn) enableDraggable();
 
     $(`[color=${color}]`).mousedown(function(event) {
-        if (event.which != 1) return;
-
-        if (!isLocalTurn) return;
+        if (event.which != 1 || !isLocalTurn) return;
 
         $(".valid-move").hide().parent().droppable().droppable("disable");
     
@@ -129,7 +142,34 @@ async function move(originElement, destinationElement) {
 
     disableDraggable();
 
-    gameNamespace.emit("move", {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
+    let move_data = {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY};
+    if (board[originY][originX].piece.name.includes("pawn") && (destinationY == board.length - 1 || destinationY == 0)) {
+        const promotionCard = $("#promotion-card");
+        promotionCard.appendTo(destinationElement)
+        promotionCard.fadeIn(300);
+
+        const rejectFunction = function() {
+            console.log("a");
+            if ($(this).is(destinationElement)) return;
+            enableDraggable();
+            revertPiece(originElement);
+            promotionCard.fadeOut(300);
+            reject("Promotion Canceled");
+        }
+
+        const promotionPiece = await new Promise((resolve, reject) => {
+            $(".promotion-piece").click(function() {
+                promotionCard.fadeOut(300);
+                resolve($(this).attr("id").split("-").at(-1));
+            });
+            $(".square").click(rejectFunction);
+        });
+        $(".square").off("click", rejectFunction);
+        $(".promotion-piece").off("click");
+        move_data["promote_to"] = promotionPiece;
+    }
+
+    gameNamespace.emit("move", move_data);
 }
 
 function enableDraggable() {
@@ -149,13 +189,13 @@ function disableDraggable() {
     $(`img[color="${color}"]`).draggable().draggable("disable");
 }
 
-async function movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY) {
+async function movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY, promoteTo) {
     movingElement = null;
     allLegalCache = {};
     moves.push({"piece": board[originY][originX].piece.name, "origin": {"x": originX, "y": originY}, "destination": {"x": destinationX, "y": destinationY}});
 
     let tempBoardPiece = structuredClone(board[originY][originX]);
-    if (tempBoardPiece.piece.name.includes("pawn") && Math.abs(originX - destinationX) >= 1) {
+    if (tempBoardPiece.piece.name.includes("pawn") && Math.abs(originX - destinationX) >= 2) {
         const yOffset = tempBoardPiece.piece.color == "white" ? -1 : 1;
         const enpassantDiagonal = diagonal(originX, originY + yOffset, destinationX, destinationY + yOffset);
         for (const [index, square] of Object.entries(enpassantDiagonal)) {
@@ -192,12 +232,25 @@ async function movePiece(originElement, destinationElement, originX, originY, de
     tempPiece.remove();
     originElement.css("left", "").css("top", "");
     originElement.appendTo(destinationElement);
+
+    const destinationPiece = board[destinationY][destinationX].piece;
+    if (destinationPiece.name.includes("pawn") && (destinationY == 0 || destinationY == boardHeight - 1)) {
+        originElement.attr("src", `../static/assets/pieces/${promoteTo}-${destinationPiece.color}.png`);
+        destinationPiece.name = promoteTo;
+    }
+}
+
+function revertPiece(piece) {
+    piece.animate({
+        "top": "0px",
+        "left": "0px"
+    }, 100);
 }
 
 gameNamespace.on("move", async (data) => {
     const originElement = $(`#${data.origin.y}-${data.origin.x}`).find(".piece");
     const destinationElement = $(`#${data.destination.y}-${data.destination.x}`);
-    await movePiece(originElement, destinationElement, data.origin.x, data.origin.y, data.destination.x, data.destination.y);
+    await movePiece(originElement, destinationElement, data.origin.x, data.origin.y, data.destination.x, data.destination.y, data["promote_to"]);
 
     if (data.turn == color) enableDraggable();
     else disableDraggable();
@@ -205,10 +258,7 @@ gameNamespace.on("move", async (data) => {
 gameNamespace.on("exception", async data => {
     console.error(data);
     if (movingElement) {
-        movingElement.animate({
-            "top": "0px",
-            "left": "0px"
-        }, 100);
+        revertPiece(movingElement);
         movingElement = null;
     }
 
@@ -370,6 +420,14 @@ function isValidEnPassant(square, side) {
 }
 
 const allLegal = {
+    "knook": (x, y) => straightMoves(x, y).filter(move => move.piece).concat(horseMoves(x, y).filter(move => !move.piece)),
+    "queen": (x, y) => diagonalMoves(x, y).concat(straightMoves(x, y)),
+    "antiqueen": horseMoves,
+    "archbishop": (x, y) => straightMoves(x, y).filter(move => {
+        if (x == move.x) return Math.abs(y - move.y) % 2 == 0;
+        else return Math.abs(x - move.x) % 2 == 0;
+    }),
+    "xook": diagonalMoves,
     "rook": straightMoves,
     "bishop": diagonalMoves,
     "horse": horseMoves,
@@ -392,7 +450,6 @@ const allLegal = {
         }
         return moves;
     },
-    "queen": (x, y) => diagonalMoves(x, y).concat(straightMoves(x, y)),
     "child-pawn": (x, y) => pawnMoves(x, y, !board[y][x].piece.moved ? 2 : 1),
     "pawn": (x, y) => {
         let limit = 1;
@@ -401,14 +458,7 @@ const allLegal = {
             if ((boardWidth % 2 == 0 && (x == (boardWidth / 2) - 1 || x == boardWidth / 2)) || (board % 2 != 0 && x == Math.floor(boardWidth / 2))) limit = 3;
         }
         return pawnMoves(x, y, limit);
-    },
-    "archbishop": (x, y) => straightMoves(x, y).filter(move => {
-        if (x == move.x) return Math.abs(y - move.y) % 2 == 0;
-        else return Math.abs(x - move.x) % 2 == 0;
-    }),
-    "xook": diagonalMoves,
-    "antiqueen": horseMoves,
-    "knook": (x, y) => straightMoves(x, y).filter(move => move.piece).concat(horseMoves(x, y).filter(move => !move.piece))
+    }
 };
 
 // Arrow

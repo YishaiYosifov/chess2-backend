@@ -21,12 +21,14 @@ def requires_game(function):
 @socket_error_handler
 @requires_args(
     Argument("origin_x", type=int, required=True), Argument("origin_y", type=int, required=True),
-    Argument("destination_x", type=int, required=True), Argument("destination_y", type=int, required=True)
+    Argument("destination_x", type=int, required=True), Argument("destination_y", type=int, required=True),
+    Argument("promote_to", type=str, default=None)
 )
 @requires_game
 def move(_, user : User, game : Game, args):
     active_games[game.token].move(
         user,
         origin={"x": args.origin_x, "y": args.origin_y},
-        destination={"x": args.destination_x, "y": args.destination_y}
+        destination={"x": args.destination_x, "y": args.destination_y},
+        args=args
     )

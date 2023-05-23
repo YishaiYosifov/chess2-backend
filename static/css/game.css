@@ -68,6 +68,25 @@ canvas {
     pointer-events: none;
 }
 
+#promotion-card {
+    box-shadow: 0 0px 10px black;
+
+    display: none;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 20;
+}
+
+.promotion-piece {
+    user-select: none;
+    transition: border 300ms;
+}
+.promotion-piece:hover {
+    border: 3px solid white;
+    border-radius: 5px;
+}
+
 @media (max-width: 768px) {
     #board {
         width: 90vmin;
