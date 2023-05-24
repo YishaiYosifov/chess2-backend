@@ -43,6 +43,7 @@ BOARD = numpy.concatenate((
     [[Square(x=column_index, y=SET_HEIGHT + row_index) for column_index in range(8)] for row_index in range(4)],
     parsed_pieces_black
 ))
+BOARD_WIDTH, BOARD_HEIGHT = len(BOARD[0]), len(BOARD)
 
 active_games = {}
 class Game(db.Model):

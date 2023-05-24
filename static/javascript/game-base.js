@@ -119,8 +119,8 @@ class GameBase {
                 if (currentSquare.hasClass("highlight")) clearHighlight(currentSquare)
                 else highlightSquare(currentSquare);
             } else {
-                highlightElementID = highlightElement.attr("id");
-                currentSquareID = currentSquare.attr("id");
+                const highlightElementID = highlightElement.attr("id");
+                const currentSquareID = currentSquare.attr("id");
                 if (highlightElementID in arrows && currentSquareID in arrows[highlightElementID]) clearArrow(highlightElement, currentSquare);
                 else drawArrow(highlightElement, currentSquare);
             }
@@ -132,10 +132,10 @@ class GameBase {
         });
     }
 
-    async moveListener(originElement, destinationElement) {
+    async moveListener(originElementImage, destinationElement) {
         $(".valid-move").hide();
         
-        const originID = originElement.parent().attr("id");
+        const originID = originElementImage.parent().attr("id");
         const destinationID = destinationElement.attr("id");
     
         if (originID == destinationID) return;
@@ -149,19 +149,19 @@ class GameBase {
     
         disableDraggable();
     
-        let move_data = {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY};
-        if (board[originY][originX].piece.name.includes("pawn") && (destinationY == board.length - 1 || destinationY == 0)) {
+        let move_data = {};
+        const originSquare = board[originY][originX]
+        if (originSquare.piece.name.includes("pawn") && (destinationY == board.length - 1 || destinationY == 0)) {
             const promotionCard = $("#promotion-card");
             promotionCard.appendTo(destinationElement)
             promotionCard.fadeIn(300);
     
             const rejectFunction = function() {
-                console.log("a");
                 if ($(this).is(destinationElement)) return;
                 $(".square").off("click", rejectFunction);
 
                 enableDraggable();
-                revertPiece(originElement);
+                revertPiece(originElementImage);
                 promotionCard.fadeOut(300);
                 reject("Promotion Canceled");
             }
@@ -176,58 +176,58 @@ class GameBase {
             });
             $(".promotion-piece").off("click");
             move_data["promote_to"] = promotionPiece;
+        } else if (originSquare.piece.name == "king" && originY == destinationY && Math.abs(originX - destinationX) > 1) {
+            if (originX > destinationX) destinationX = 2;
+            else destinationX = 5;
         }
+        Object.assign(move_data, {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
     
         gameNamespace.emit("move", move_data);
     }
 
-    async movePiece(originElement, destinationElement, originX, originY, destinationX, destinationY, promoteTo) {
+    async movePiece(originElementImage, destinationElement, originX, originY, destinationX, destinationY, promoteTo) {
         movingElement = null;
         allLegalCache = {};
         moves.push({"piece": board[originY][originX].piece.name, "origin": {"x": originX, "y": originY}, "destination": {"x": destinationX, "y": destinationY}});
     
-        let tempBoardPiece = structuredClone(board[originY][originX]);
-        if (tempBoardPiece.piece.name.includes("pawn") && Math.abs(originX - destinationX) >= 2) {
-            const yOffset = tempBoardPiece.piece.color == "white" ? -1 : 1;
+        let boardSquare = structuredClone(board[originY][originX]);
+        if (boardSquare.piece.name.includes("pawn") && Math.abs(originX - destinationX) >= 2) {
+            const yOffset = boardSquare.piece.color == "white" ? -1 : 1;
             const enpassantDiagonal = diagonal(originX, originY + yOffset, destinationX, destinationY + yOffset);
             for (const [index, square] of Object.entries(enpassantDiagonal)) {
                 square.piece = null;
                 $(`#${square.y}-${square.x}`).find(".piece").delay(index * 30).fadeOut(100, function() { $(this).remove(); });
             }
+        } else if (boardSquare.piece.name == "king" && Math.abs(originX - destinationX) > 1) {
+            let castleRookCopy;
+            let rookCastleDestination;
+            if (originX > destinationX) {
+                castleRookCopy = structuredClone(board[originY][0]);
+                rookCastleDestination = $(`#${originY}-2`);
+
+                board[originY][0].piece = null;
+                board[originY][2].piece = castleRookCopy.piece;
+            } else {
+                castleRookCopy = structuredClone(board[originY].at(-1));
+                rookCastleDestination = $(`#${originY}-4`);
+
+                board[originY].at(-1).piece = null;
+                board[originY][4].piece = castleRookCopy.piece;
+            }
+            animateMovement($(`#${castleRookCopy.y}-${castleRookCopy.x}`).find(".piece"), rookCastleDestination);
         }
         board[originY][originX].piece = null;
     
-        delete tempBoardPiece.x;
-        delete tempBoardPiece.y;
-        tempBoardPiece.piece.moved = true;
+        delete boardSquare.x;
+        delete boardSquare.y;
+        boardSquare.piece.moved = true;
     
-        Object.assign(board[destinationY][destinationX], tempBoardPiece);
-    
-        const tempPiece = originElement.clone();
-        tempPiece
-            .css("position", "absolute")
-            .css("left", originElement.offset().left)
-            .css("top", originElement.offset().top)
-            .css("width", originElement.width())
-            .css("height", originElement.height())
-            .css("z-index", 1);
-        originElement.detach();
-    
-        tempPiece.appendTo("body");
-        await tempPiece.animate({
-            left: destinationElement.offset().left,
-            top: destinationElement.offset().top
-        }, 100).promise();
-    
-        destinationElement.find(".piece").remove();
-    
-        tempPiece.remove();
-        originElement.css("left", "").css("top", "");
-        originElement.appendTo(destinationElement);
-    
+        Object.assign(board[destinationY][destinationX], boardSquare);
+
+        await animateMovement(originElementImage, destinationElement);
         const destinationPiece = board[destinationY][destinationX].piece;
         if (destinationPiece.name.includes("pawn") && (destinationY == 0 || destinationY == boardHeight - 1)) {
-            originElement.attr("src", `../static/assets/pieces/${promoteTo}-${destinationPiece.color}.png`);
+            originElementImage.attr("src", `../static/assets/pieces/${promoteTo}-${destinationPiece.color}.png`);
             destinationPiece.name = promoteTo;
         }
     }
@@ -251,7 +251,7 @@ class GameBase {
         if (data["code"] == 5) {
             enableDraggable();
     
-            forcedMoves = data["message"];
+            const forcedMoves = data["message"];
             for (let i = 0; i < 2; i++) {
                 if (movingElement) return;
     
@@ -288,8 +288,8 @@ function disableDraggable() {
     $(`img[color="${color}"]`).draggable().draggable("disable");
 }
 
-function revertPiece(piece) {
-    piece.animate({
+function revertPiece(pieceImage) {
+    pieceImage.animate({
         "top": "0px",
         "left": "0px"
     }, 100);
@@ -314,6 +314,30 @@ function clearAllHighlights() {
     $(".highlight").each((i, square) => clearHighlight($(square)));
 }
 
+async function animateMovement(originElementImage, destinationElement) {
+    const tempPiece = originElementImage.clone();
+    tempPiece
+        .css("position", "absolute")
+        .css("left", originElementImage.offset().left)
+        .css("top", originElementImage.offset().top)
+        .css("width", originElementImage.width())
+        .css("height", originElementImage.height())
+        .css("z-index", 1);
+    originElementImage.detach();
+
+    tempPiece.appendTo("body");
+    await tempPiece.animate({
+        left: destinationElement.offset().left,
+        top: destinationElement.offset().top
+    }, 100).promise();
+
+    destinationElement.find(".piece").remove();
+
+    tempPiece.remove();
+    originElementImage.css("left", "").css("top", "");
+    originElementImage.appendTo(destinationElement);
+}
+
 
 function pieceSlice(pieces, capture = true) {
     const fromPiece = pieces[0].piece;
@@ -324,6 +348,16 @@ function pieceSlice(pieces, capture = true) {
     }
     return pieces;
 }
+
+function straight(x1, y1, x2, y2) {
+    let straightSlice;
+    if (y1 == y2) straightSlice = board[y1].slice(Math.min(x1, x2), Math.max(x1, x2) + 1);
+    else straightSlice = board.slice(Math.min(y1, y2), Math.max(y1, y2) + 1).map(column => column[x1]);
+
+    if (straightSlice.at(-1) == board[y1][x1]) straightSlice.reverse();
+    return straightSlice;
+}
+
 function diagonal(x1, y1, x2, y2) {
     let sliced = board.slice(Math.min(y1, y2), Math.max(y1, y2) + 1).map(column => {
         let columnSlice = column.slice(Math.min(x1, x2), Math.max(x1, x2) + 1);
@@ -333,23 +367,23 @@ function diagonal(x1, y1, x2, y2) {
 
     if (y1 > y2) sliced.reverse();
 
-    let diagonal = [];
+    let diagonalSlice = [];
     for (const [index, _] of sliced.entries()) {
         let diagonalElement = sliced[index][index];
         if (!diagonalElement) break;
-        diagonal.push(diagonalElement);
+        diagonalSlice.push(diagonalElement);
     }
-    if (diagonal.at(-1) == board[y1][x1]) diagonal.reverse();
+    if (diagonalSlice.at(-1) == board[y1][x1]) diagonalSlice.reverse();
 
-    return diagonal;
+    return diagonalSlice;
 }
 
 const straightMoves = (x, y) =>
-        pieceSlice(board[y].slice(0, x + 1).reverse()).concat(
-            pieceSlice(board[y].slice(x, boardWidth)),
+        pieceSlice(straight(x, y, 0, y)).concat(
+            pieceSlice(straight(x, y, boardWidth, y)),
 
-            pieceSlice(board.slice(0, y + 1).map(column => column[x]).reverse()),
-            pieceSlice(board.slice(y, boardHeight).map(column => column[x]))
+            pieceSlice(straight(x, y, x, boardHeight)),
+            pieceSlice(straight(x, y, x, 0))
         );
 const diagonalMoves = (x, y) =>
     pieceSlice(diagonal(x, y, boardWidth, boardHeight)).concat(
@@ -458,6 +492,23 @@ const allLegal = {
                 if (square.piece && square.piece.color == piece.color) continue;
                 moves.push(square);
             }
+        }
+        if (piece.moved) return moves;
+
+        for (const castleDirection of [0, boardWidth - 1]) {
+            const castleRook = board[y][castleDirection];
+            if (castleRook.piece.moved) continue;
+
+            const between = straight(x, y, castleDirection, y);
+            between.shift()
+            between.pop();
+            
+            let castleMoves = []
+            for (square of between) {
+                if (square.piece && !(square == between[0] && square.piece.name == "bishop")) return moves;
+                castleMoves.push(square)
+            }
+            moves = moves.concat(castleMoves);
         }
         return moves;
     },

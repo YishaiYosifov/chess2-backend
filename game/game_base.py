@@ -62,7 +62,6 @@ class GameBase:
         if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
 
         # Process the move
-        origin_square.piece.moved = True
         if collisions:
             for collision in collisions:
                 sliced = collision(self.game, origin, destination)
@@ -73,10 +72,11 @@ class GameBase:
                 break
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
         else: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
+        origin_square.piece.moved = True
 
         opponent = self._get_opponent(user)
         move_data = {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}
-        if destination_square.piece.name == "pawn" and (destination_square.y == 0 or destination_square.y == len(self.game.board) - 1):
+        if destination_square.piece and destination_square.piece.name == "pawn" and (destination_square.y == 0 or destination_square.y == len(self.game.board) - 1):
             if not args.promote_to: raise SocketIOException(SocketIOErrors.BAD_ARGUMENT, "Missing Argument: promote_to")
             elif "pawn" in args.promote_to or not args.promote_to in PIECE_DATA: raise SocketIOException(SocketIOErrors.PROMOTION_ERROR, "Invalid Promotion Piece")
 

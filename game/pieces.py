@@ -2,7 +2,7 @@ import math
 
 import numpy
 
-from dao import Piece, Square, Game
+from dao import Piece, Square, Game, BOARD_WIDTH, BOARD_HEIGHT
 
 # Forced moves
 # @returns
@@ -28,18 +28,17 @@ def enpassant_forced_status(game : Game, square : Square, origin : dict, destina
     return (1, moves) if moves else (0, [])
 
 def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, destination : dict) -> list[int, list]:
-    board_width, board_height = len(game.board[0]), len(game.board)
     check_directions = [
-        [board_width, board_height],
-        [0, board_height],
+        [BOARD_WIDTH, BOARD_HEIGHT],
+        [0, BOARD_HEIGHT],
         [0, 0],
-        [board_width, 0]
+        [BOARD_WIDTH, 0]
     ]
     moves = []
     for x, y in check_directions:
         for check_square in diagonal_collision(game, {"x": square.x, "y": square.y}, {"x": x, "y": y}):
             if check_square.piece:
-                if check_square.piece.name == "child-pawn":
+                if check_square.piece.color != square.piece.color and check_square.piece.name == "child-pawn":
                     moves.append([square.to_dict(), check_square.to_dict()])
                     if check_square.x == destination["x"] and \
                         check_square.y == destination["y"] and \
@@ -49,13 +48,14 @@ def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, 
 
 # Collisions
 def straight_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
-    x1, x2 = min(origin["x"], destination["x"]), max(origin["x"], destination["x"])
-    y1, y2 = min(origin["y"], destination["y"]), max(origin["y"], destination["y"])
+    x1, y1 = origin.values()
+    x2, y2 = destination.values()
 
-    if x1 == x2:
-        if origin["y"] > destination["y"]: return numpy.flip(game.board[y1:y2, x1])
-        else: return game.board[y1 + 1:y2 + 1, x1]
-    else: return game.board[y1, x1:x2]
+    if y1 == y2: sliced = game.board[y1, min(x1, x2):max(x1, x2) + 1]
+    else: sliced = game.board[min(y1, y2):max(y1, y2) + 1, x1]
+    if sliced[-1] == game.board[y1, x1]: sliced = numpy.flip(sliced)
+    return sliced[1:]
+    
 def diagonal_collision(game : Game, origin : dict, destination : dict) -> numpy.ndarray:
     x1, y1 = origin.values()
     x2, y2 = destination.values()
@@ -66,11 +66,9 @@ def diagonal_collision(game : Game, origin : dict, destination : dict) -> numpy.
 
     diagonal = sliced.diagonal()
     if diagonal[-1] == game.board[y1, x1]: diagonal = numpy.flip(diagonal)
-    diagonal = diagonal[1:]
+    return diagonal[1:]
 
-    return diagonal
-
-def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
+def pawn_collision(game : Game, origin : dict, destination : dict) -> bool | numpy.ndarray:
     if not diagonal_movement(game, origin, destination): return straight_collision(game, origin, destination)
 
     if not game.moves: return []
@@ -99,6 +97,37 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool:
             enpassant_square.piece.color == current_piece.color: return False
         enpassant_square.piece = None
     game.board[destination["y"], destination["x"]].piece = current_piece
+    return True
+
+def king_collision(game : Game, origin : dict, destination : dict) -> bool | numpy.ndarray:
+    king = game.board[origin["y"], origin["x"]]
+
+    x_movement = abs(origin["x"] - destination["x"])
+    y_movement = abs(origin["y"] - destination["y"])
+    if x_movement == 1 and y_movement == 1: return diagonal_collision(game, origin, destination)
+    elif x_movement == 1 or y_movement == 1: return straight_collision(game, origin, destination)
+    elif king.piece.moved or y_movement != 0: return False
+
+    if origin["x"] > destination["x"]:
+        castle_rook = game.board[origin["y"], 0]
+        side = "short"
+    else:
+        castle_rook = game.board[origin["y"], -1]
+        side = "long"
+    if castle_rook.piece.moved: return False
+    
+    between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[:-1]
+    for square in between:
+        if square.piece and not (square != between[0] and square.piece.name == "bishop"): return False
+    
+    if side == "short":
+        game.board[origin["y"], 1].piece = king.piece.copy()
+        game.board[origin["y"], 2].piece = castle_rook.piece.copy()
+    else:
+        game.board[origin["y"], 5].piece = king.piece.copy()
+        game.board[origin["y"], 4].piece = castle_rook.piece.copy()
+    castle_rook.piece = None
+
     return True
 
 def _can_enpassant(game : Game, square : Square, side : int) -> list:
@@ -148,8 +177,10 @@ PIECE_DATA = {
         "validate": horse_movement
     },
     "king": {
-        "validate": lambda game, origin, destination: abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1,
-        "collisions": [straight_collision, diagonal_collision]
+        "validate": lambda game, origin, destination:
+            (abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1) or \
+            (origin["y"] == destination["y"] and abs(origin["x"] - destination["x"]) == 2),
+        "collisions": [king_collision]
     },
     "queen": {
         "validate": lambda game, origin, destination: straight_movement(game, origin, destination) or diagonal_movement(game, origin, destination),
