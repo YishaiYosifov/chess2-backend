@@ -118,7 +118,7 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
     
     between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[:-1]
     for square in between:
-        if square.piece and not (square != between[0] and square.piece.name == "bishop"): return False
+        if square.piece and not (square == between[0] and square.piece.name == "bishop"): return False
     
     if side == "short":
         game.board[origin["y"], 1].piece = king.piece.copy()

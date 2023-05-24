@@ -177,7 +177,7 @@ class GameBase {
             $(".promotion-piece").off("click");
             move_data["promote_to"] = promotionPiece;
         } else if (originSquare.piece.name == "king" && originY == destinationY && Math.abs(originX - destinationX) > 1) {
-            if (originX > destinationX) destinationX = 2;
+            if (originX > destinationX) destinationX = 1;
             else destinationX = 5;
         }
         Object.assign(move_data, {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
