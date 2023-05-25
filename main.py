@@ -15,10 +15,11 @@ from pip._vendor import cachecontrol
 
 import google.auth.transport.requests
 import requests
+import numpy
 
+from extensions import GOOGLE_CLIENT_ID, CONFIG, Square, Piece
 from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
-from extensions import GOOGLE_CLIENT_ID, CONFIG
 
 from app import app, socketio
 from game_modes import GameBase
@@ -135,7 +136,14 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-        for active_game in Game.query.all(): active_games[active_game.token] = GameBase(active_game)
+        for active_game in Game.query.all():
+            """active_game.board = numpy.asarray([[Square(x=x, y=y) for x in range(8)] for y in range(10)])
+            active_game.board[0][0].piece = Piece(name="king", color="black")
+            active_game.board[9][0].piece = Piece(name="rook", color="black")
+            active_game.turn_id = 8
+            db.session.query(Game).filter_by(game_id=active_game.game_id).update({"board": active_game.board})"""
+            active_games[active_game.token] = GameBase(active_game)
+        db.session.commit()
     threading.Thread(target=delete_expired, daemon=True).start()
 
     socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"], use_reloader=False)

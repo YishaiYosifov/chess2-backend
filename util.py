@@ -230,6 +230,7 @@ class SocketIOErrors(Enum):
     FORCED_MOVE_ERROR = 5
 
     PROMOTION_ERROR = 6
+    SERVER_ERROR = 7
 class SocketIOException(Exception):
     def __init__(self, code : SocketIOErrors, message : str):
         super().__init__(message)
@@ -240,8 +241,12 @@ class SocketIOException(Exception):
 def socket_error_handler(function):
     def wrapper(*args, **kwargs):
         try: return function(*args, **kwargs)
-        except SocketIOException as e:
-            print(e.code, e.message)
-            emit("exception", {"code": e.code, "message": e.message})
+        except Exception as e:
+            if isinstance(e, SocketIOException):
+                print(e.code, e.message)
+                emit("exception", {"code": e.code, "message": e.message})
+            else:
+                emit("exception", {"code": SocketIOErrors.SERVER_ERROR.value, "message": "Internal Server Error"})
+                raise
     wrapper.__name__ = function.__name__
     return wrapper

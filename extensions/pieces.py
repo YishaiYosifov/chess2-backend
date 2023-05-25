@@ -106,38 +106,47 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
     y_movement = abs(origin["y"] - destination["y"])
     if x_movement == 1 and y_movement == 1: return diagonal_collision(game, origin, destination)
     elif x_movement == 1 or y_movement == 1: return straight_collision(game, origin, destination)
-    elif king.piece.moved or y_movement != 0: return {"success": False}
 
-    if origin["x"] > destination["x"]:
-        castle_rook = game.board[origin["y"], 0]
-        side = "short"
+    # Castling
+    if x_movement == 0 and y_movement > 0:
+        # Vertical Castle
+        if king.y == 0:
+            castle_rook = game.board[-1, origin["x"]]
+            new_rook_position = {"x": origin["x"], "y": math.floor(BOARD_HEIGHT / 2) - 1}
+        elif king.y == BOARD_HEIGHT - 1:
+            castle_rook = game.board[0, origin["x"]]
+            new_rook_position = {"x": origin["x"], "y": math.floor(BOARD_HEIGHT / 2)}
+        else: return {"success": False}
     else:
-        castle_rook = game.board[origin["y"], -1]
-        side = "long"
-    if castle_rook.piece.moved: {"success": False}
-    
+        # Regular Castle
+        if king.piece.moved or y_movement != 0: return {"success": False}
+
+        if origin["x"] > destination["x"]:
+            castle_rook = game.board[origin["y"], 0]
+            new_rook_position = {"x": 2, "y": origin["y"]}
+        else:
+            castle_rook = game.board[origin["y"], -1]
+            new_rook_position = {"x": 4, "y": origin["y"]}
+        if castle_rook.piece and castle_rook.piece.moved: {"success": False}
+
+    if not castle_rook.piece: {"success": False}
+
     between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[:-1]
     captured = []
     for square in between:
         if square.piece:
             if square != between[0] or square.piece.name != "bishop": {"success": False}
             captured.append({"piece": square.piece.name, "x": square.x, "y": square.y})
+
+    game.board[destination["y"], destination["x"]].piece = king.piece.copy()
     
-    new_rook_destination = {}
-    if side == "short":
-        game.board[origin["y"], 1].piece = king.piece.copy()
-        game.board[origin["y"], 2].piece = castle_rook.piece.copy()
-        new_rook_destination = {"x": 2, "y": origin["y"]}
-    else:
-        game.board[origin["y"], 5].piece = king.piece.copy()
-        game.board[origin["y"], 4].piece = castle_rook.piece.copy()
-        new_rook_destination = {"x": 4, "y": origin["y"]}
+    game.board[new_rook_position["y"], new_rook_position["x"]].piece = castle_rook.piece.copy()
     castle_rook.piece = None
 
     return {"success": True, "move_log_portion": {
                 "moved": [
                     {"piece": "king", "origin": origin, "destination": destination},
-                    {"piece": "rook", "origin": {"x": castle_rook.x, "y": castle_rook.y}, "destination": new_rook_destination}
+                    {"piece": "rook", "origin": {"x": castle_rook.x, "y": castle_rook.y}, "destination": new_rook_position}
                 ], "captured": captured}}
 # endregion
 
@@ -167,7 +176,7 @@ diagonal_legal = lambda game, origin: numpy.concatenate(
                                         ))
 
 def king_legal(game : Game, origin : dict) -> numpy.ndarray:
-    king : Piece = game.board[origin["y"], origin["x"]].piece
+    king : Square = game.board[origin["y"], origin["x"]]
 
     moves = []
     for i in range(-1, 2):
@@ -179,26 +188,17 @@ def king_legal(game : Game, origin : dict) -> numpy.ndarray:
             if (check_x < 0 or check_x > BOARD_WIDTH - 1 or check_y < 0 or check_y > BOARD_HEIGHT - 1): continue
 
             square = game.board[check_y][check_x]
-            if square.piece and square.piece.color == king.color: continue
+            if square.piece and square.piece.color == king.piece.color: continue
             moves.append(square)
-    if king.moved: return moves
 
-    for castleDirection in [0, BOARD_WIDTH - 1]:
-        castle_rook : Square = game.board[origin["y"]][castleDirection]
-        if castle_rook.piece.moved: continue
+    # Vertical Castle
+    if king.y == 0: moves += _get_castle_moves(game, origin, game.board[BOARD_HEIGHT - 1, origin["x"]], capture_bishop=True) or []
+    elif king.y == BOARD_HEIGHT - 1: moves += _get_castle_moves(game, origin, game.board[0, origin["x"]], capture_bishop=True) or []
 
-        between = straight_collision(game, origin, {"x": castleDirection, "y": origin["y"]})[1:-1]
-        
-        castle_moves = []
-        is_valid_castle = True
-        for square in between:
-            if square.piece and not (square == between[0] and square.piece.name == "bishop"):
-                is_valid_castle = False
-                break
-            castle_moves.append(square)
-        if (not is_valid_castle): continue
+    # Regular Castle
+    if not king.piece.moved:
+        for castle_direction in [0, BOARD_WIDTH - 1]: moves += _get_castle_moves(game, origin, game.board[origin["y"], castle_direction], capture_bishop=True) or []
 
-        moves += castle_moves
     return moves
 
 def horse_legal(game : Game, origin : dict) -> numpy.ndarray:
@@ -300,6 +300,19 @@ def _get_enpassant_diagonal(game : Game, pawn_square : Square, x_slice : int, y_
             break
     return enpassant_slice, captured
 
+def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, capture_bishop = False) -> list | None:
+    if not castle_rook.piece or castle_rook.piece.moved: return
+
+    between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[1:-1]
+    
+    castle_moves = []
+    for square in between:
+        if square.piece and not (capture_bishop and square == between[0] and square.piece.name == "bishop"): break
+        castle_moves.append(square)
+    else: return castle_moves
+
+def _is_castle_valid(): pass
+
 # endregion
 
 PIECE_DATA = {
@@ -323,7 +336,8 @@ PIECE_DATA = {
     "king": {
         "validate": lambda game, origin, destination:
             (abs(origin["y"] - destination["y"]) <= 1 and abs(origin["x"] - destination["x"]) <= 1) or \
-            (origin["y"] == destination["y"] and abs(origin["x"] - destination["x"]) == 2),
+            (origin["y"] == destination["y"] and abs(origin["x"] - destination["x"]) == 2) or \
+            (origin["x"] == destination["x"] and abs(origin["y"] - destination["y"]) == math.floor(BOARD_WIDTH / 2) + 1),
         "collisions": [king_collision],
 
         "all_legal": king_legal

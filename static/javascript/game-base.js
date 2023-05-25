@@ -178,9 +178,15 @@ class GameBase {
             });
             $(".promotion-piece").off("click");
             move_data["promote_to"] = promotionPiece;
-        } else if (originSquare.piece.name == "king" && originY == destinationY && Math.abs(originX - destinationX) > 1) {
-            if (originX > destinationX) destinationX = 1;
-            else destinationX = 5;
+        } else if (originSquare.piece.name == "king") {
+            if (originY == destinationY && Math.abs(originX - destinationX) > 1) {
+                if (originX > destinationX) destinationX = 1;
+                else destinationX = 5;
+            } else if (originX == destinationX && Math.abs(originY - destinationY) > 1) {
+                if (originY > destinationY) destinationY = Math.floor(boardHeight / 2) - 1;
+                else destinationY = Math.floor(boardHeight / 2);
+                console.log(destinationY);
+            }
         }
         Object.assign(move_data, {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
     
