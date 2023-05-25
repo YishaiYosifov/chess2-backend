@@ -4,8 +4,6 @@ import re
 
 from dotenv import load_dotenv
 
-import numpy
-
 load_dotenv()
 
 # Constants

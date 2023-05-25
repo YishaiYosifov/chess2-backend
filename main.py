@@ -20,8 +20,8 @@ from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
 from extensions import GOOGLE_CLIENT_ID, CONFIG
 
-from game.game_base import GameBase
 from app import app, socketio
+from game_modes import GameBase
 from api import api
 from dao import *
 

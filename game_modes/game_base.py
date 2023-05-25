@@ -6,8 +6,8 @@ from flask_socketio import emit
 import numpy
 
 from util import SocketIOException, SocketIOErrors
-from game.pieces import PIECE_DATA
-from dao import Game, User, Square
+from extensions import Square, PIECE_DATA
+from dao import Game, User
 from app import app, db
 
 class GameBase:
@@ -62,20 +62,29 @@ class GameBase:
         if validator and not validator(self.game, origin, destination): raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Move")
 
         # Process the move
+        move_log = {"moved": [], "captured": []}
         if collisions:
             for collision in collisions:
-                sliced = collision(self.game, origin, destination)
-                if isinstance(sliced, bool) and not sliced: continue
-                elif isinstance(sliced, numpy.ndarray):
-                    if len([square for square in sliced if square.piece]) > 1: continue
+                collision_results = collision(self.game, origin, destination)
+                if isinstance(collision_results, dict):
+                    success, move_log_portion = collision_results.get("success", False), collision_results.get("move_log_portion", [])
+                    if not success: continue
+                    move_log["captured"] += move_log_portion.get("captured", [])
+                    move_log["moved"] += move_log_portion.get("moved", [])
+                elif isinstance(collision_results, numpy.ndarray):
+                    if len([square for square in collision_results if square.piece]) > 1: continue
                     self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
                 break
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
         else: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
+        if not move_log["moved"]:
+            if IS_CAPTURE: move_log["captured"].append({"piece": destination_square.piece.name, "x": destination["x"], "y": destination["y"]})
+            move_log["moved"].append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
+
         origin_square.piece.moved = True
 
         opponent = self._get_opponent(user)
-        move_data = {"origin": origin, "destination": destination, "turn": self._get_color(opponent)}
+        move_data = {"move_log": move_log, "turn": self._get_color(opponent)}
         if destination_square.piece and destination_square.piece.name == "pawn" and (destination_square.y == 0 or destination_square.y == len(self.game.board) - 1):
             if not args.promote_to: raise SocketIOException(SocketIOErrors.BAD_ARGUMENT, "Missing Argument: promote_to")
             elif "pawn" in args.promote_to or not args.promote_to in PIECE_DATA: raise SocketIOException(SocketIOErrors.PROMOTION_ERROR, "Invalid Promotion Piece")
@@ -84,9 +93,10 @@ class GameBase:
             move_data["promote_to"] = args.promote_to
 
         # Update the board and move history
-        self.game.moves.append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
+        self.game.moves.append(move_log)
         self.game.board[origin["y"], origin["x"]].piece = None
-        db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves})
+        self.game.legal_move_cache = {}
+        db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves, "legal_move_cache": self.game.legal_move_cache})
 
         # Emit the move and sync the clock
         emit("move", move_data, to=self.game.token)

@@ -1,49 +1,9 @@
-from typing import Literal
-
 import random
-import numpy
 import uuid
 
-from pydantic import BaseModel
-
+from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
-from extensions import CONFIG
 from app import db
-
-class Piece(BaseModel):
-    name : str
-    color : Literal["white"] | Literal["black"]
-
-    moved = False
-
-class Square(BaseModel):
-    piece : Piece = None
-
-    x : int
-    y : int
-
-    def to_dict(self) -> dict:
-        results = self.__dict__.copy()
-        if self.piece: results["piece"] = self.piece.__dict__
-        return results
-
-# Initilize default board
-SET_HEIGHT = len(CONFIG["PIECE_SET"])
-
-parsed_pieces_white = numpy.empty((SET_HEIGHT, 8), Square)
-parsed_pieces_black = numpy.empty((SET_HEIGHT, 8), Square)
-for row_index, row in enumerate(CONFIG["PIECE_SET"]):
-    for column_index, piece in enumerate(row):
-        parsed_pieces_white[row_index][column_index] = Square(piece=Piece(name=piece, color="white") if piece else None, x=column_index, y=row_index)
-        parsed_pieces_black[row_index][column_index] = Square(piece=Piece(name=piece, color="black") if piece else None, x=column_index, y=(SET_HEIGHT + 4) - row_index + 2)
-parsed_pieces_black = parsed_pieces_black[::-1]
-
-BOARD = numpy.concatenate((
-    parsed_pieces_white,
-    [[Square(x=column_index, y=SET_HEIGHT + row_index) for column_index in range(8)] for row_index in range(4)],
-    parsed_pieces_black
-))
-BOARD_WIDTH, BOARD_HEIGHT = len(BOARD[0]), len(BOARD)
 
 active_games = {}
 class Game(db.Model):
@@ -74,11 +34,21 @@ class Game(db.Model):
     turn_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     turn = db.relationship("User", foreign_keys=[turn_id], uselist=False)
 
-    moves = db.Column(db.PickleType, default=[], nullable=False)
-    board = db.Column(db.PickleType, default=BOARD, nullable=False)
+    moves = db.Column(db.PickleType, default=[])
+    board = db.Column(db.PickleType, default=BOARD)
     clocks = db.Column(db.PickleType)
+    legal_move_cache = db.Column(db.PickleType, default={})
 
     created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
+
+    def get_legal_moves(self, origin):
+        cache_origin = tuple(origin.values())
+        if cache_origin in self.legal_move_cache: return self.legal_move_cache[origin]
+
+        square = self.board[origin["y"], origin["x"]]
+        legal_moves = PIECE_DATA[square.piece.name]["all_legal"](self, origin)
+        self.legal_move_cache[cache_origin] = legal_moves
+        return legal_moves
 
     @classmethod
     def start_game(cls, *players, settings : GameSettings) -> int:
@@ -113,7 +83,7 @@ class Game(db.Model):
         game = cls(token=token, white=white, black=black, game_settings=settings)
         db.session.add(game)
 
-        from game import GameBase
+        from game_modes import GameBase
         active_games[token] = GameBase(Game.query.filter_by(token=token).first())
 
         return token
