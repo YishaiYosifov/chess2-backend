@@ -118,12 +118,13 @@ def get_board(args):
     if not game: raise NotFound("Game Not Found")
 
     game_dict = column_to_dict(game, include=["moves", "is_over"])
+    if game.match: game_dict["match"] = column_to_dict(game, include=["white_score", "black_score"])
+    else: game_dict["match"] = {"white_score": 0, "black_score": 0}
     return jsonify(game_dict | {
         "white": game.white.user_id,
         "black": game.black.user_id,
         "turn": game.turn.user_id,
         "board": [[square.to_dict() for square in row] for row in game.board],
-        "match": {"white_results": game.match.white_results, "black_results": game.match.black_results},
         "mode": game.game_settings.mode
     }), 200
 

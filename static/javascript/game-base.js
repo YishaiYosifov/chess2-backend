@@ -260,10 +260,11 @@ class GameBase {
         whiteEloText.text(white["rating"]);
         blackEloText.text(black["rating"]);
 
+        gameOverModal.modal({backdrop: "static"});
         await gameOverModal.modal("show").promise();
         await sleep(450);
 
-        eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
+        await eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
         eloTextAnimation(blackEloText, black["rating"], data["black_rating"]);
     }
 

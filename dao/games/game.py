@@ -3,7 +3,6 @@ import uuid
 
 from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
-from .match import Match
 from app import db
 
 active_games = {}
@@ -30,6 +29,9 @@ class Game(db.Model):
 
     white = db.relationship("User", foreign_keys=[white_id], uselist=False)
     black = db.relationship("User", foreign_keys=[black_id], uselist=False)
+
+    white_score = db.Column(db.Integer, server_default=db.text("0"))
+    black_score = db.Column(db.Integer, server_default=db.text("0"))
 
     game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
     game_settings = db.relationship("GameSettings", uselist=False)
@@ -87,10 +89,7 @@ class Game(db.Model):
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
         game = cls(token=token, white=white, black=black, game_settings=settings)
-        match = Match(token=token)
-        game.match = match
-
-        db.session.add_all([game, match])
+        db.session.add(game)
 
         from game_modes import GameBase
         active_games[token] = GameBase(Game.query.filter_by(token=token).first())

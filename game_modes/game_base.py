@@ -104,7 +104,7 @@ class GameBase:
         # Check if the king was taken
         for square in move_log["captured"]:
             if square["piece"] == "king":
-                self.end_game(1 if user_color == "white" else -1, 1 if user_color == "black" else -1, "King Captured")
+                self.end_game(1 if user_color == "white" else 0, 1 if user_color == "black" else 0, "King Captured")
                 move_data["is_over"] = True
                 break
 
@@ -121,25 +121,22 @@ class GameBase:
 
         self.game.is_over = True
         
-        self.game.match.is_active = False
-        self.game.match.last_game_over = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-        self.game.match.white_results += white_results
-        self.game.match.black_results += black_results
+        self.game.white_score = white_results
+        self.game.black_score = black_results
+        if self.game.match:
+            self.game.match.white_score += white_results
+            self.game.match.black_score += black_results
         db.session.commit()
 
     def update_elo(self, white_results : int, black_results : int) -> tuple[int, int]:
         white_rating = self.game.white.rating(self.game.game_settings.mode)
         black_rating = self.game.black.rating(self.game.game_settings.mode)
 
-        white_expected = white_rating.elo / (white_rating.elo + black_rating.elo)
-        black_expected = black_rating.elo / (white_rating.elo + black_rating.elo)
+        white_expected = 1 / (1 + 10 ** ((black_rating.elo - white_rating.elo) / 400))
+        black_expected = 1 - white_expected
 
-        if white_results == black_results == 0.5: k = CONFIG["DRAWN_ELO_K_FACTOR"]
-        else: k = CONFIG["ELO_K_FACTOR"]
-
-        white_rating.elo = round(white_rating.elo + k * (white_results * white_expected))
-        black_rating.elo = round(black_rating.elo + k * (black_results * black_expected))
+        white_rating.elo = max(100, round(white_rating.elo + CONFIG["ELO_K_FACTOR"] * (white_results - white_expected)))
+        black_rating.elo = max(100, round(black_rating.elo + CONFIG["ELO_K_FACTOR"] * (black_results - black_expected)))
 
         return white_rating.elo, black_rating.elo
     

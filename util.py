@@ -241,9 +241,7 @@ def socket_error_handler(function):
     def wrapper(*args, **kwargs):
         try: return function(*args, **kwargs)
         except Exception as e:
-            if isinstance(e, SocketIOException):
-                print(e.code, e.message)
-                emit("exception", {"code": e.code, "message": e.message})
+            if isinstance(e, SocketIOException): emit("exception", {"code": e.code, "message": e.message})
             else:
                 emit("exception", {"code": SocketIOErrors.SERVER_ERROR.value, "message": "Internal Server Error"})
                 raise
