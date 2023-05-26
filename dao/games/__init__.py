@@ -1,4 +1,4 @@
 from .outgoing_game import *
 from .game_settings import *
-from .match_archive import *
+from .match import *
 from .game import *

@@ -230,10 +230,12 @@ def pawn_legal(game : Game, origin : dict) -> numpy.ndarray:
         y_slice = 0
     if (not game.moves): return moves
 
+    y_offset = 1 if pawn.piece.color == "white" else -1
     for x_slice in [0, BOARD_WIDTH]:
         side = 1 if x_slice > origin["x"] else -1
 
-        check_capture_square = game.board[origin["y"] + 1 if pawn.piece.color == "white" else -1, origin["x"] + side]
+        try: check_capture_square = game.board[origin["y"] + y_offset, origin["x"] + side]
+        except IndexError: continue
         if check_capture_square.piece and check_capture_square.piece.color != pawn.piece.color:
             moves.append(check_capture_square)
             continue

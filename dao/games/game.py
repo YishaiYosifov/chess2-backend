@@ -3,6 +3,7 @@ import uuid
 
 from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
+from .match import Match
 from app import db
 
 active_games = {}
@@ -21,6 +22,8 @@ class Game(db.Model):
 
     game_id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.Text)
+
+    match_id = db.Column(db.Integer, db.ForeignKey("matches.match_id"))
     
     white_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     black_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
@@ -39,15 +42,18 @@ class Game(db.Model):
     clocks = db.Column(db.PickleType)
     legal_move_cache = db.Column(db.PickleType, default={})
 
-    created_at = db.Column(db.DateTime, default=db.text("(UTC_TIMESTAMP)"))
+    created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
+    is_over = db.Column(db.Boolean, server_default=db.text("FALSE"))
 
     def get_legal_moves(self, origin):
         cache_origin = tuple(origin.values())
-        if cache_origin in self.legal_move_cache: return self.legal_move_cache[origin]
+        if cache_origin in self.legal_move_cache: return self.legal_move_cache[cache_origin]
 
         square = self.board[origin["y"], origin["x"]]
         legal_moves = PIECE_DATA[square.piece.name]["all_legal"](self, origin)
         self.legal_move_cache[cache_origin] = legal_moves
+        db.session.query(Game).filter_by(game_id=self.game_id).update({"legal_move_cache": self.legal_move_cache})
+        
         return legal_moves
 
     @classmethod
@@ -81,7 +87,10 @@ class Game(db.Model):
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
         game = cls(token=token, white=white, black=black, game_settings=settings)
-        db.session.add(game)
+        match = Match(token=token)
+        game.match = match
+
+        db.session.add_all([game, match])
 
         from game_modes import GameBase
         active_games[token] = GameBase(Game.query.filter_by(token=token).first())

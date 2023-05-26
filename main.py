@@ -98,6 +98,7 @@ def delete_expired():
                 .join(User).filter_by(auth_method=AuthMethods.GUEST).all()
             for guest in expired_guests: guest.user.delete()
             
+            Match.query.filter((Match.is_active == db.false()) & (Match.last_game_over < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S"))).delete()
             SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             OutgoingGames.query.filter(OutgoingGames.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()

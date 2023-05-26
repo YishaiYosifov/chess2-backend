@@ -9,6 +9,8 @@
         ["child-pawn", "antiqueen", "pawn", "pawn", "pawn", "pawn", "knook", "child-pawn"],
         ["archbishop", "child-pawn", null, null, null, null, "child-pawn", "archbishop"]
     ],
+    "DRAWN_ELO_K_FACTOR": 2,
+    "ELO_K_FACTOR": 10,
 
     "MYSQL_POOL_SIZE": 7,
     "MYSQL_MAX_OVERFLOW": 10,

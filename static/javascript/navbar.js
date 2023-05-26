@@ -30,7 +30,7 @@ function loadNavbar() {
     const root = location.protocol + "//" + location.host
     $.getJSON(`${root}/static/navbar.json`, async navbarItems => {
         const isLoggedIn = Object.keys(authInfo).length && authInfo["auth_method"] != "guest";
-    
+
         const bodyTop = navbar.find(".offcanvas-body").find("#body-top");
         const bodyBottom = navbar.find(".offcanvas-body").find("#body-bottom");
         for (item of navbarItems) {

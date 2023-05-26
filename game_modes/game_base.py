@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import threading
 import time
 
@@ -6,8 +8,8 @@ from flask_socketio import emit
 import numpy
 
 from util import SocketIOException, SocketIOErrors
-from extensions import Square, PIECE_DATA
-from dao import Game, User
+from extensions import Square, PIECE_DATA, CONFIG
+from dao import Match, Game, User
 from app import app, db
 
 class GameBase:
@@ -16,7 +18,7 @@ class GameBase:
 
         #threading.Thread(target=self._clock).start()
 
-    def move(self, user, origin : dict, destination : dict, args):
+    def move(self, user : User, origin : dict, destination : dict, args):
         self.game : Game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
 
@@ -76,10 +78,11 @@ class GameBase:
                     self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
                 break
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
-        else: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
+
         if not move_log["moved"]:
             if IS_CAPTURE: move_log["captured"].append({"piece": destination_square.piece.name, "x": destination["x"], "y": destination["y"]})
             move_log["moved"].append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
+        if not collisions: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
 
         origin_square.piece.moved = True
 
@@ -98,12 +101,47 @@ class GameBase:
         self.game.legal_move_cache = {}
         db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves, "legal_move_cache": self.game.legal_move_cache})
 
+        # Check if the king was taken
+        for square in move_log["captured"]:
+            if square["piece"] == "king":
+                self.end_game(1 if user_color == "white" else -1, 1 if user_color == "black" else -1, "King Captured")
+                move_data["is_over"] = True
+                break
+
         # Emit the move and sync the clock
         emit("move", move_data, to=self.game.token)
         emit("clock_sync", self.game.clocks, to=self.game.token)
 
         self.game.turn = opponent
         db.session.commit()
+    
+    def end_game(self, white_results : int, black_results : int, reason : str):
+        white_rating, black_rating = self.update_elo(white_results, black_results)
+        emit("game_over", {"white_results": white_results, "black_results": black_results, "reason": reason, "white_rating": white_rating, "black_rating": black_rating}, to=self.game.token)
+
+        self.game.is_over = True
+        
+        self.game.match.is_active = False
+        self.game.match.last_game_over = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+        self.game.match.white_results += white_results
+        self.game.match.black_results += black_results
+        db.session.commit()
+
+    def update_elo(self, white_results : int, black_results : int) -> tuple[int, int]:
+        white_rating = self.game.white.rating(self.game.game_settings.mode)
+        black_rating = self.game.black.rating(self.game.game_settings.mode)
+
+        white_expected = white_rating.elo / (white_rating.elo + black_rating.elo)
+        black_expected = black_rating.elo / (white_rating.elo + black_rating.elo)
+
+        if white_results == black_results == 0.5: k = CONFIG["DRAWN_ELO_K_FACTOR"]
+        else: k = CONFIG["ELO_K_FACTOR"]
+
+        white_rating.elo = round(white_rating.elo + k * (white_results * white_expected))
+        black_rating.elo = round(black_rating.elo + k * (black_results * black_expected))
+
+        return white_rating.elo, black_rating.elo
     
     # region Helpers
 

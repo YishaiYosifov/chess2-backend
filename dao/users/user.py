@@ -70,11 +70,11 @@ class User(db.Model):
     def get_active_game(self) -> Game: return Game.query.filter((Game.white == self) | (Game.black == self)).first()
 
     def get_public_info(self) -> dict:
-        from util import get_from_column
-        return get_from_column(self, PUBLIC_INFO)
+        from util import column_to_dict
+        return column_to_dict(self, include=PUBLIC_INFO)
     def get_private_info(self) -> dict:
-        from util import get_from_column
-        return self.get_public_info() | get_from_column(self, PRIVATE_INFO)
+        from util import column_to_dict
+        return self.get_public_info() | column_to_dict(self, include=PRIVATE_INFO)
 
     def rating(self, mode : str): return RatingArchive.query.filter_by(user=self, mode=mode).order_by(RatingArchive.rating_id.desc()).first()
 

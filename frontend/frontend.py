@@ -48,7 +48,7 @@ def user_helper(**kwargs):
 
 def game_helper(**kwargs):
     game_token = kwargs.get("game_token")
-    if not game_token in active_games: return redirect("/")
+    if not game_token in active_games: return redirect("/play")
 
     return True
 

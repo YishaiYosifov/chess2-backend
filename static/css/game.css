@@ -87,6 +87,18 @@ canvas {
     border-radius: 5px;
 }
 
+.victory .modal-header {
+    background-image: linear-gradient(to right, rgb(20, 162, 20), rgb(170, 255, 0));
+}
+
+.defeat .modal-header {
+    background-image: linear-gradient(to right, red, rgb(255, 183, 0));
+}
+
+.draw  q.modal-header {
+    background-image: linear-gradient(to right, gray, silver);
+}
+
 @media (max-width: 768px) {
     #board {
         width: 90vmin;

@@ -32,7 +32,33 @@
         </div>
 
         <div class="card" id="promotion-card"></div>
-        
+        <div class="modal fade" id="game-over-modal" tabindex="-1" aria-labelledby="gameOverModal" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 text-white" style="background-color: var(--dark-primary);">
+                    <div class="modal-header">
+                        <h1 class="modal-title" id="game-over-results-text"></h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <p class="text-center mt-3" id="game-over-reason-text"></p>
+                        <div class="justify-content-center d-flex">
+                            <div class="text-center me-3">
+                                <img class="img-fluid border border-white border-3 profile-picture-white" height="100px" width="100px">
+                                <p id="white-elo-text"></p>
+                            </div>
+                            <div class="text-center">
+                                <img class="img-fluid border border-black border-3 profile-picture-black" height="100px" width="100px">
+                                <p id="black-elo-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+          
         <script src="../static/javascript/util.js"></script>
         <script src="../static/javascript/game-base.js"></script>
         <script src="../static/javascript/game.js"></script>

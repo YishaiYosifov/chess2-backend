@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify
 from flask_socketio import emit
 
 from dao import GameSettings, OutgoingGames, Game, User, AuthMethods, RatingArchive
-from util import requires_args, requires_auth
+from util import requires_args, requires_auth, column_to_dict
 from extensions import CONFIG
 from app import db
 
@@ -117,12 +117,14 @@ def get_board(args):
     game : Game = Game.query.filter_by(token=args.game_token).first()
     if not game: raise NotFound("Game Not Found")
 
-    return jsonify({
+    game_dict = column_to_dict(game, include=["moves", "is_over"])
+    return jsonify(game_dict | {
         "white": game.white.user_id,
         "black": game.black.user_id,
         "turn": game.turn.user_id,
         "board": [[square.to_dict() for square in row] for row in game.board],
-        "moves": game.moves
+        "match": {"white_results": game.match.white_results, "black_results": game.match.black_results},
+        "mode": game.game_settings.mode
     }), 200
 
 @game.route("/get_legal", methods=["POST"])

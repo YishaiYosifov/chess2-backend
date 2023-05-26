@@ -58,10 +58,8 @@ def login(args):
     password = args.password
 
     # Select the user using the assuming the selector is the username, if it doesn't find the user select assuming the selector is the email address
-    user : User = User.query.filter_by(username=selector).first()
-    if not user:
-        user : User = User.query.filter_by(email=selector).first()
-        if not user: raise Unauthorized("Unknown email / username / password")
+    user : User = User.query.filter_by(username=selector).first() or User.query.filter_by(email=selector).first()
+    if not user: raise Unauthorized("Unknown email / username / password")
     
     if user.auth_method != AuthMethods.WEBSITE: raise BadRequest("Wrong Authorization Method")
 

@@ -8,18 +8,24 @@ const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">
 const gameToken = window.location.pathname.split("/").pop();
 const CSSProperties = getComputedStyle(document.documentElement, null);
 
+var gameData;
 var moves;
 var board;
 var color;
+
+var white;
+var black;
+
+var isGameOver = false;
 var isLocalTurn;
 
 var highlightElement;
 var movingElement;
 
+var allLegalCache = {};
 var boardHeight;
 var boardWidth;
 
-var allLegalCache = {};
 var game;
 
 const pieces = ["knook", "queen", "antiqueen", "rook", "horse", "xook", "bishop", "archbishop", "king", "pawn", "child-pawn"]
@@ -28,7 +34,14 @@ async function baseConstructBoard() {
     const boardContainer = $("#board");
     const userID = authInfo.user_id;
 
-    const gameData = await (await apiRequest("/game/get_game", {"game_token": gameToken})).json();
+    gameData = await (await apiRequest("/game/get_game", {"game_token": gameToken})).json();
+    
+    white = await (await apiRequest(`/profile/${gameData["white"]}/get_info`, {"include": ["username", "country"]})).json();
+    white["rating"] = await (await apiRequest(`/profile/${gameData["white"]}/get_ratings`, {"mode": gameData["mode"]})).json();
+
+    black = await (await apiRequest(`/profile/${gameData["black"]}/get_info`, {"include": ["username", "country"]})).json();
+    black["rating"] = await (await apiRequest(`/profile/${gameData["black"]}/get_ratings`, {"mode": gameData["mode"]})).json();
+
     color = userID == gameData.white ? "white" : "black";
     board = gameData.board;
     moves = gameData.moves;
@@ -37,6 +50,9 @@ async function baseConstructBoard() {
     boardWidth = board[0].length;
     
     isLocalTurn = gameData.turn == userID;
+
+    $(".profile-picture-white").attr("src", `../static/uploads/${gameData["white"]}/profile-picture.jpeg`)
+    $(".profile-picture-black").attr("src", `../static/uploads/${gameData["black"]}/profile-picture.jpeg`)
 
     const promotionCard = $("#promotion-card");
     for (const piece of pieces) {
@@ -80,10 +96,12 @@ async function baseConstructBoard() {
 class GameBase {
     constructor() {
         game = this;
+        if (gameData["is_over"]) return;
         if (isLocalTurn) enableDraggable();
 
         gameNamespace.on("move", this.socketioMove);
         gameNamespace.on("exception", this.socketioException);
+        gameNamespace.on("game_over", this.socketioGameOver);
 
         $(`[color=${color}]`).mousedown(async function(event) {
             if (event.which != 1 || !isLocalTurn) return;
@@ -221,10 +239,38 @@ class GameBase {
         }
     }
 
+    async socketioGameOver(data) {
+        isGameOver = true;
+        disableDraggable();
+
+        const gameOverModal = $("#game-over-modal");
+        $("#game-over-reason-text").text("By " + data["reason"]);
+
+        const whiteEloText = $("#white-elo-text");
+        const blackEloText = $("#black-elo-text");
+        if (data["white_results"] == 1) setWinner("white");
+        else if (data["black_results"] == 1) setWinner("black");
+        else {
+            $("#game-over-results-text").text("DRAW")
+            whiteEloText.addClass("bg-gray");
+            blackEloText.addClass("bg-gray");
+            gameOverModal.addClass("draw");
+        }
+
+        whiteEloText.text(white["rating"]);
+        blackEloText.text(black["rating"]);
+
+        await gameOverModal.modal("show").promise();
+        await sleep(450);
+
+        eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
+        eloTextAnimation(blackEloText, black["rating"], data["black_rating"]);
+    }
+
     async socketioMove(data) {
         await game.movePiece(data["move_log"], data["promote_to"]);
     
-        if (data.turn == color) enableDraggable();
+        if (!data["is_over"] && data.turn == color) enableDraggable();
         else disableDraggable();
     }
 
@@ -258,7 +304,36 @@ class GameBase {
     }
 }
 
+function setWinner(winner) {
+    const loser = winner == "white" ? "black" : "white";
+    $(`#${winner}-elo-text`).addClass("bg-success");
+    $(`#${loser}-elo-text`).addClass("bg-danger");
+
+    const isWinner = winner == color
+    $("#game-over-modal").addClass(isWinner ? "victory" : "defeat");
+    $("#game-over-results-text").text(isWinner ? "VICTORY" : "DEFEAT")
+}
+
+async function eloTextAnimation(textElement, currentElo, newElo) {
+    const originalFont = textElement.css("font-size");
+    await textElement.animate({"font-size": "25px"}, 500).promise();
+    await sleep(300);
+
+    const add = currentElo < newElo ? 1 : -1
+    while (currentElo != newElo) {
+        currentElo += add;
+        textElement.text(currentElo);
+
+        await sleep(50);
+    }
+
+    await sleep(300);
+    textElement.animate({"font-size": originalFont}, 500);
+}
+
 function enableDraggable() {
+    if (isGameOver) return;
+    
     isLocalTurn = true;
     $(`img[color="${color}"]`).draggable({
         containment: $("#board"),

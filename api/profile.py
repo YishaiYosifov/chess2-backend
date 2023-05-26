@@ -14,13 +14,13 @@ from pydantic import BaseModel
 from PIL import Image
 
 from util import requires_args, requires_auth, try_get_user_from_session, column_to_dict
-from dao import MatchArchive, AuthMethods, User, WebsiteAuth, RatingArchive
+from dao import Game, AuthMethods, User, WebsiteAuth, RatingArchive
 from app import db
 
 profile = Blueprint("profile", __name__, url_prefix="/profile/<target>")
 
 @profile.route("/get_info", methods=["POST"])
-@requires_args(Argument("include", type=str, action='append'))
+@requires_args(Argument("include", type=str, action="append"))
 def get_info(target : str, args):
     """
     Get a user's information
@@ -32,7 +32,7 @@ def get_info(target : str, args):
         data = user.get_private_info()
     else:
         # Select the user using the given username
-        user : User = User.query.filter_by(username=target).first()
+        user : User = User.query.filter_by(username=target).first() or User.query.filter_by(user_id=target).first()
         if not user: raise NotFound("User Not Found")
         data = user.get_public_info()
     
@@ -49,36 +49,37 @@ def get_games(target : str, args):
     """
 
     # Find the target user
-    user : User = User.query.filter_by(username=target).first()
+    user : User = User.query.filter_by(username=target).first() or User.query.filter_by(user_id=target).first()
     if not user: raise NotFound("User Not Found")
 
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[MatchArchive] = MatchArchive.query.filter((MatchArchive.white == user) | (MatchArchive.black == user)).limit(args.limit).all()
+    games : list[Game] = Game.query.filter((Game.is_over == db.true()) & ((Game.white == user) | (Game.black == user))).limit(args.limit).all()
     games_data = []
 
     # Convert it to json
     for game in games:
-        data = column_to_dict(game, ["white_id", "black_id", "game_settings"])
+        data = column_to_dict(game, include=["white_id", "black_id", "game_settings"])
         data["white"] = game.white.username if game.white else "DELETED"
         data["black"] = game.black.username if game.black else "DELETED"
-        data["game_settings"] = column_to_dict(game.game_settings, ["game_settings_id"])
+        data["game_settings"] = column_to_dict(game.game_settings, include=["game_settings_id"])
 
         games_data.append(data)
 
     return jsonify(games_data), 200
 
 @profile.route("/get_ratings", methods=["POST"])
-@requires_args(Argument("mode", type=str, required=True), Argument("since", type=int, required=True))
+@requires_args(Argument("mode", type=str, required=True), Argument("since", type=int))
 def get_ratings(target : str, args):
     """
     Get rating information for a certain user
     """
 
     # Find the target user
-    user : User = User.query.filter_by(username=target).first()
+    user : User = User.query.filter_by(username=target).first() or User.query.filter_by(user_id=target).first()
     if not user: raise NotFound("User Not Found")
+    if not args.since: return jsonify(user.rating(args.mode).elo), 200
 
     since = datetime.utcfromtimestamp(args.since)
 

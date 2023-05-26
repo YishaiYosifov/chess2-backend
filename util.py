@@ -198,22 +198,21 @@ def send_verification_email(to : str, auth : WebsiteAuth):
     # Send the email
     gmail_service.users().messages().send(userId="me", body={"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()}).execute()
 
-def column_to_dict(column, exclude = []) -> dict[str:any]:
-    attributes = [attribute for attribute, value in column.__dict__.items()
-        if value != None and \
-        not attribute in exclude and \
-        not attribute.startswith("_")
-    ]
-    return get_from_column(column, attributes)
-def get_from_column(column, attributes : list) -> dict[str:any]:
+def column_to_dict(column, include = [], exclude = []) -> dict[str:any]:
     """
-    Get attributes from the object
+    Get attributes from sqlalchemy object
 
-    :param attributes: the attribute to get
+    :param include: attributes to include
+    :param exclude: attributes to exclude
+
+    :raises ValueError: both include and exclude were given
     """
+    if include and exclude: raise ValueError("Cannot have both include and exclude")
+
     results = {}
-    for attribute in attributes:
-        value = getattr(column, attribute)
+    for attribute, value in column.__dict__.items():
+        if (include and not attribute in include) or attribute in exclude or attribute.startswith("_"): continue
+        
         if isinstance(value, Enum): value = value.value
         elif isinstance(value, datetime): value = value.isoformat()
         results[attribute] = value
