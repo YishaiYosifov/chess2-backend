@@ -108,6 +108,7 @@ def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True
 
     :param force_login: raise unauthorized exception when not logged in
     :param raise_on_session_expired: raise unauthorized exception when the user is logged in but the sesion expired
+    :param allow_guests: whether to allow guests users
     """
 
     if hasattr(request, "cached_session_user"): return request.cached_session_user

@@ -64,11 +64,13 @@ class User(db.Model):
     incoming_games = db.relationship("OutgoingGames", backref="recipient", foreign_keys="OutgoingGames.recipient_id", cascade="all, delete-orphan")
 
     def __eq__(self, to):
-        if not isinstance(to, User): return False
-        return to.user_id == self.user_id
+        from ..games.player import Player
+        if not isinstance(to, User) and not isinstance(to, Player): return False
+        return to.user_id == self.user_id or (self.player_in and to == self.player_in)
     
-    def get_active_game(self) -> Game: return Game.query.filter((Game.white == self) | (Game.black == self)).first()
-
+    @property
+    def active_game(self) -> Game: return Game.query.filter((Game.is_over == db.false()) & (Game.white.has(user=self) | Game.black.has(user=self))).first()
+    
     def get_public_info(self) -> dict:
         from util import column_to_dict
         return column_to_dict(self, include=PUBLIC_INFO)

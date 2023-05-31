@@ -6,8 +6,9 @@ from pydantic import BaseModel
 
 from .assets import assets
 
-from dao import AuthMethods, User, active_games
 from util import try_get_user_from_session
+from dao import AuthMethods, User, Game
+from app import db
 
 frontend = Blueprint("frontend", __name__, template_folder="templates")
 frontend.register_blueprint(assets)
@@ -36,7 +37,7 @@ def change_password_helper():
 def user_helper(**kwargs):
     username = kwargs.get("username")
     if not username:
-        user = try_get_user_from_session(False)
+        user = try_get_user_from_session(must_logged_in=False)
         if not user: return redirect("/")
         
         return redirect(f"/user/{user.username}")
@@ -48,14 +49,17 @@ def user_helper(**kwargs):
 
 def game_helper(**kwargs):
     game_token = kwargs.get("game_token")
-    if not game_token in active_games: return redirect("/play")
+    game = Game.query.filter_by(token=game_token).first()
+    if not game: return redirect("/play")
+    elif not game.is_over:
+        user = try_get_user_from_session(must_logged_in=False)
+        if not user or (user != game.white and user != game.black): return redirect("/play")
 
     return True
 
 def play_helper():
     user = try_get_user_from_session(allow_guests=True)
-    active_game = user.get_active_game()
-    if active_game: return redirect(f"/game/{active_game.token}")
+    if user.active_game: return redirect(f"/game/{user.active_game.token}")
     return True
 
 # endregion

@@ -1,21 +1,21 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import random
 import uuid
+import time
 
+if TYPE_CHECKING: from game_modes import Anarchy
 from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
+from .player import Player
 from app import db
 
-active_games = {}
 class Game(db.Model):
     def __init__(self, **data):
         super().__init__(**data)
-
         self.turn = self.white
-        self.clocks = {
-            data["white"].user_id: self.game_settings.time_control,
-            data["black"].user_id: self.game_settings.time_control
-        }
-        db.session.commit()
+        self.white.clock = self.black.clock = time.time() + self.game_settings.time_control
 
     __tablename__ = "games"
 
@@ -24,30 +24,35 @@ class Game(db.Model):
 
     match_id = db.Column(db.Integer, db.ForeignKey("matches.match_id"))
     
-    white_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
-    black_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
-
-    white = db.relationship("User", foreign_keys=[white_id], uselist=False)
-    black = db.relationship("User", foreign_keys=[black_id], uselist=False)
-
-    white_score = db.Column(db.Integer, server_default=db.text("0"))
-    black_score = db.Column(db.Integer, server_default=db.text("0"))
+    white_id = db.Column(db.Integer, db.ForeignKey("players.player_id"))
+    black_id = db.Column(db.Integer, db.ForeignKey("players.player_id"))
+    white = db.relationship("Player", backref=db.backref("game_white", uselist=False), foreign_keys=[white_id], uselist=False)
+    black = db.relationship("Player", backref=db.backref("game_black", uselist=False), foreign_keys=[black_id], uselist=False)
 
     game_settings_id = db.Column(db.Integer, db.ForeignKey("game_settings.game_settings_id"))
     game_settings = db.relationship("GameSettings", uselist=False)
 
-    turn_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
-    turn = db.relationship("User", foreign_keys=[turn_id], uselist=False)
+    turn_id = db.Column(db.Integer, db.ForeignKey("players.player_id"))
+    turn = db.relationship("Player", foreign_keys=[turn_id], uselist=False)
 
     moves = db.Column(db.PickleType, default=[])
     board = db.Column(db.PickleType, default=BOARD)
-    clocks = db.Column(db.PickleType)
     legal_move_cache = db.Column(db.PickleType, default={})
 
     created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
+    ended_at = db.Column(db.Double)
+    
     is_over = db.Column(db.Boolean, server_default=db.text("FALSE"))
 
-    def get_legal_moves(self, origin):
+    def get_game_class(self) -> Anarchy:
+        import game_modes
+
+        modes = {
+            "anarchy": game_modes.Anarchy
+        }
+        return modes[self.game_settings.mode](self)
+
+    def get_legal_moves(self, origin) -> list:
         cache_origin = tuple(origin.values())
         if cache_origin in self.legal_move_cache: return self.legal_move_cache[cache_origin]
 
@@ -88,10 +93,10 @@ class Game(db.Model):
 
         # Insert the game into the active games dict
         token = uuid.uuid4().hex[:8]
-        game = cls(token=token, white=white, black=black, game_settings=settings)
-        db.session.add(game)
 
-        from game_modes import GameBase
-        active_games[token] = GameBase(Game.query.filter_by(token=token).first())
+        white_player = Player(user=white, color="white")
+        black_player = Player(user=black, color="black")
+        game = cls(token=token, white=white_player, black=black_player, game_settings=settings)
+        db.session.add_all([white_player, black_player, game])
 
         return token

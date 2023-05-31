@@ -2,7 +2,7 @@
     "MODES": ["anarchy", "chss", "fog of war"],
     "TIME_CONTROLS": [1, 3, 5, 10, 15, 30],
     "INCREMENTS": [0, 2, 5, 10],
-    "ACCEPTABLE_RATING_DIFFERENCE": 200,
+    "ACCEPTABLE_RATING_DIFFERENCE": 300,
 
     "PIECE_SET": [
         ["rook", "horse", "bishop", "king", "queen", "xook", "horse", "rook"],

@@ -1,3 +1,13 @@
 .btn-outline-secondary:hover {
     background-color: rgba(105, 112, 119, 0.3);
 }
+
+#mode-preview {
+    max-width: 70vmin;
+}
+
+@media (max-width: 450px) {
+    #mode-preview {
+        max-width: 80vmin;
+    }
+}

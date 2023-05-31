@@ -16,7 +16,8 @@ const URLAlerts = {
 
 var message = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
 window.addEventListener("load", () => {
-    var urlMessage = new URLSearchParams(location.search).get("a")
+    let urlMessage = new URLSearchParams(location.search).get("a");
+    let color
     if (urlMessage) {
         if (!(urlMessage in URLAlerts)) return;
 
@@ -24,17 +25,17 @@ window.addEventListener("load", () => {
         if (!window.location.pathname.includes(alertData["urls"])) return;
 
         message = alertData["message"];
-        var color = alertData["color"]
+        color = alertData["color"];
 
-        pathname = window.location.pathname.split("/").pop()
-        pathname = (pathname == "") ? "/" : pathname
-        window.history.replaceState({}, null, pathname)
+        pathname = window.location.pathname.split("/").pop();
+        pathname = (pathname == "") ? "/" : pathname;
+        window.history.replaceState({}, null, pathname);
     }
     else if (message == "None") return;
     else {
         let messageData = JSON.parse(message);
         message = messageData["message"];
-        var color = messageData["color"]
+        color = messageData["color"];
     }
 
     showAlert(message, color);

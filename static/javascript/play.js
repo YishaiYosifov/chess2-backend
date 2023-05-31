@@ -20,8 +20,12 @@ async function main() {
             return $(this).text().replace(/\s/g, "") == value;
         }).addClass("bg-secondary");
     }
+
+    if (new URLSearchParams(location.search).get("s") == 1) $("#play").trigger("click");
+    pathname = window.location.pathname.split("/").pop();
+    pathname = (pathname == "") ? "/" : pathname;
+    window.history.replaceState({}, null, pathname);
 }
-main();
 
 $(".setting-button").click(function() {
     const button = $(this);
@@ -44,7 +48,8 @@ $(".setting-button").click(function() {
 $("#play").click(async function() {
     const response = await (await apiRequest("/game/pool/start", settings));
     if (!response.ok) {
-        showAlert("Something went wrong.");
+        if (response.status == 409) showAlert(await response.text());
+        else showAlert("Something went wrong.");
         return;
     } else if (response.status == 200) {
         window.location.replace(`/game/${await response.text()}`);
@@ -64,3 +69,5 @@ $("#cancel").click(() => {
     $("#play").show();
     $("*[setting] *").prop("disabled", false);
 });
+
+main();

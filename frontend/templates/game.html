@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <title>Play - Chess 2</title>
-        <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="Content-Language" content="en">
+        <meta name="google" content="notranslate">
+        <meta charset="utf-8">
 
         <!-- SocketIO CDN -->
         <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
@@ -28,7 +30,60 @@
         <script src="../static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
-        <div id="board" oncontextmenu="return false;">
+        <div id="main-container" class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-auto">
+                    <div class="card text-white p-2" id="board-card">
+                        <div class="card-header text-white row col-12 align-items-center p-0" id="small-profile-white" style="justify-content: space-between">
+                            <span class="username-black limit-text col-auto m-0 text-white-50" style="display: inline-block; max-width: 50%;">
+                                <img class="img-fluid profile-picture-black me-3 rounded" style="width: 100%; height: 100%; max-height: 60px; max-width: 60px;">
+                                <img class="img-fluid country-black me-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
+                            </span>
+                            <div class="col-auto d-flex bg-warning text-dark py-2 rounded clock">
+                                <i class="bi bi-clock-fill"></i>
+                                <span class="align-middle ms-2 me-2" id="clock-black"></span>
+                            </div>
+                        </div>
+                        <div class="card-body px-1 justify-content-center d-flex">
+                            <div class="m-0" id="board" oncontextmenu="return false;"></div>
+                        </div>
+                        <div class="card-footer text-white row col-12 align-items-center p-0" id="small-profile-black" style="justify-content: space-between">
+                            <span class="username-white limit-text col-auto m-0 text-white-50" style="display: inline-block; max-width: 50%;">
+                                <img class="img-fluid profile-picture-white me-3 rounded" style="width: 100%; height: 100%; max-height: 60px; max-width: 60px;">
+                                <img class="img-fluid country-white me-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
+                            </span>
+                            <div class="col-auto d-flex bg-warning text-dark py-2 rounded clock">
+                                <i class="bi bi-clock-fill"></i>
+                                <span class="align-middle ms-2 me-2" id="clock-white"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-white justify-content-center" id="info-panel">
+                    <div class="card mx-auto mx-0" id="move-history-card">
+                        <div class="card-body" style="overflow: auto;">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <tbody class="text-white">
+                                        <h3 class="text-white-50 text-center" id="no-moves-text">No Moves</h3>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-3 mx-auto mx-0" id="chat-card">
+                        <div class="card-body">
+
+                        </div>
+                        <div class="card-footer">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" placeholder="Message..." aria-label="Username" aria-describedby="chat">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card" id="promotion-card"></div>
@@ -53,7 +108,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-info">New Game</button>
+                        <button class="btn btn-info" id="new-game">New Game</button>
                         <button class="btn btn-info">Rematch</button>
 
                         <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -63,8 +118,10 @@
         </div>
           
         <script src="../static/javascript/util.js"></script>
-        <script src="../static/javascript/game-base.js"></script>
+        
+        <script src="../static/javascript/game-modes/anarchy.js"></script>
         <script src="../static/javascript/game.js"></script>
+
         <script src="../static/javascript/navbar.js"></script>
     </body>
 </html>

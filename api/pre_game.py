@@ -5,11 +5,13 @@ from flask import Blueprint, jsonify
 from flask_socketio import emit
 
 from dao import GameSettings, OutgoingGames, Game, User, AuthMethods, RatingArchive
-from util import requires_args, requires_auth, column_to_dict
+from util import requires_args, requires_auth
+from .live_game import live_game
 from extensions import CONFIG
 from app import db
 
-game = Blueprint("game", __name__, url_prefix="/game")
+game = Blueprint("pre_game", __name__, url_prefix="/game")
+game.register_blueprint(live_game)
 
 @game.route("/pool/start", methods=["POST"])
 @requires_args(Argument("mode", type=str, required=True), Argument("time_control", type=int, required=True), Argument("increment", type=int, required=True))
@@ -20,7 +22,7 @@ def start_pool_game(user : User, args):
     """
 
     if user.outgoing_game: raise Conflict("You already have an outgoing game")
-    elif user.get_active_game(): raise Conflict("You already have an active game")
+    elif user.active_game: raise Conflict("You already have an active game")
 
     # Check if the mode and the time control are valid
     mode : str = args.mode.lower()
@@ -61,7 +63,7 @@ def start_pool_game(user : User, args):
 @requires_auth()
 def invite(user : User, args):
     if user.outgoing_game: raise Conflict("You already have an outgoing game")
-    elif user.get_active_game(): raise Conflict("You already have an active game")
+    elif user.active_game: raise Conflict("You already have an active game")
 
     opponent : User = User.query.filter_by(user_id=args.recipient_id).first()
     if not opponent: raise NotFound("Opponent Not Found")
@@ -88,7 +90,7 @@ def invite(user : User, args):
 def accept_invite(user : User, args):
     inviter : User = User.query.filter_by(user_id=args.inviter_id).first()
     if not inviter or inviter.outgoing_game.recipient != user: raise BadRequest("User Not Invited")
-    elif user.get_active_game(): raise Conflict("You already have an active game")
+    elif user.active_game: raise Conflict("You already have an active game")
     
     game_id = Game.start_game(user, inviter, settings=inviter.outgoing_game.game_settings)
     db.session.delete(inviter.outgoing_game)
@@ -110,37 +112,3 @@ def cancel_outgoing(user : User):
 @game.route("/has_outgoing", methods=["POST"])
 @requires_auth(allow_guests=True)
 def has_outgoing(user : User): return jsonify(user.outgoing_game != None)
-
-@game.route("/get_game", methods=["POST"])
-@requires_args(Argument("game_token", type=str, required=True))
-def get_board(args):
-    game : Game = Game.query.filter_by(token=args.game_token).first()
-    if not game: raise NotFound("Game Not Found")
-
-    game_dict = column_to_dict(game, include=["moves", "is_over"])
-    if game.match: game_dict["match"] = column_to_dict(game, include=["white_score", "black_score"])
-    else: game_dict["match"] = {"white_score": 0, "black_score": 0}
-    return jsonify(game_dict | {
-        "white": game.white.user_id,
-        "black": game.black.user_id,
-        "turn": game.turn.user_id,
-        "board": [[square.to_dict() for square in row] for row in game.board],
-        "mode": game.game_settings.mode
-    }), 200
-
-@game.route("/get_legal", methods=["POST"])
-@requires_args(Argument("game_token", type=str, required=True), Argument("x", type=int, required=True), Argument("y", type=int, required=True))
-def get_legal_moves(args):
-    game : Game = Game.query.filter_by(token=args.game_token).first()
-    if not game: raise NotFound("Game Not Found")
-
-    try: square = game.board[args.y, args.x]
-    except IndexError: raise BadRequest("Invalid Square")
-    if not square.piece: raise BadRequest("Invalid Square")
-
-    legal_moves = game.get_legal_moves({"x": args.x, "y": args.y})
-    db.session.commit()
-    return jsonify(
-        list(
-            map(lambda move: {"x": move.x, "y": move.y}, legal_moves)
-        )), 200

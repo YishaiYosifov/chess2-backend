@@ -14,13 +14,53 @@ body {
 
 .nav-item {
     transition: all 0.2s;
-}
-.nav-item:hover {
-    background-color: var(--dark-primary);
+    border-radius: 10px;
 }
 
+.navbar-nav .nav-item.active .nav-link,
+.navbar-nav .nav-item:hover .nav-link {
+    color: #c5c5c5;
+}
+
+.active {
+    color: #c9c8c8 !important;
+}
 .nav-link {
-    padding-left: 3%;
+    color: #99999a;
+}
+.nav-link:hover {
+    color: #797979;
+}
+
+@media (min-width: 992px) {
+    .navbar-nav {
+        float: none;
+        margin:0 auto;
+        display: block;
+        text-align: center;
+    }
+    
+    .navbar-nav > li {
+        display: inline-block;
+        float: none;
+    }
+}
+
+@media (max-width: 992px) {
+    .nav-item {
+        transition: all 0.2s;
+    }
+    .nav-item:hover {
+        background-color: var(--dark-primary);
+    }
+    
+    .nav-link {
+        color: white;
+        padding-left: 3%;
+    }
+    .active {
+        color: rgb(198, 198, 198) !important;
+    }
 }
 
 .input-group-text {

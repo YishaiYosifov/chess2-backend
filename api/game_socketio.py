@@ -1,8 +1,8 @@
 from flask_restful.reqparse import Argument
 
 from util import requires_auth, requires_args, try_get_user_from_session, socket_error_handler, SocketIOException, SocketIOErrors
-from dao import User, Game, active_games
-from app import socketio
+from app import socketio, db
+from dao import User, Game
 
 def requires_game(function):
     @requires_auth(allow_guests=True)
@@ -10,7 +10,7 @@ def requires_game(function):
         user = kwargs.get("user")
         if not user: user = try_get_user_from_session(allow_guests=True)
 
-        game : Game = Game.query.filter((Game.white == user) | (Game.black == user)).first()
+        game : Game = Game.query.filter((Game.is_over == db.false()) & (Game.white.has(user=user) | Game.black.has(user=user))).first()
         if not game: raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Unknown Game Token")
 
         return function(*args, game=game, **kwargs)
@@ -26,7 +26,7 @@ def requires_game(function):
 )
 @requires_game
 def move(_, user : User, game : Game, args):
-    active_games[game.token].move(
+    game.get_game_class().move(
         user,
         origin={"x": args.origin_x, "y": args.origin_y},
         destination={"x": args.destination_x, "y": args.destination_y},

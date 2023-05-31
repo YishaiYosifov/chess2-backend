@@ -55,15 +55,15 @@ def get_games(target : str, args):
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.query.filter((Game.is_over == db.true()) & ((Game.white == user) | (Game.black == user))).limit(args.limit).all()
+    games : list[Game] = Game.query.filter((Game.is_over == db.true()) & (Game.white.has(user=user) | Game.black.has(user=user))).limit(args.limit).all()
     games_data = []
 
     # Convert it to json
     for game in games:
-        data = column_to_dict(game, include=["white_id", "black_id", "game_settings"])
-        data["white"] = game.white.username if game.white else "DELETED"
-        data["black"] = game.black.username if game.black else "DELETED"
-        data["game_settings"] = column_to_dict(game.game_settings, include=["game_settings_id"])
+        data = column_to_dict(game, exclude=["white_id", "black_id", "game_settings"])
+        data["white"] = game.white.user.username if game.white else "DELETED"
+        data["black"] = game.black.user.username if game.black else "DELETED"
+        data["game_settings"] = column_to_dict(game.game_settings, exclude=["game_settings_id"])
 
         games_data.append(data)
 

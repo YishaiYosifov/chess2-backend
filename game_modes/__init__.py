@@ -1,1 +1,1 @@
-from .game_base import *
+from .anarchy import *

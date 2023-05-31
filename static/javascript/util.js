@@ -74,14 +74,16 @@ async function loadAuthInfo() {
 }
 loadAuthInfo();
 
-function isDictEqual(dict1, dict2) {
-    const dict1Keys = Object.keys(dict1)
-    if (dict1Keys.length != Object.keys(dict2).length) return false;
-    for (const key of dict1Keys) {
-        if (dict1[key] != dict2[key]) return false;
-    }
-
-    return true;
-}
-
 const percent = (num, whole) => (num * whole) / 100
+
+function formatSeconds(seconds) {
+    if (!seconds) return "0:00";
+    
+    minutes = Math.floor(seconds / 60);
+    seconds -= minutes * 60;
+    seconds = seconds.toFixed(1);
+
+    seconds = seconds.toString();
+    if (seconds.split(".")[0].length == 1) seconds = "0" + seconds;
+    return `${minutes}:${seconds}`;
+}

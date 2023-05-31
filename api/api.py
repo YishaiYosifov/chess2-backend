@@ -2,8 +2,8 @@ from flask import Blueprint, redirect, session
 from werkzeug.exceptions import Conflict
 
 from .profile import profile
+from .pre_game import game
 from .auth import auth
-from .game import game
 
 from util import requires_auth, send_verification_email
 from dao import WebsiteAuth, User, EmailVerification

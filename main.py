@@ -22,7 +22,7 @@ from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
 
 from app import app, socketio
-from game_modes import GameBase
+from game_modes import Anarchy
 from api import api
 from dao import *
 
@@ -85,8 +85,9 @@ def connected(user : User):
 @socketio.on("connect", namespace="/game")
 @requires_auth(allow_guests=True)
 def game_connected(user : User):
-    game = user.get_active_game()
-    if game: join_room(game.token)
+    url_parts = request.referrer.split("/")
+    if url_parts[-2] == "game": join_room(url_parts[-1])
+    elif user.active_game: join_room(user.active_game.token)
 
 # Delete expired columns
 def delete_expired():
@@ -133,17 +134,7 @@ if __name__ == "__main__":
     app.register_blueprint(frontend)
     app.register_blueprint(api)
 
-    with app.app_context():
-        db.create_all()
-
-        for active_game in Game.query.all():
-            """active_game.board = numpy.asarray([[Square(x=x, y=y) for x in range(8)] for y in range(10)])
-            active_game.board[0][0].piece = Piece(name="king", color="black")
-            active_game.board[9][0].piece = Piece(name="rook", color="black")
-            active_game.turn_id = 8
-            db.session.query(Game).filter_by(game_id=active_game.game_id).update({"board": active_game.board})"""
-            active_games[active_game.token] = GameBase(active_game)
-        db.session.commit()
+    with app.app_context(): db.create_all()
     threading.Thread(target=delete_expired, daemon=True).start()
 
     socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"], use_reloader=False)
