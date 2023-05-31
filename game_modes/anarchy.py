@@ -6,7 +6,7 @@ import numpy
 
 from util import SocketIOException, SocketIOErrors
 from extensions import Square, PIECE_DATA, CONFIG
-from dao import Game, User, Player
+from dao import Game, User, Player, RatingArchive
 from app import db
 
 class Anarchy:
@@ -156,9 +156,18 @@ class Anarchy:
         white_expected = 1 / (1 + 10 ** ((black_rating.elo - white_rating.elo) / 400))
         black_expected = 1 - white_expected
 
-        white_rating.elo = max(100, round(white_rating.elo + CONFIG["ELO_K_FACTOR"] * (white_results - white_expected)))
-        black_rating.elo = max(100, round(black_rating.elo + CONFIG["ELO_K_FACTOR"] * (black_results - black_expected)))
+        new_white_rating = RatingArchive(
+            user=self.game.white.user,
+            mode=self.game.game_settings.mode,
+            elo=max(100, round(white_rating.elo + CONFIG["ELO_K_FACTOR"] * (white_results - white_expected)))
+        )
+        new_black_rating = RatingArchive(
+            user=self.game.black.user,
+            mode=self.game.game_settings.mode,
+            elo=max(100, round(black_rating.elo + CONFIG["ELO_K_FACTOR"] * (black_results - black_expected)))
+        )
+        db.session.add_all([new_white_rating, new_black_rating])
 
-        return white_rating.elo, black_rating.elo
+        return new_white_rating.elo, new_black_rating.elo
 
     # endregion

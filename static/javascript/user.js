@@ -1,7 +1,7 @@
 google.charts.load("current", {packages: ["corechart"]});
 
 const gameHTML = $($.parseHTML(
-    `<tr class="col-11 text-start">
+    `<tr class="col-11 text-start" style="cursor: pointer;">
         <td>
             <img class="img-fluid mt-2 border border-3 rounded-circle" id="mode-image" style="min-width: 60px; min-height: 60px; max-width: 60px; max-height: 60px" alt="Mode" data-bs-placement="top">
         </td>
@@ -54,20 +54,20 @@ async function main() {
     const username = window.location.pathname.split("/").pop();
 
     userInfo = await (await apiRequest(`/profile/${username}/get_info`)).json();
-    $("#profile-picture").prop("src", `/static/uploads/${userInfo["user_id"]}/profile-picture.jpeg`);
+    $("#profile-picture").prop("src", `/static/uploads/${userInfo.user_id}/profile-picture.jpeg`);
 
     let usernameGroup = $("#username-group");
-    let usernameText = $(`<span id="username limit-text" data-bs-placement="left" style="width: 280px;">${userInfo["username"]}</span>`);
-    usernameText.attr("title", userInfo["username"]);
+    let usernameText = $(`<span id="username limit-text" data-bs-placement="left" style="width: 280px;">${userInfo.username}</span>`);
+    usernameText.attr("title", userInfo.username);
     usernameGroup.append(usernameText);
     new bootstrap.Tooltip(usernameText);
 
     country = $("#country");
-    country.attr("title", userInfo["country"]);
+    country.attr("title", userInfo.country);
     new bootstrap.Tooltip(country);
-    country.prop("src", `/assets/country/${userInfo["country_alpha"]}`);
+    country.prop("src", `/assets/country/${userInfo.country_alpha}`);
 
-    $("#about").text(userInfo["about"]);
+    $("#about").text(userInfo.about);
 
     // Game Archive
     const games = await (await apiRequest(`/profile/${username}/get_games`, {"limit": 10})).json();
@@ -84,30 +84,39 @@ async function initilizePage(username, games) {
     $("#ratings").show();
     for (const game of games) {
         let gameElement = gameHTML.clone();
+        gameElement.click(() => window.location.replace(`/game/${game.token}`))
 
         let whiteUsername = gameElement.find("#white-username");
-        whiteUsername.text(game["white"]);
-        if (game["white"] != "DELETED") whiteUsername.attr("onclick", `window.location.replace("/user/${game["white"]}")`);
+        whiteUsername.text(game.white);
+        if (game.white != "DELETED") whiteUsername.click(e => {
+            e.stopPropagation();
+            window.location.replace(`/user/${game.white}`);
+        });
 
         let blackUsername = gameElement.find("#black-username");
-        blackUsername.text(game["black"]);
-        if (game["black"] != "DELETED") blackUsername.attr("onclick", `window.location.replace("/user/${game["black"]}")`);
+        blackUsername.text(game.black);
+        if (game.black != "DELETED") blackUsername.click(e => {
+            e.stopPropagation();
+            window.location.replace(`/user/${game.black}`);
+        });
 
         let modeImage = gameElement.find("#mode-image");
-        modeImage.prop("src", `../static/assets/modes/${game["game_settings"]["mode"]}.png`);
-        modeImage.prop("title", game["game_settings"]["mode"]);
+        modeImage.prop("src", `../static/assets/modes/${game.game_settings.mode}.png`);
+        modeImage.prop("title", game.game_settings.mode);
         new bootstrap.Tooltip(modeImage);
 
-        gameElement.find("#white-wins").text(game["white_wins"]);
-        gameElement.find("#black-wins").text(game["black_wins"]);
+        gameElement.find("#white-wins").text(game.white_score);
+        gameElement.find("#black-wins").text(game.black_score);
 
         let results = gameElement.find("#results");
-        if ((game["winner"] == "white" && game["white"] == username) ||
-            (game["winner"] == "black" && game["black"] == username)) {
+        if (game.white_score == game.black_score == 0.5) {
+            results.addClass("bi-plus-slash-minus");
+            results.addClass("text-gray");
+        } else if ((game.white_score == 1 && game.white == username) ||
+            (game.black_score == 1 && game.black == username)) {
             results.addClass("bi-plus-square");
             results.addClass("text-success");
-        }
-        else {
+        } else {
             results.addClass("bi-dash-square");
             results.addClass("text-danger");
         }
@@ -124,7 +133,7 @@ async function initilizePage(username, games) {
     const ratingHolder = $("#ratings")
 
     for (const [mode, ratingData] of Object.entries(ratings)) {
-        let rating = ratingData["archive"].at(-1)["elo"];
+        let rating = ratingData.archive.at(-1).elo;
 
         const ratingElement = ratingHTML.clone();
 
@@ -133,11 +142,11 @@ async function initilizePage(username, games) {
         ratingElement.find("#elo").text(rating);
         ratingElement.find("#rating-mode").text(mode);
 
-        ratingElement.find("#rating-highest").text(ratingData["max"]);
-        ratingElement.find("#rating-lowest").text(ratingData["min"]);
+        ratingElement.find("#rating-highest").text(ratingData.max);
+        ratingElement.find("#rating-lowest").text(ratingData.min);
 
         let ratingChangeElement = ratingElement.find("#rating-change")
-        ratingChange = rating - ratingData["archive"][0]["elo"];
+        ratingChange = rating - ratingData.archive[0].elo;
         if (ratingChange > 0) {
             ratingChangeElement.text("+" + ratingChange)
             ratingChangeElement.css("color", "var(--soft-green)")
@@ -152,10 +161,10 @@ async function initilizePage(username, games) {
 
         ratingHolder.append(ratingElement);
 
-        let data = ratingData["archive"].map(rating => {
-            return [new Date(rating["achieved_at"]), rating["elo"]];
+        let data = ratingData.archive.map(rating => {
+            return [new Date(rating.achieved_at).toLocaleString(), rating.elo];
         });
-        data.push([new Date(), rating]);
+        data.push([new Date().toLocaleString(), rating]);
         
         google.charts.setOnLoadCallback(() => create_chart(ratingElement.find(".chart")[0], [["Date", "Elo"]].concat(data)));
     }
@@ -163,8 +172,6 @@ async function initilizePage(username, games) {
 
 function create_chart(element, data) {
     data = google.visualization.arrayToDataTable(data);
-    new google.visualization.DateFormat({pattern: "MMM d"}).format(data, 0);
-
     var options = {
         legend: "none",
         backgroundColor: "#1A1A1A",
@@ -183,7 +190,8 @@ function create_chart(element, data) {
             height: "100%"
         },
         areaOpacity: 0.5,
-        focusTarget: "category"
+        focusTarget: "category",
+        bar: { groupWidth: '50%' }
     };
     var chart = new google.visualization.AreaChart(element);
     chart.draw(data, options);
