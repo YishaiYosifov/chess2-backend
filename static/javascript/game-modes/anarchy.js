@@ -67,26 +67,7 @@ class Anarchy {
         gameNamespace.on("exception", this.socketioException);
         gameNamespace.on("clock_sync", this.socketioSyncClock);
 
-        $(`[color=${color}]`).mousedown(async function(event) {
-            if (event.which != 1 || turnColor != color || isGameOver || viewingMove != null) return;
-    
-            $(".valid-move").hide().parent().droppable().droppable("disable");
-        
-            movingElement = $(this);
-            const id = movingElement.parent().attr("id");
-            let [y, x] = id.split("-");
-            x = parseInt(x);
-            y = parseInt(y);
-        
-            let legalMoves = allLegalCache[id] ?? await (await apiRequest("/game/live/get_legal", {"game_token": gameToken, "x": x, "y": y})).json();
-            allLegalCache[id] = legalMoves;
-            for (const validMove of legalMoves) {
-                const moveIndicator = $(`#${validMove.y}-${validMove.x}`).find(".valid-move");
-                moveIndicator.fadeIn(300);
-                
-                moveIndicator.parent().droppable({drop: (event, ui) => game.moveListener($(ui.helper), $(event.target))}).droppable("enable");
-            }
-        });
+        $(`[color=${color}]`).mousedown(this.showLegalClick);
     
         $(".square").mousedown(function(event) {
             if (event.which == 1) {
@@ -178,30 +159,32 @@ class Anarchy {
         addMoveToTable(moveLog);
         moves.push(moveLog);
 
-        if (viewingMove != null) return;
-        movingElement = null;
+        if (viewingMove == null) movingElement = null;
         allLegalCache = {};
 
         for (const [index, capture] of Object.entries(moveLog["captured"])) {
-            const capturedPieceImage = $(`#${capture.y}-${capture.x}`).find(".piece");
-            capturedPieceImage.delay(index * 30).fadeOut(100, function() { $(this).remove(); });
+            if (viewingMove == null) {
+                const capturedPieceImage = $(`#${capture.y}-${capture.x}`).find(".piece");
+                capturedPieceImage.delay(index * 30).fadeOut(100, function() { $(this).remove(); });
+            }
             board[capture.y][capture.x].piece = null;
         }
         for (const move of moveLog["moved"]) {
             const [origin, destination] = [move["origin"], move["destination"]];
-            const originPieceImage = $(`#${origin.y}-${origin.x}`).find(".piece");
-            const destinationPiece = $(`#${destination.y}-${destination.x}`);
-
             const tempPiece = Object.assign({}, board[origin.y][origin.x].piece);
-            if (move.piece.includes("pawn") && (destination.y == 0 || destination.y == boardHeight - 1)) {
-                tempPiece.name = promoteTo;
-                originPieceImage.attr("src", `../static/assets/pieces/${promoteTo}-${tempPiece.color}.png`);
+            if (viewingMove == null) {
+                const originPieceImage = $(`#${origin.y}-${origin.x}`).find(".piece");
+                const destinationPiece = $(`#${destination.y}-${destination.x}`);
+
+                if (move.piece.includes("pawn") && (destination.y == 0 || destination.y == boardHeight - 1)) {
+                    tempPiece.name = promoteTo;
+                    originPieceImage.attr("src", `../static/assets/pieces/${promoteTo}-${tempPiece.color}.png`);
+                }
+                animateMovement(originPieceImage, destinationPiece);
             }
 
             board[origin.y][origin.x].piece = null;
             board[destination.y][destination.x].piece = tempPiece;
-            
-            animateMovement(originPieceImage, destinationPiece);
         }
     }
 
@@ -275,5 +258,26 @@ class Anarchy {
                 await sleep(300);
             }
         } else showAlert("Something went wrong. Please refresh the page");
+    }
+
+    async showLegalClick(event) {
+        if (event.which != 1 || turnColor != color || isGameOver || viewingMove != null) return;
+
+        $(".valid-move").hide().parent().droppable().droppable("disable");
+    
+        movingElement = $(this);
+        const id = movingElement.parent().attr("id");
+        let [y, x] = id.split("-");
+        x = parseInt(x);
+        y = parseInt(y);
+    
+        let legalMoves = allLegalCache[id] ?? await (await apiRequest("/game/live/get_legal", {"game_token": gameToken, "x": x, "y": y})).json();
+        allLegalCache[id] = legalMoves;
+        for (const validMove of legalMoves) {
+            const moveIndicator = $(`#${validMove.y}-${validMove.x}`).find(".valid-move");
+            moveIndicator.fadeIn(300);
+            
+            moveIndicator.parent().droppable({drop: (event, ui) => game.moveListener($(ui.helper), $(event.target))}).droppable("enable");
+        }
     }
 }

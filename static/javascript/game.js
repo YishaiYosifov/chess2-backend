@@ -399,8 +399,6 @@ $(window).on("keydown", e => {
     } else if (e.key == "ArrowLeft") {
         if (viewingMove == null) newViewingMove = moves.length;
         else if (viewingMove - 1 < 0) return;
-
-        disableDraggable()
         newViewingMove--;
         
         const move = moves[newViewingMove];
@@ -433,7 +431,6 @@ $(window).on("keydown", e => {
 
 function revertToIndex(moveIndex) {
     if (typeof(moveIndex) != "number") moveIndex = $(this).attr("id").split("-").at(-1);
-    setViewingMove(moveIndex);
 
     const revertBoard = structuredClone(board);
     for (const [i, move] of Object.entries(moves.slice(moveIndex).reverse())) {
@@ -455,10 +452,13 @@ function revertToIndex(moveIndex) {
                 const piece = pieceHTML.clone();
                 piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.png`);
                 piece.attr("color", square.piece.color);
+                if (square.piece.color == color) piece.mousedown(game.showLegalClick);
+                
                 squareElement.append(piece);
             }
         }
     }
+    setViewingMove(moveIndex);
 }
 
 function setViewingMove(newViewingMove) {
@@ -470,6 +470,6 @@ function setViewingMove(newViewingMove) {
         viewingMove = newViewingMove;
     } else {
         viewingMove = null;
-        enableDraggable();
+        if (turnColor == color) enableDraggable();
     }
 }

@@ -1,6 +1,6 @@
 {
     "MODES": ["anarchy", "chss", "fog of war"],
-    "TIME_CONTROLS": [1, 3, 5, 10, 15, 30],
+    "TIME_CONTROLS": [1, 3, 5, 10, 15, 30, 180],
     "INCREMENTS": [0, 2, 5, 10],
     "ACCEPTABLE_RATING_DIFFERENCE": 300,
 

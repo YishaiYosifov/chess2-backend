@@ -9,6 +9,7 @@ from .board import Square, Piece, BOARD_HEIGHT, BOARD_WIDTH
 if TYPE_CHECKING: from dao import Game
 
 # region Forced moves
+
 # @returns
 # 0: not forced
 # 1: forced, not played
@@ -49,9 +50,11 @@ def bishop_childpawn_forced_status(game : Game, square : Square, origin : dict, 
                         origin["x"] == square.x and origin["y"] == square.y: return 2, []
                 break
     return (1, moves) if moves else (0, [])
+
 # endregion
 
 # region Collisions
+
 def straight_collision(game : Game, origin : dict, destination : dict, include_first = False) -> numpy.ndarray:
     x1, y1 = origin.values()
     x2, y2 = destination.values()
@@ -148,6 +151,7 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
                     {"piece": "king", "origin": origin, "destination": destination},
                     {"piece": "rook", "origin": {"x": castle_rook.x, "y": castle_rook.y}, "destination": new_rook_position}
                 ], "captured": captured}}
+
 # endregion
 
 # region All Legal
@@ -303,7 +307,7 @@ def _get_enpassant_diagonal(game : Game, pawn_square : Square, x_slice : int, y_
     return enpassant_slice, captured
 
 def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, is_vertical = False) -> list | None:
-    if not castle_rook.piece or (not is_vertical and castle_rook.piece.moved): return
+    if not castle_rook.piece or castle_rook.piece.name != "rook" or (not is_vertical and castle_rook.piece.moved): return
 
     between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[1:-1]
     
@@ -312,8 +316,6 @@ def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, is_verti
         if square.piece and not (not is_vertical and square == between[0] and square.piece.name == "bishop"): break
         castle_moves.append(square)
     else: return castle_moves
-
-def _is_castle_valid(): pass
 
 # endregion
 
