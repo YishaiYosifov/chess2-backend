@@ -30,6 +30,8 @@
         <script src="../static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
         <div id="main-container" class="container-fluid">
             <div class="row justify-content-center">
                 <div class="col-auto">
@@ -62,11 +64,13 @@
 
                 <div class="text-white justify-content-center" id="info-panel">
                     <div class="card mx-auto mx-0" id="move-history-card">
+                        <div class="card-header">
+                            <h3 class="text-white-50 text-center" id="move-history-title"></h3>
+                        </div>
                         <div class="card-body" style="overflow: auto;">
                             <div class="table-responsive">
-                                <table class="table">
-                                    <tbody class="text-white">
-                                        <h3 class="text-white-50 text-center" id="no-moves-text">No Moves</h3>
+                                <table class="table" style="border-collapse:separate; border-spacing: 0 0.5em;">
+                                    <tbody class="text-white" id="move-history-table">
                                     </tbody>
                                 </table>
                             </div>

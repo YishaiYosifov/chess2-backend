@@ -62,6 +62,6 @@
         "auth_req": 1,
         "side": "bottom",
         
-        "path": "api/auth/logout"
+        "path": "logout"
     }
 ]

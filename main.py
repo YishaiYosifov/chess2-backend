@@ -15,14 +15,12 @@ from pip._vendor import cachecontrol
 
 import google.auth.transport.requests
 import requests
-import numpy
 
-from extensions import GOOGLE_CLIENT_ID, CONFIG, Square, Piece
 from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
+from extensions import GOOGLE_CLIENT_ID, CONFIG
 
 from app import app, socketio
-from game_modes import Anarchy
 from api import api
 from dao import *
 
@@ -55,7 +53,7 @@ def google_signup():
     if not user:
         user = User(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL)
         user.insert()
-    user.gen_session_token()
+    session["user_id"] = user.user_id
     db.session.commit()
     
     return redirect("/")
@@ -66,7 +64,7 @@ def google_login():
     Redirect the user to the google log in page
     """
 
-    if try_get_user_from_session(must_logged_in=False, raise_on_session_expired=False): return redirect("/")
+    if try_get_user_from_session(force_logged_in=False): return redirect("/")
 
     authorization_url, state = flow.authorization_url()
     session["state"] = state
@@ -95,11 +93,12 @@ def delete_expired():
         with app.app_context():
             now = datetime.utcnow()
 
-            expired_guests : list[SessionToken] = SessionToken.query.filter(SessionToken.last_used < (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")) \
-                .join(User).filter_by(auth_method=AuthMethods.GUEST).all()
-            for guest in expired_guests: guest.user.delete()
-            
-            SessionToken.query.filter(SessionToken.last_used < (now - timedelta(weeks=2)).strftime("%Y-%m-%d %H:%M:%S")).delete()
+            expired_guests : list[User] = User.query.filter(
+                (User.last_accessed < (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")) &
+                (User.auth_method == AuthMethods.GUEST)
+            )
+            for user in expired_guests: user.delete()
+
             EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             OutgoingGames.query.filter(OutgoingGames.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
             db.session.commit()
@@ -107,12 +106,7 @@ def delete_expired():
         time.sleep(60)
 
 @app.errorhandler(HTTPException)
-def http_error_handler(exception : HTTPException):
-    if request.path.split("/")[1] != "api":
-        if isinstance(exception, Unauthorized):
-            if exception.description == "Session Expired": return redirect("/login?a=session-expired")
-            else: return redirect("/login")
-    return exception.description, exception.code
+def http_error_handler(exception : HTTPException): return exception.description, exception.code
 
 if __name__ == "__main__":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"

@@ -115,7 +115,7 @@ class Anarchy:
     
     def end_game(self, white_results : int, black_results : int, reason : str):
         white_rating, black_rating = self._update_elo(white_results, black_results)
-        emit("game_over", {"white_results": white_results, "black_results": black_results, "reason": reason, "white_rating": white_rating, "black_rating": black_rating}, to=self.game.token)
+        emit("game_over", {"white_results": white_results, "black_results": black_results, "reason": reason, "white_rating": white_rating, "black_rating": black_rating}, to=self.game.token, namespace="/game")
 
         self.game.is_over = True
         self.game.ended_at = time.time()

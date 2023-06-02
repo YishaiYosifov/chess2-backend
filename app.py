@@ -5,6 +5,7 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 from flask_session import Session
+from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 
 import urllib.parse
@@ -15,6 +16,7 @@ from extensions import CONFIG
 load_dotenv()
 
 app = flask.Flask(__name__)
+csrf = CSRFProtect(app)
 
 DB_USERNAME = os.getenv("MYSQL_DATABASE_USER")
 DB_PASSWORD = urllib.parse.quote_plus(os.getenv("MYSQL_DATABASE_PASSWORD"))

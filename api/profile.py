@@ -55,7 +55,7 @@ def get_games(target : str, args):
     if args.limit > 100: raise BadRequest("Can only fetch up to 100 games")
 
     # Get a list of the games
-    games : list[Game] = Game.query.filter((Game.is_over == db.true()) & (Game.white.has(user=user) | Game.black.has(user=user))).limit(args.limit).all()
+    games : list[Game] = Game.query.filter((Game.is_over == db.true()) & (Game.white.has(user=user) | Game.black.has(user=user))).order_by(db.desc(Game.ended_at)).limit(args.limit).all()
     games_data = []
 
     # Convert it to json

@@ -1,16 +1,20 @@
 async function apiRequest(route, json=null) {
-    var response = await fetch(`/api${route}`, {
+    const csrfToken = $("[name='csrf_token']").val();
+    const response = await fetch(`/api${route}`, {
             method: "POST",
             body: JSON.stringify(json),
             headers: {
                 "Accept": "application/json",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
             }
         }
     );
 
-    var responseCopy = response.clone();
-    if (authInfo["auth_method"] != "guest" && responseCopy.status == 401 && await responseCopy.text() == "Session Expired") {
+    if (Object.keys(authInfo).length && authInfo["auth_method"] != "guest" && response.status == 401 && await response.clone().text() == "Not Logged In") {
+        localStorage.removeItem("auth-info");
+        console.log(123);
+        
         window.location.replace("/login?a=session-expired");
         throw new Error("Session Token Expired");
     }
@@ -19,11 +23,16 @@ async function apiRequest(route, json=null) {
 }
 
 async function apiUpload(route, name, file) {
-    let data = new FormData();
+    const csrfToken = $("[name='csrf_token']").val();
+
+    const data = new FormData();
     data.append(name, file);
     return await fetch(`/api${route}`, {
         method: "POST",
-        body: data
+        body: data,
+        headers: {
+            "X-CSRFToken": csrfToken
+        }
     });
 }
 
@@ -77,7 +86,8 @@ loadAuthInfo();
 const percent = (num, whole) => (num * whole) / 100
 
 function formatSeconds(seconds) {
-    if (!seconds) return "0:00";
+    if (seconds < 0) return "0:00.0";
+    if (Math.abs(seconds - Math.round(seconds)) < 0.1) seconds = Math.round(seconds);
     
     minutes = Math.floor(seconds / 60);
     seconds -= minutes * 60;
@@ -87,3 +97,5 @@ function formatSeconds(seconds) {
     if (seconds.split(".")[0].length == 1) seconds = "0" + seconds;
     return `${minutes}:${seconds}`;
 }
+
+numToLetter = num => String.fromCharCode(97 + num);

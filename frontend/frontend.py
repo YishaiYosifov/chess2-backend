@@ -37,7 +37,7 @@ def change_password_helper():
 def user_helper(**kwargs):
     username = kwargs.get("username")
     if not username:
-        user = try_get_user_from_session(must_logged_in=False)
+        user = try_get_user_from_session(force_logged_in=False)
         if not user: return redirect("/")
         
         return redirect(f"/user/{user.username}")
@@ -52,7 +52,7 @@ def game_helper(**kwargs):
     game = Game.query.filter_by(token=game_token).first()
     if not game: return redirect("/play")
     elif not game.is_over:
-        user = try_get_user_from_session(must_logged_in=False)
+        user = try_get_user_from_session(force_logged_in=False)
         if not user or (user != game.white and user != game.black): return redirect("/play")
 
     return True
@@ -69,12 +69,13 @@ def index():
     alert = session.get("alert")
     if alert: session.pop("alert")
 
-    if try_get_user_from_session(must_logged_in=False): return render_template("index-authorized.html", alert=alert)
+    if try_get_user_from_session(force_logged_in=False): return render_template("index-authorized.html", alert=alert)
     else: return render_template("index-unauthorized.html", alert=alert)
 
 TEMPLATES = [
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),
+    Template(route="/logout", template="logout.html", auth_req=AuthReq.REQUIRED),
 
     Template(route="/user/<username>", template="user.html", helper=user_helper),
     Template(route="/user", template="user.html", helper=user_helper),
@@ -88,7 +89,7 @@ TEMPLATES = [
 
 def default_template(template : Template, **kwargs):
     if template.auth_req == AuthReq.REQUIRED: try_get_user_from_session()
-    elif template.auth_req == AuthReq.NOT_AUTHED and try_get_user_from_session(must_logged_in=False): return redirect("/")
+    elif template.auth_req == AuthReq.NOT_AUTHED and try_get_user_from_session(force_logged_in=False): return redirect("/")
 
     if template.helper:
         helper_return = template.helper(**kwargs)

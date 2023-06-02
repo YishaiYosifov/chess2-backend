@@ -1,11 +1,11 @@
 from werkzeug.exceptions import BadRequest, Unauthorized
 
-from flask import Blueprint, redirect, jsonify, session
+from flask import Blueprint, redirect, session
 from flask_restful.reqparse import Argument
 
 import shutil
 
-from util import send_verification_email, requires_args, requires_auth, try_get_user_from_session
+from util import send_verification_email, requires_args, requires_auth
 from dao import WebsiteAuth, AuthMethods, User
 from app import db
 
@@ -68,19 +68,19 @@ def login(args):
     if not auth.check_password(password): raise Unauthorized("Unknown email / username / password")
 
     # Generate the session token
-    user.gen_session_token()
+    session["user_id"] = user.user_id
     db.session.commit()
 
     return "Logged In", 200
 
-@auth.route("/logout", methods=["POST", "GET"])
+@auth.route("/logout", methods=["POST"])
 @requires_auth()
 def logout(user : User):
     """
     Logout a user
     """
 
-    user.logout()
+    session.clear()
     return redirect("/")
 
 @auth.route("/delete", methods=["POST"])

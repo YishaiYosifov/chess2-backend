@@ -19,7 +19,7 @@ from flask import request, g, session
 from flask_restful import reqparse
 from flask_socketio import emit
 
-from dao import EmailVerification, SessionToken, WebsiteAuth, User, AuthMethods
+from dao import EmailVerification, WebsiteAuth, User, AuthMethods
 from extensions import EMAIL_VERIFICATION_MESSAGE
 from app import db
 
@@ -102,38 +102,41 @@ def requires_args(*arguments : reqparse.Argument):
         return wrapper
     return decorator
 
-def try_get_user_from_session(must_logged_in=True, raise_on_session_expired=True, allow_guests=False) -> User | None:
+def try_get_user_from_session(force_logged_in=True, allow_guests=False) -> User | None:
     """
     Get the user object from the session.
 
-    :param force_login: raise unauthorized exception when not logged in
-    :param raise_on_session_expired: raise unauthorized exception when the user is logged in but the sesion expired
+    :param must_logged_in: raise unauthorized exception when not logged in
     :param allow_guests: whether to allow guests users
     """
 
     if hasattr(request, "cached_session_user"): return request.cached_session_user
 
     # Check if the user is logged in
-    if not "session_token" in session:
-        if must_logged_in: raise Unauthorized("Not Logged In")
+    if not "user_id" in session:
+        if allow_guests:
+            user = User.create_guest()
+            db.session.commit()
+            return user
+        if force_logged_in: raise Unauthorized("Not Logged In")
         return
 
-    # Select the token
-    token : SessionToken = SessionToken.query.filter_by(token=session["session_token"]).first()
-    if not token:
-        # If it doesn't find the token, it means the session token has expired
+    # Get the user from the session
+    user : User = User.query.filter_by(user_id=session["user_id"]).first()
+    if not user:
+        # If the user was not found, something went wrong
         session.clear()
-        if raise_on_session_expired: raise Unauthorized("Session Expired")
+        if force_logged_in: raise Unauthorized("Not Logged In")
         return
-    elif not allow_guests and token.user.auth_method == AuthMethods.GUEST:
-        if must_logged_in: raise Unauthorized("Not Logged In")
+    elif not allow_guests and user.auth_method == AuthMethods.GUEST:
+        if force_logged_in: raise Unauthorized("Not Logged In")
         return
     
-    token.last_used = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    user.last_accessed = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
 
-    request.cached_session_user = token.user
-    return token.user
+    request.cached_session_user = user
+    return user
 
 def create_gmail_service(client_secret_file, api_name, api_version, *scopes, prefix=""):
     CLIENT_SECRET_FILE = client_secret_file
@@ -211,12 +214,14 @@ def column_to_dict(column, include = [], exclude = []) -> dict[str:any]:
     if include and exclude: raise ValueError("Cannot have both include and exclude")
 
     results = {}
-    for attribute, value in column.__dict__.items():
-        if (include and not attribute in include) or attribute in exclude or attribute.startswith("_"): continue
+    for attribute in column.__table__.columns:
+        name = attribute.name
+        if (include and not name in include) or name in exclude or name.startswith("_"): continue
         
+        value = getattr(column, name)
         if isinstance(value, Enum): value = value.value
         elif isinstance(value, datetime): value = value.isoformat()
-        results[attribute] = value
+        results[name] = value
     return results
 
 class SocketIOErrors(Enum):

@@ -1,3 +1,16 @@
+const squareHTML = $($.parseHTML(`
+    <div class="square">
+        <img class="img-fluid valid-move" src="../static/assets/valid-move.png" draggable="false">
+    </div>
+`));
+const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`));
+const moveTableItem = $($.parseHTML(`
+
+`))
+
+const gameToken = window.location.pathname.split("/").pop();
+const CSSProperties = getComputedStyle(document.documentElement, null);
+
 var gameData;
 var board;
 
@@ -5,6 +18,7 @@ var turnColor;
 var white;
 var black;
 
+var animatingMovement = false;
 var isGameOver = false;
 
 async function main() {
@@ -21,11 +35,12 @@ async function main() {
     black = Object.assign(black, gameData.black);
 
     color = userID == black.user_id ? "black" : "white";
-    turnColor = gameData.turn == white.user_id ? "white" : "black"
+    turnColor = gameData.turn == white.user_id ? "white" : "black";
     isGameOver = gameData.is_over;
 
     board = gameData.board;
     moves = gameData.moves;
+    if (!moves.length) $("#move-history-title").text("No Moves");
 
     boardHeight = board.length;
     boardWidth = board[0].length;
@@ -51,7 +66,10 @@ async function main() {
     let loaded = 0;
     profilePictures.on("load", function() {
         loaded++;
-        if (loaded === totalPictures) setBoardWidth();
+        if (loaded === totalPictures) {
+            setBoardWidth();
+            moves.forEach(addMoveToTable)
+        }
     });
     const game = new Anarchy();
 }
@@ -137,6 +155,8 @@ function clearAllHighlights() {
 }
 
 async function animateMovement(originElementImage, destinationElement) {
+    animatingMovement = true;
+
     const tempPiece = originElementImage.clone();
     tempPiece
         .css("position", "absolute")
@@ -158,6 +178,7 @@ async function animateMovement(originElementImage, destinationElement) {
     tempPiece.remove();
     originElementImage.css("left", "").css("top", "");
     originElementImage.appendTo(destinationElement);
+    animatingMovement = false;
 }
 
 
@@ -302,3 +323,153 @@ $(window).on("resize", () => {
         }
     }, 30);
 });
+
+
+// Move History
+function addMoveToTable(move, i) {
+    if (i == undefined) i = moves.length;
+    i++;
+    move = structuredClone(move);
+
+    $("#move-history-title").text("Move History");
+    let moveFormatted = "";
+
+    if (move.moved[0].piece == "king" && (move.moved[1] && move.moved[1].piece == "rook")) {
+        const king = move.moved[0];
+        const rook = move.moved[1];
+
+        if (king.origin.y == rook.origin.y) {
+            if (rook.origin.x == 0) moveFormatted = "O-O";
+            else moveFormatted = "O-O-O";
+        } else {
+            if (rook.origin.y > king.origin.y) moveFormatted = "🠙-O-O";
+            else moveFormatted = "🠛-O-O";
+        }
+    } else {
+        for (const moved of move.moved) {
+            let isCapture = false
+            for (const [i, captured] of Object.entries(move.captured)) {
+                if (captured.x == moved.destination.x && captured.y == moved.destination.y) {
+                    isCapture = true;
+                    move.captured.splice(i)
+                    break;
+                }
+            }
+
+            let pieceChar;
+            if (moved.piece == "knook") pieceChar = "KN";
+            else if (moved.piece.includes("pawn")) pieceChar = isCapture ? numToLetter(moved.origin.x) : "";
+            else pieceChar = moved.piece[0].toUpperCase();
+
+            moveFormatted += `${pieceChar}${isCapture ? "x" : ""}${numToLetter(moved.destination.x)}${moved.destination.y + 1}`;
+        }
+    }
+    
+    for (const captured of move.captured) moveFormatted += `x${numToLetter(captured.x)}${captured.y + 1}`;
+    
+    const moveHistoryTable = $("#move-history-table");
+    const columns = moveHistoryTable.children("tr");
+
+    const lastColumn = columns.last();
+    const lastMove = lastColumn.find("td:last-child");
+
+    if (!lastColumn.length || lastMove.text()) {
+        const column = $("<tr></tr>");
+        column.append($(`<th scope="row">${columns.length + 1}</th>`));
+        column.append($(`<td id="move-${i}">${moveFormatted}</td>`).click(revertToIndex));
+        column.append($(`<td></td>`));
+        moveHistoryTable.append(column);
+    } else lastMove.text(moveFormatted).attr("id", `move-${i}`).click(revertToIndex);
+
+    const tableHolder = $("#move-history-card").find(".card-body");
+    tableHolder.scrollTop(tableHolder[0].scrollHeight);
+}
+
+var viewingMove = null;
+$(window).on("keydown", e => {
+    if (animatingMovement || !moves) return;
+    
+    let newViewingMove = viewingMove;
+    if (e.key == "ArrowUp") {
+        revertToIndex(0);
+        return;
+    } else if (e.key == "ArrowDown") {
+        revertToIndex(moves.length);
+        return;
+    } else if (e.key == "ArrowLeft") {
+        if (viewingMove == null) newViewingMove = moves.length;
+        else if (viewingMove - 1 < 0) return;
+
+        disableDraggable()
+        newViewingMove--;
+        
+        const move = moves[newViewingMove];
+        for (const moved of move.moved) {
+            animateMovement($(`#${moved.destination.y}-${moved.destination.x}`).find(".piece"), $(`#${moved.origin.y}-${moved.origin.x}`));
+        }
+        for (const captured of move.captured) {
+            const piece = pieceHTML.clone();
+            const color = newViewingMove % 2 == 0 ? "black" : "white";
+            piece.attr("src", `../static/assets/pieces/${captured.piece}-${color}.png`);
+            piece.attr("color", color);
+            $(`#${captured.y}-${captured.x}`).append(piece);
+        }
+    } else if (e.key == "ArrowRight") {
+        if (viewingMove == null || viewingMove >= moves.length) return;
+
+        const move = moves[viewingMove];
+
+        for (const captured of move.captured) {
+            $(`#${captured.y}-${captured.x}`).find(".piece").remove()
+        }
+        for (const moved of move.moved) {
+            animateMovement($(`#${moved.origin.y}-${moved.origin.x}`).find(".piece"), $(`#${moved.destination.y}-${moved.destination.x}`));
+        }
+        newViewingMove++;
+    }
+    else return;
+    setViewingMove(newViewingMove);
+});
+
+function revertToIndex(moveIndex) {
+    if (typeof(moveIndex) != "number") moveIndex = $(this).attr("id").split("-").at(-1);
+    setViewingMove(moveIndex);
+
+    const revertBoard = structuredClone(board);
+    for (const [i, move] of Object.entries(moves.slice(moveIndex).reverse())) {
+        for (const moved of move.moved) {
+            const destination = revertBoard[moved.destination.y][moved.destination.x];
+            revertBoard[moved.origin.y][moved.origin.x].piece = Object.assign({}, destination.piece);
+            destination.piece = null;
+        }
+
+        const pieceColor = i % 2 == moves.length % 2 ? "white" : "black";
+        for (const captured of move.captured) revertBoard[captured.y][captured.x].piece = {"name": captured.piece, "color": pieceColor};
+    }
+
+    for (const row of revertBoard) {
+        for (const square of row) {
+            const squareElement = $(`#${square.y}-${square.x}`);
+            squareElement.find(".piece").remove();
+            if (square.piece && Object.keys(square.piece).length) {
+                const piece = pieceHTML.clone();
+                piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.png`);
+                piece.attr("color", square.piece.color);
+                squareElement.append(piece);
+            }
+        }
+    }
+}
+
+function setViewingMove(newViewingMove) {
+    $("#move-history-table").find("td").css("border-bottom", "");
+
+    if (newViewingMove < moves.length) {
+        disableDraggable();
+        $(`#move-${newViewingMove}`).css("border-bottom", "solid cornflowerblue");
+        viewingMove = newViewingMove;
+    } else {
+        viewingMove = null;
+        enableDraggable();
+    }
+}

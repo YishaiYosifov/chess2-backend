@@ -165,12 +165,12 @@ async function initilizePage(username, games) {
             return [new Date(rating.achieved_at).toLocaleString(), rating.elo];
         });
         data.push([new Date().toLocaleString(), rating]);
-        
         google.charts.setOnLoadCallback(() => create_chart(ratingElement.find(".chart")[0], [["Date", "Elo"]].concat(data)));
     }
 }
 
 function create_chart(element, data) {
+    console.log(data);
     data = google.visualization.arrayToDataTable(data);
     var options = {
         legend: "none",
@@ -179,7 +179,7 @@ function create_chart(element, data) {
         height: 50,
         vAxis: {
             textPosition: "none",
-            gridlines: { color: "transparent" }
+            gridlines: { color: "transparent" },
         },
         hAxis: {
             textPosition: "none",
@@ -191,7 +191,6 @@ function create_chart(element, data) {
         },
         areaOpacity: 0.5,
         focusTarget: "category",
-        bar: { groupWidth: '50%' }
     };
     var chart = new google.visualization.AreaChart(element);
     chart.draw(data, options);

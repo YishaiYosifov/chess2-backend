@@ -28,6 +28,8 @@
         <script src="static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
         <div class="container-fluid mt-2">
             <div class="row align-items-start justify-content-center">
                 <div class="col-11 col-md-9 col-lg-6 text-white" style="max-width: 730px">

@@ -12,7 +12,6 @@ import requests
 
 from .auth import AuthMethods, WebsiteAuth
 from .rating_archive import RatingArchive
-from .session_token import SessionToken
 from ..games import Game
 
 from extensions import CONFIG, EMAIL_REG, COUNTRIES
@@ -53,11 +52,10 @@ class User(db.Model):
     auth_method = db.Column(db.Enum(AuthMethods))
     username_last_changed = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
 
+    last_accessed = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
     created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
 
     # Relationships
-    session_tokens = db.relationship("SessionToken", backref="user", cascade="all, delete-orphan")
-
     email_verification = db.relationship("EmailVerification", uselist=False, backref="user", cascade="all, delete-orphan")
 
     outgoing_game = db.relationship("OutgoingGames", backref="inviter", foreign_keys="OutgoingGames.inviter_id", uselist=False, cascade="all, delete-orphan")
@@ -78,15 +76,18 @@ class User(db.Model):
         from util import column_to_dict
         return self.get_public_info() | column_to_dict(self, include=PRIVATE_INFO)
 
-    def rating(self, mode : str): return RatingArchive.query.filter_by(user=self, mode=mode).order_by(RatingArchive.rating_id.desc()).first()
+    def rating(self, mode : str):
+        rating_archive = RatingArchive.query.filter_by(user=self, mode=mode).order_by(RatingArchive.rating_id.desc()).first()
+        if not rating_archive:
+            rating_archive = RatingArchive(user=self, mode=mode)
+            db.session.add(rating_archive)
+        return rating_archive
 
     def delete(self):
-        self.logout()
-
         if self.auth_method == AuthMethods.WEBSITE: WebsiteAuth.query.filter_by(user=self).delete()
-
         RatingArchive.query.filter_by(user=self).delete()
-        SessionToken.query.filter_by(user=self).delete()
+        try: session.clear()
+        except RuntimeError: pass
 
         db.session.delete(self)
     
@@ -167,26 +168,10 @@ class User(db.Model):
         self.country = country
         self.country_alpha = alpha
     
-    def gen_session_token(self):
-        """
-        Generate a new session token
-        """
-
-        token = uuid.uuid4().hex
-        session["session_token"] = token
-        db.session.add(SessionToken(user=self, token=token))
-    
-    def logout(self):
-        try:
-            SessionToken.query.filter_by(token=session["session_token"]).delete()
-            session.clear()
-        except RuntimeError: pass
-    
     @classmethod
     def create_guest(cls):
         guest = cls(username=f"guest-{uuid.uuid4().hex[:8]}", auth_method=AuthMethods.GUEST)
         guest.insert()
 
-        guest.gen_session_token()
-
+        session["user_id"] = guest.user_id
         return guest

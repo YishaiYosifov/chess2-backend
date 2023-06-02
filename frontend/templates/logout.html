@@ -1,0 +1,12 @@
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E=" crossorigin="anonymous"></script>
+<script src="/static/javascript/util.js"></script>
+<script>
+    async function main() {
+        await apiRequest("/auth/logout");
+        localStorage.removeItem("auth-info");
+        window.location.replace("/");
+    }
+    main();
+</script>

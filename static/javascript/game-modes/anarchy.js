@@ -1,13 +1,3 @@
-const squareHTML = $($.parseHTML(`
-    <div class="square">
-        <img class="img-fluid valid-move" src="../static/assets/valid-move.png" draggable="false">
-    </div>
-`));
-const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`))
-
-const gameToken = window.location.pathname.split("/").pop();
-const CSSProperties = getComputedStyle(document.documentElement, null);
-
 var highlightElement;
 var movingElement;
 var moves;
@@ -78,7 +68,7 @@ class Anarchy {
         gameNamespace.on("clock_sync", this.socketioSyncClock);
 
         $(`[color=${color}]`).mousedown(async function(event) {
-            if (event.which != 1 || turnColor != color || isGameOver) return;
+            if (event.which != 1 || turnColor != color || isGameOver || viewingMove != null) return;
     
             $(".valid-move").hide().parent().droppable().droppable("disable");
         
@@ -185,9 +175,12 @@ class Anarchy {
     }
 
     async movePiece(moveLog, promoteTo) {
+        addMoveToTable(moveLog);
+        moves.push(moveLog);
+
+        if (viewingMove != null) return;
         movingElement = null;
         allLegalCache = {};
-        moves.push(moveLog);
 
         for (const [index, capture] of Object.entries(moveLog["captured"])) {
             const capturedPieceImage = $(`#${capture.y}-${capture.x}`).find(".piece");
@@ -215,7 +208,7 @@ class Anarchy {
     socketioSyncClock(data) {
         white.clock = data.white;
         black.clock = data.black;
-        updateTimer()
+        updateTimer();
     }
 
     async socketioGameOver(data) {

@@ -192,12 +192,12 @@ def king_legal(game : Game, origin : dict) -> numpy.ndarray:
             moves.append(square)
 
     # Vertical Castle
-    if king.y == 0: moves += _get_castle_moves(game, origin, game.board[BOARD_HEIGHT - 1, origin["x"]], capture_bishop=True) or []
-    elif king.y == BOARD_HEIGHT - 1: moves += _get_castle_moves(game, origin, game.board[0, origin["x"]], capture_bishop=True) or []
+    if king.y == 0: moves += _get_castle_moves(game, origin, game.board[BOARD_HEIGHT - 1, origin["x"]], is_vertical=True) or []
+    elif king.y == BOARD_HEIGHT - 1: moves += _get_castle_moves(game, origin, game.board[0, origin["x"]], is_vertical=True) or []
 
     # Regular Castle
     if not king.piece.moved:
-        for castle_direction in [0, BOARD_WIDTH - 1]: moves += _get_castle_moves(game, origin, game.board[origin["y"], castle_direction], capture_bishop=True) or []
+        for castle_direction in [0, BOARD_WIDTH - 1]: moves += _get_castle_moves(game, origin, game.board[origin["y"], castle_direction]) or []
 
     return moves
 
@@ -302,14 +302,14 @@ def _get_enpassant_diagonal(game : Game, pawn_square : Square, x_slice : int, y_
             break
     return enpassant_slice, captured
 
-def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, capture_bishop = False) -> list | None:
-    if not castle_rook.piece or castle_rook.piece.moved: return
+def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, is_vertical = False) -> list | None:
+    if not castle_rook.piece or (not is_vertical and castle_rook.piece.moved): return
 
     between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[1:-1]
     
     castle_moves = []
     for square in between:
-        if square.piece and not (capture_bishop and square == between[0] and square.piece.name == "bishop"): break
+        if square.piece and not (not is_vertical and square == between[0] and square.piece.name == "bishop"): break
         castle_moves.append(square)
     else: return castle_moves
 

@@ -15,7 +15,7 @@ class Game(db.Model):
     def __init__(self, **data):
         super().__init__(**data)
         self.turn = self.white
-        self.white.clock = self.black.clock = time.time() + self.game_settings.time_control
+        self.white.clock = self.black.clock = round(time.time()) + self.game_settings.time_control
 
     __tablename__ = "games"
 
