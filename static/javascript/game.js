@@ -115,6 +115,12 @@ function enableDraggable() {
     if (isGameOver) return;
     
     $(`img[color="${color}"]`).draggable({
+        start: function(event, ui) { 
+            $(this).draggable("option", "cursorAt", {
+                left: Math.floor(this.clientWidth / 2),
+                top: Math.floor(this.clientHeight / 2)
+            }); 
+        },
         containment: $("#board"),
         cursor: "grabbing",
         revert: "invalid",

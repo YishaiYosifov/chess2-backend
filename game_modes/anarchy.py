@@ -30,7 +30,7 @@ class Anarchy:
 
         # Get the movement of the piece
         piece_data : dict = PIECE_DATA[origin_square.piece.name]
-        if not PIECE_DATA.get("allow_self_color_capture", False) and \
+        if not piece_data.get("allow_same_color_capture", False) and \
             IS_CAPTURE and \
             destination_square.piece.color == player.color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
 

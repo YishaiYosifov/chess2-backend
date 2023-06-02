@@ -145,11 +145,14 @@ class Anarchy {
             if (originY == destinationY && Math.abs(originX - destinationX) > 1) {
                 if (originX > destinationX) destinationX = 2;
                 else destinationX = 6;
-                console.log(destinationX);
             } else if (originX == destinationX && Math.abs(originY - destinationY) > 1) {
                 if (originY > destinationY) destinationY = Math.floor(boardHeight / 2) - 1;
                 else destinationY = Math.floor(boardHeight / 2);
             }
+        } else if (["bishop", "xook"].includes(originSquare.piece.name)) {
+            if (originX == destinationX) {
+                destinationY = originY + (originY > destinationY ? -2 : 2)
+            } else if (originY == destinationY) destinationX = originX + (originX > destinationX ? -2 : 2)
         }
         Object.assign(move_data, {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
     
@@ -234,13 +237,13 @@ class Anarchy {
 
     async socketioException(data) {
         console.error(data);
+        if (turnColor == color) enableDraggable();
         if (movingElement) {
             revertPiece(movingElement);
             movingElement = null;
         }
     
         if (data["code"] == 5) {
-            enableDraggable();
 
             const forcedMoves = data["message"];
             for (let i = 0; i < 2; i++) {

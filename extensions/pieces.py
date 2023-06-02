@@ -79,10 +79,10 @@ def diagonal_collision(game : Game, origin : dict, destination : dict, include_f
     if not include_first: diagonal = diagonal[1:]
     return diagonal
 
-def pawn_collision(game : Game, origin : dict, destination : dict) -> bool | numpy.ndarray:
+def pawn_collision(game : Game, origin : dict, destination : dict) -> dict | numpy.ndarray:
     if not diagonal_movement(game, origin, destination): return straight_collision(game, origin, destination)
 
-    if not game.moves: return []
+    if not game.moves: return numpy.empty()
     pawn_square : Piece = game.board[origin["y"]][origin["x"]]
     pawn_piece = pawn_square.piece
 
@@ -102,7 +102,7 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool | num
     game.board[destination["y"], destination["x"]].piece = pawn_piece
     return {"success": True, "move_log_portion": {"moved": [{"piece": pawn_piece.name, "origin": origin, "destination": destination}], "captured": list(captured)}}
 
-def king_collision(game : Game, origin : dict, destination : dict) -> bool | numpy.ndarray:
+def king_collision(game : Game, origin : dict, destination : dict) -> dict:
     king = game.board[origin["y"], origin["x"]]
 
     x_movement = abs(origin["x"] - destination["x"])
@@ -142,7 +142,6 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
             captured.append({"piece": square.piece.name, "x": square.x, "y": square.y})
 
     game.board[destination["y"], destination["x"]].piece = king.piece.copy()
-    
     game.board[new_rook_position["y"], new_rook_position["x"]].piece = castle_rook.piece.copy()
     castle_rook.piece = None
 
@@ -151,6 +150,44 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
                     {"piece": "king", "origin": origin, "destination": destination},
                     {"piece": "rook", "origin": {"x": castle_rook.x, "y": castle_rook.y}, "destination": new_rook_position}
                 ], "captured": captured}}
+
+def bishop_collision(game : Game, origin : dict, destination : dict) -> bool | numpy.ndarray:
+    bishop = game.board[origin["y"], origin["x"]]
+    if diagonal_movement(game, origin, destination):
+        if game.board[destination["y"], destination["x"]].piece and \
+            game.board[destination["y"], destination["x"]].piece.color == bishop.piece.color: return {"success": False}
+        return diagonal_collision(game, origin, destination)
+
+    if origin["x"] == destination["x"]:
+        y_offset = 1 if origin["y"] > destination["y"] else -1
+        new_ilvaticano_position = {"x": destination["x"], "y": destination["y"] + y_offset}
+        try: ilvaticano_bud = game.board[destination["y"] - y_offset, destination["x"]]
+        except IndexError: return {"success": False}
+    else:
+        x_offset = 1 if origin["x"] > destination["x"] else -1
+        new_ilvaticano_position = {"x": destination["x"] + x_offset, "y": destination["y"]}
+        try: ilvaticano_bud = game.board[destination["y"], destination["x"] - x_offset]
+        except IndexError: return {"success": False}
+    ilvaticano_moves = _get_ilvaticano_moves(game, origin, ilvaticano_bud)
+    if not ilvaticano_moves: return {"success": False}
+    
+    captured = []
+    for square in ilvaticano_moves:
+        captured.append({"piece": square.piece.name, "x": square.x, "y": square.y})
+        square.piece = None
+
+    move_log = {
+        "moved": [
+            {"piece": bishop.piece.name, "origin": origin, "destination": destination},
+            {"piece": ilvaticano_bud.piece.name, "origin": {"x": ilvaticano_bud.x, "y": ilvaticano_bud.y}, "destination": new_ilvaticano_position}
+        ], "captured": captured
+    }
+
+    game.board[destination["y"], destination["x"]].piece = bishop.piece.copy()
+    game.board[new_ilvaticano_position["y"], new_ilvaticano_position["x"]].piece = ilvaticano_bud.piece.copy()
+    ilvaticano_bud.piece = None
+
+    return {"success": True, "move_log_portion": move_log}
 
 # endregion
 
@@ -232,7 +269,7 @@ def pawn_legal(game : Game, origin : dict) -> numpy.ndarray:
     else:
         moves = list(piece_slice(game.board[origin["y"] - limit:origin["y"] + 1, origin["x"]][::-1], False))
         y_slice = 0
-    if (not game.moves): return moves
+    if not game.moves: return moves
 
     y_offset = 1 if pawn.piece.color == "white" else -1
     for x_slice in [0, BOARD_WIDTH]:
@@ -250,16 +287,21 @@ def pawn_legal(game : Game, origin : dict) -> numpy.ndarray:
     return moves
 
 def bishop_legal(game : Game, origin : dict) -> numpy.ndarray:
-    moves = diagonal_legal(game, origin)
-    bishop = game[origin["y"], origin["x"]].piece
-
+    moves = list(diagonal_legal(game, origin))
+    
     # Il Vaticano
-    """for i in [-2, 2]:
-        for j in [-2, 2]:
-            square = game[i, j]
-            if square.piece and \
-                square.piece.name == "bishop" and \
-                square.piece.color == bishop.color"""
+    for i in [-3, 0, 3]:
+        for j in [-3, 0, 3]:
+            if i == j == 0: continue
+
+            check_x = origin["x"] + j
+            check_y = origin["y"] + i
+            if check_x > BOARD_WIDTH - 1 or check_x < 0 or check_y > BOARD_HEIGHT - 1 or check_y < 0: continue
+
+            ilvaticano_bud = game.board[check_y, check_x]
+            ilvaticano_moves = _get_ilvaticano_moves(game, origin, ilvaticano_bud)
+            if ilvaticano_moves: moves += ilvaticano_moves + [ilvaticano_bud]
+    return moves
 
 # endregion
         
@@ -273,6 +315,13 @@ horse_movement = lambda game, origin, destination: (abs(origin["y"] - destinatio
 def pawn_movement(game : Game, origin : dict, destination : dict) -> bool:
     pawn : Piece = game.board[origin["y"], origin["x"]]
     return origin["x"] == destination["x"] and abs(destination["y"] - origin["y"]) <= _get_pawn_limit(pawn)
+
+bishop_movement = lambda game, origin, destination: diagonal_movement(game, origin, destination) or (
+                                                        straight_movement(game, origin, destination) and (
+                                                            abs(origin["y"] - destination["y"]) == 2 or \
+                                                            abs(origin["x"] - destination["x"]) == 2
+                                                        )
+                                                    )
 
 # endregion
 
@@ -334,6 +383,17 @@ def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, is_verti
         castle_moves.append(square)
     else: return castle_moves
 
+def _get_ilvaticano_moves(game : Game, origin : dict, ilvaticano_bud : Square) -> list:
+    bishop : Piece = game.board[origin["y"], origin["x"]].piece
+    if not ilvaticano_bud.piece or \
+        (ilvaticano_bud.piece.name != "bishop" and ilvaticano_bud.piece.name != "xook") or \
+        ilvaticano_bud.piece.color != bishop.color: return
+
+    ilvaticano_capture = straight_collision(game, origin, {"x": ilvaticano_bud.x, "y": ilvaticano_bud.y})[:-1]
+    for ilvaticano_square in ilvaticano_capture:
+        if not ilvaticano_square.piece or not "pawn" in ilvaticano_square.piece.name or ilvaticano_square.piece.color == bishop.color: break
+    else: return list(ilvaticano_capture)
+
 # endregion
 
 PIECE_DATA = {
@@ -344,11 +404,12 @@ PIECE_DATA = {
         "all_legal": straight_legal
     },
     "bishop": {
-        "validate": diagonal_movement,
-        "collisions": [diagonal_collision],
+        "validate": bishop_movement,
+        "collisions": [bishop_collision],
 
         "forced": {bishop_childpawn_forced_status: 1},
-        "all_legal": diagonal_legal
+        "all_legal": bishop_legal,
+        "allow_same_color_capture": True
     },
     "horse": {
         "validate": horse_movement,
@@ -375,10 +436,11 @@ PIECE_DATA = {
         "all_legal": horse_legal
     },
     "xook": {
-        "validate": diagonal_movement,
-        "collisions": [diagonal_collision],
+        "validate": bishop_movement,
+        "collisions": [bishop_collision],
 
-        "all_legal": diagonal_legal
+        "all_legal": bishop_legal,
+        "allow_same_color_capture": True
     },
     "knook": {
         "validator": straight_movement,
