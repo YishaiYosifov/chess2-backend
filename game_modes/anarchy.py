@@ -21,6 +21,7 @@ class Anarchy:
         try:
             origin_square : Square = self.game.board[origin["y"], origin["x"]]
             destination_square : Square = self.game.board[destination["y"], destination["x"]]
+            destination_piece = destination_square.piece
         except IndexError: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Squares")
         IS_CAPTURE = destination_square.piece != None
 
@@ -29,14 +30,15 @@ class Anarchy:
 
         # Get the movement of the piece
         piece_data : dict = PIECE_DATA[origin_square.piece.name]
-        if IS_CAPTURE and destination_square.piece.color == player.color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
+        if not PIECE_DATA.get("allow_self_color_capture", False) and \
+            IS_CAPTURE and \
+            destination_square.piece.color == player.color: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Invalid Destination Square")
 
+        collisions = piece_data.get("collisions")
+        validator = piece_data.get("validate")
         if IS_CAPTURE:
-            collisions = piece_data.get("collisions_capture")
-            validator = piece_data.get("validate_capture")
-        else:
-            collisions = piece_data.get("collisions")
-            validator = piece_data.get("validate")
+            collisions = piece_data.get("collisions_capture") or collisions
+            validator = piece_data.get("validate_capture") or validator
         
         # Forced moves
         max_forced = {"priority": 0}
@@ -74,7 +76,7 @@ class Anarchy:
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
 
         if not move_log["moved"]:
-            if IS_CAPTURE: move_log["captured"].append({"piece": destination_square.piece.name, "x": destination["x"], "y": destination["y"]})
+            if IS_CAPTURE: move_log["captured"].append({"piece": destination_piece.name, "x": destination["x"], "y": destination["y"]})
             move_log["moved"].append({"piece": origin_square.piece.name, "origin": origin, "destination": destination})
         if not collisions: self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
 

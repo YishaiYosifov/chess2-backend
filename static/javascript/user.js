@@ -170,7 +170,6 @@ async function initilizePage(username, games) {
 }
 
 function create_chart(element, data) {
-    console.log(data);
     data = google.visualization.arrayToDataTable(data);
     var options = {
         legend: "none",

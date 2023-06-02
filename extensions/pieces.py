@@ -88,11 +88,11 @@ def pawn_collision(game : Game, origin : dict, destination : dict) -> bool | num
 
     # regular capture
     x_offset = 1 if destination["x"] > origin["x"] else -1
-    y_offset = -1 if pawn_square.piece.color == "white" else 1
+    y_offset = 1 if pawn_square.piece.color == "white" else -1
 
     regular_capture_square = game.board[pawn_square.y + y_offset, pawn_square.x + x_offset]
     if regular_capture_square.piece:
-        if abs(origin["y"] - destination["y"]) > 1 or pawn_piece.color == pawn_piece.color: return {"success": False}
+        if abs(origin["y"] - destination["y"]) > 1 or pawn_piece.color == regular_capture_square.piece.color: return {"success": False}
         return numpy.asarray([regular_capture_square])
 
     # en passant
@@ -126,10 +126,10 @@ def king_collision(game : Game, origin : dict, destination : dict) -> bool | num
 
         if origin["x"] > destination["x"]:
             castle_rook = game.board[origin["y"], 0]
-            new_rook_position = {"x": 2, "y": origin["y"]}
+            new_rook_position = {"x": 3, "y": origin["y"]}
         else:
             castle_rook = game.board[origin["y"], -1]
-            new_rook_position = {"x": 4, "y": origin["y"]}
+            new_rook_position = {"x": 5, "y": origin["y"]}
         if castle_rook.piece and castle_rook.piece.moved: {"success": False}
 
     if not castle_rook.piece: {"success": False}
@@ -249,6 +249,18 @@ def pawn_legal(game : Game, origin : dict) -> numpy.ndarray:
         moves += list(enpassant_slice)
     return moves
 
+def bishop_legal(game : Game, origin : dict) -> numpy.ndarray:
+    moves = diagonal_legal(game, origin)
+    bishop = game[origin["y"], origin["x"]].piece
+
+    # Il Vaticano
+    """for i in [-2, 2]:
+        for j in [-2, 2]:
+            square = game[i, j]
+            if square.piece and \
+                square.piece.name == "bishop" and \
+                square.piece.color == bishop.color"""
+
 # endregion
         
 # region Piece movement
@@ -307,13 +319,18 @@ def _get_enpassant_diagonal(game : Game, pawn_square : Square, x_slice : int, y_
     return enpassant_slice, captured
 
 def _get_castle_moves(game : Game, origin : dict, castle_rook : Square, is_vertical = False) -> list | None:
-    if not castle_rook.piece or castle_rook.piece.name != "rook" or (not is_vertical and castle_rook.piece.moved): return
+    if not castle_rook.piece or \
+        castle_rook.piece.color != game.board[origin["y"], origin["x"]].piece.color or \
+        castle_rook.piece.name != "rook" or \
+        (not is_vertical and castle_rook.piece.moved): return
 
-    between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})[1:-1]
+    between = straight_collision(game, origin, {"x": castle_rook.x, "y": castle_rook.y})
     
     castle_moves = []
     for square in between:
-        if square.piece and not (not is_vertical and square == between[0] and square.piece.name == "bishop"): break
+        if square.piece:
+            if not is_vertical and square == between[0] and square.piece.name == "bishop": continue
+            elif not (square == between[-1] and square.piece.name == "rook"): break
         castle_moves.append(square)
     else: return castle_moves
 
@@ -344,7 +361,8 @@ PIECE_DATA = {
             (origin["x"] == destination["x"] and abs(origin["y"] - destination["y"]) == math.floor(BOARD_WIDTH / 2) + 1),
         "collisions": [king_collision],
 
-        "all_legal": king_legal
+        "all_legal": king_legal,
+        "allow_same_color_capture": True
     },
     "queen": {
         "validate": lambda game, origin, destination: straight_movement(game, origin, destination) or diagonal_movement(game, origin, destination),

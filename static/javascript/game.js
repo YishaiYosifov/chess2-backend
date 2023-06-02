@@ -452,8 +452,8 @@ function revertToIndex(moveIndex) {
                 const piece = pieceHTML.clone();
                 piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.png`);
                 piece.attr("color", square.piece.color);
-                if (square.piece.color == color) piece.mousedown(game.showLegalClick);
-                
+                if (square.piece.color == color) piece.mousedown(game.mouseDownShowLegal);
+
                 squareElement.append(piece);
             }
         }

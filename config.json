@@ -5,7 +5,7 @@
     "ACCEPTABLE_RATING_DIFFERENCE": 300,
 
     "PIECE_SET": [
-        ["rook", "horse", "bishop", "king", "queen", "xook", "horse", "rook"],
+        ["rook", "horse", "xook", "queen", "king", "bishop", "horse", "rook"],
         ["child-pawn", "antiqueen", "pawn", "pawn", "pawn", "pawn", "knook", "child-pawn"],
         ["archbishop", "child-pawn", null, null, null, null, "child-pawn", "archbishop"]
     ],

@@ -151,15 +151,19 @@ canvas {
     height: 30%;
 }
 
-td, th {
+#move-history-card td, th {
     background-color: rgb(41, 41, 41) !important;
 }
 
-th {
+#move-history-card td {
+    cursor: pointer;
+}
+
+#move-history-card th {
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
 }
-td:last-child {
+#move-history-card td:last-child {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
 }

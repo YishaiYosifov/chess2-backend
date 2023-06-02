@@ -29,7 +29,7 @@ async function baseConstructBoard() {
     }
 
     let tempBoard = structuredClone(board);
-    const colorMod = color == "white" ? 1 : 0
+    const colorMod = color == "white" ? 0 : 1
     if (color == "white") tempBoard.reverse();
     else {
         for (const element of $("#board-card").children()) $("#board-card").prepend(element);
@@ -67,7 +67,7 @@ class Anarchy {
         gameNamespace.on("exception", this.socketioException);
         gameNamespace.on("clock_sync", this.socketioSyncClock);
 
-        $(`[color=${color}]`).mousedown(this.showLegalClick);
+        $(`[color=${color}]`).mousedown(this.mouseDownShowLegal);
     
         $(".square").mousedown(function(event) {
             if (event.which == 1) {
@@ -143,8 +143,9 @@ class Anarchy {
             move_data["promote_to"] = promotionPiece;
         } else if (originSquare.piece.name == "king") {
             if (originY == destinationY && Math.abs(originX - destinationX) > 1) {
-                if (originX > destinationX) destinationX = 1;
-                else destinationX = 5;
+                if (originX > destinationX) destinationX = 2;
+                else destinationX = 6;
+                console.log(destinationX);
             } else if (originX == destinationX && Math.abs(originY - destinationY) > 1) {
                 if (originY > destinationY) destinationY = Math.floor(boardHeight / 2) - 1;
                 else destinationY = Math.floor(boardHeight / 2);
@@ -260,7 +261,7 @@ class Anarchy {
         } else showAlert("Something went wrong. Please refresh the page");
     }
 
-    async showLegalClick(event) {
+    async mouseDownShowLegal(event) {
         if (event.which != 1 || turnColor != color || isGameOver || viewingMove != null) return;
 
         $(".valid-move").hide().parent().droppable().droppable("disable");

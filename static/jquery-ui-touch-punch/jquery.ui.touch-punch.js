@@ -9,12 +9,8 @@
  *  jquery.ui.mouse.js
  */
 (function ($) {
-
-  // Detect touch support
-  $.support.touch = 'ontouchend' in document;
-
   // Ignore browsers without touch support
-  if (!$.support.touch) {
+  if (!'ontouchend' in document) {
     return;
   }
 
@@ -37,30 +33,53 @@
 
     event.preventDefault();
 
-    var touch = event.originalEvent.changedTouches[0],
+    /*var touch = event.originalEvent.changedTouches[0],
         simulatedEvent = document.createEvent('MouseEvents');
     
     // Initialize the simulated mouse event using the touch event's coordinates
     simulatedEvent.initMouseEvent(
       simulatedType,    // type
-      true,             // bubbles                    
-      true,             // cancelable                 
-      window,           // view                       
-      1,                // detail                     
-      touch.screenX,    // screenX                    
-      touch.screenY,    // screenY                    
-      touch.clientX,    // clientX                    
-      touch.clientY,    // clientY                    
-      false,            // ctrlKey                    
-      false,            // altKey                     
-      false,            // shiftKey                   
-      false,            // metaKey                    
-      0,                // button                     
-      null              // relatedTarget              
+      true,             // bubbles
+      true,             // cancelable
+      window,           // view
+      1,                // detail
+      touch.screenX,    // screenX
+      touch.screenY,    // screenY
+      touch.clientX,    // clientX
+      touch.clientY,    // clientY
+      false,            // ctrlKey
+      false,            // altKey
+      false,            // shiftKey
+      false,            // metaKey
+      0,                // button
+      null              // relatedTarget
     );
 
     // Dispatch the simulated event to the target element
-    event.target.dispatchEvent(simulatedEvent);
+    event.target.dispatchEvent(simulatedEvent);*/
+
+    var touch = event.originalEvent.changedTouches[0];
+
+    // Initialize the simulated mouse event using the touch event's coordinates
+    var simulatedEvent = $.Event(simulatedType, {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      detail: 1,
+      screenX: touch.screenX,
+      screenY: touch.screenY,
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: false,
+      metaKey: false,
+      button: 0,
+      relatedTarget: null
+    });
+  
+    // Dispatch the simulated event to the target element
+    $(event.target).trigger(simulatedEvent);
   }
 
   /**
@@ -150,9 +169,9 @@
 
     // Delegate the touch handlers to the widget's element
     self.element.bind({
-      touchstart: $.proxy(self, '_touchStart'),
-      touchmove: $.proxy(self, '_touchMove'),
-      touchend: $.proxy(self, '_touchEnd')
+      touchstart: $.bind(self, '_touchStart'),
+      touchmove: $.bind(self, '_touchMove'),
+      touchend: $.bind(self, '_touchEnd')
     });
 
     // Call the original $.ui.mouse init method
@@ -168,9 +187,9 @@
 
     // Delegate the touch handlers to the widget's element
     self.element.unbind({
-      touchstart: $.proxy(self, '_touchStart'),
-      touchmove: $.proxy(self, '_touchMove'),
-      touchend: $.proxy(self, '_touchEnd')
+      touchstart: $.bind(self, '_touchStart'),
+      touchmove: $.bind(self, '_touchMove'),
+      touchend: $.bind(self, '_touchEnd')
     });
 
     // Call the original $.ui.mouse destroy method
