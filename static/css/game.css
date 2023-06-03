@@ -131,14 +131,14 @@ canvas {
 
 #info-panel.mobile {
     margin-top: 20px;
-    height: 400px;
+    height: 600px;
     max-width: unset;
 }
 #info-panel.mobile #move-history-card {
-    height: 40%;
+    height: 50%;
 }
 #info-panel.mobile #chat-card {
-    height: 60%;
+    height: 50%;
 }
 
 #info-panel:not(.mobile) {

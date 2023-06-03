@@ -74,6 +74,8 @@ class Anarchy:
                     self.game.board[destination["y"], destination["x"]].piece = origin_square.piece
                 break
             else: raise SocketIOException(SocketIOErrors.MOVE_ERROR, "Collisions Failed")
+        self.game.moves.append(move_log)
+        current_move_number = len(self.game.moves)
 
         if not move_log["moved"]:
             if IS_CAPTURE: move_log["captured"].append({"piece": destination_piece.name, "x": destination["x"], "y": destination["y"]})
@@ -90,18 +92,24 @@ class Anarchy:
 
             destination_square.piece.name = args.promote_to
             move_data["promote_to"] = args.promote_to
+            self.game.last_50_move_reset = current_move_number
 
         # Update the board and move history
-        self.game.moves.append(move_log)
         self.game.board[origin["y"], origin["x"]].piece = None
         self.game.legal_move_cache = {}
         db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board})
+
+        # 50 update move rule
+        if move_log["captured"] or any("pawn" in moved["piece"] for moved in move_log["moved"]): self.game.last_50_move_reset = current_move_number
 
         # 3 fold repetition
         board_hash = self._hash_board()
         if self.game.board_hashes.count(board_hash) >= 3:
             move_data["is_over"] = True
             self.end_game(0.5, 0.5, "3 Fold Repetition")
+        elif current_move_number - self.game.last_50_move_reset >= 100:
+            move_data["is_over"] = True
+            self.end_game(0.5, 0.5, "50 Move Rule")
         else:
             # Check if the king was captured
             for square in move_log["captured"]:

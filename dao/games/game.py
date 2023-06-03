@@ -42,6 +42,8 @@ class Game(db.Model):
     moves = db.Column(MutableList.as_mutable(db.PickleType), default=[])
     legal_move_cache = db.Column(MutableDict.as_mutable(db.PickleType), default={})
 
+    last_50_move_reset = db.Column(db.Integer, server_default=db.text("0"))
+
     created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
     ended_at = db.Column(db.Double)
     
