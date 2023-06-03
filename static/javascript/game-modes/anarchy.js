@@ -150,9 +150,8 @@ class Anarchy {
                 else destinationY = Math.floor(boardHeight / 2);
             }
         } else if (["bishop", "xook"].includes(originSquare.piece.name)) {
-            if (originX == destinationX) {
-                destinationY = originY + (originY > destinationY ? -2 : 2)
-            } else if (originY == destinationY) destinationX = originX + (originX > destinationX ? -2 : 2)
+            if (originX == destinationX) destinationY = originY + (originY > destinationY ? -2 : 2)
+            else if (originY == destinationY) destinationX = originX + (originX > destinationX ? -2 : 2)
         }
         Object.assign(move_data, {"origin_x": originX, "origin_y": originY, "destination_x": destinationX, "destination_y": destinationY});
     
@@ -223,8 +222,8 @@ class Anarchy {
         await gameOverModal.modal("show").promise();
         await sleep(450);
 
-        await eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
-        eloTextAnimation(blackEloText, black["rating"], data["black_rating"]);
+        if (white["rating"] != data["white_rating"]) await eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
+        if (black["rating"] != data["black_rating"]) eloTextAnimation(blackEloText, black["rating"], data["black_rating"]);
     }
 
     async socketioMove(data) {

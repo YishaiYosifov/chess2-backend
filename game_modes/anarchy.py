@@ -95,14 +95,21 @@ class Anarchy:
         self.game.moves.append(move_log)
         self.game.board[origin["y"], origin["x"]].piece = None
         self.game.legal_move_cache = {}
-        db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board, "moves": self.game.moves, "legal_move_cache": self.game.legal_move_cache})
+        db.session.query(Game).filter_by(game_id=self.game.game_id).update({"board": self.game.board})
 
-        # Check if the king was taken
-        for square in move_log["captured"]:
-            if square["piece"] == "king":
-                self.end_game(1 if player.color == "white" else 0, 1 if player.color == "black" else 0, "King Captured")
-                move_data["is_over"] = True
-                break
+        # 3 fold repetition
+        board_hash = self._hash_board()
+        if self.game.board_hashes.count(board_hash) >= 3:
+            move_data["is_over"] = True
+            self.end_game(0.5, 0.5, "3 Fold Repetition")
+        else:
+            # Check if the king was captured
+            for square in move_log["captured"]:
+                if square["piece"] == "king":
+                    self.end_game(1 if player.color == "white" else 0, 1 if player.color == "black" else 0, "King Captured")
+                    move_data["is_over"] = True
+                    break
+        self.game.board_hashes.append(board_hash)
 
         # Update and sync the clock
         player.clock += self.game.game_settings.increment
@@ -171,5 +178,14 @@ class Anarchy:
         db.session.add_all([new_white_rating, new_black_rating])
 
         return new_white_rating.elo, new_black_rating.elo
+    
+    def _hash_board(self) -> int:
+        return hash(
+            tuple(
+                tuple(
+                    square.piece.name + square.piece.color if square.piece else "" for square in row
+                ) for row in self.game.board
+            )
+        )
 
     # endregion

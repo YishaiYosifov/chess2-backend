@@ -10,7 +10,7 @@ class Player(db.Model):
     user = db.relationship("User", backref="player_in", uselist=False)
     color = db.Column(db.Text(10))
 
-    score = db.Column(db.Integer, server_default=db.text("0"))
+    score = db.Column(db.Float, server_default=db.text("0"))
     clock_synced_since_last_turn_at = db.Column(db.Double, server_default=db.text("(UNIX_TIMESTAMP())"))
     clock = db.Column(db.Double)
 

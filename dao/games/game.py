@@ -5,6 +5,8 @@ import random
 import uuid
 import time
 
+from sqlalchemy.ext.mutable import MutableList, MutableDict
+
 if TYPE_CHECKING: from game_modes import Anarchy
 from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
@@ -35,9 +37,10 @@ class Game(db.Model):
     turn_id = db.Column(db.Integer, db.ForeignKey("players.player_id"))
     turn = db.relationship("Player", foreign_keys=[turn_id], uselist=False)
 
-    moves = db.Column(db.PickleType, default=[])
     board = db.Column(db.PickleType, default=BOARD)
-    legal_move_cache = db.Column(db.PickleType, default={})
+    board_hashes = db.Column(MutableList.as_mutable(db.PickleType), default=[])
+    moves = db.Column(MutableList.as_mutable(db.PickleType), default=[])
+    legal_move_cache = db.Column(MutableDict.as_mutable(db.PickleType), default={})
 
     created_at = db.Column(db.DateTime, server_default=db.text("(UTC_TIMESTAMP)"))
     ended_at = db.Column(db.Double)
@@ -59,7 +62,6 @@ class Game(db.Model):
         square = self.board[origin["y"], origin["x"]]
         legal_moves = PIECE_DATA[square.piece.name]["all_legal"](self, origin)
         self.legal_move_cache[cache_origin] = legal_moves
-        db.session.query(Game).filter_by(game_id=self.game_id).update({"legal_move_cache": self.legal_move_cache})
         
         return legal_moves
 

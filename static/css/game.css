@@ -148,7 +148,7 @@ canvas {
     height: 70%;
 }
 #info-panel:not(.mobile) #chat-card {
-    max-height: 30%;
+    height: 30%;
 }
 
 #move-history-card td, th {
@@ -162,11 +162,6 @@ canvas {
 
 #move-history-card th {
     width: 1%;
-}
-
-#move-history-card table {
-    width: 100%;
-    /*table-layout: fixed;*/
 }
 
 #move-history-card th {

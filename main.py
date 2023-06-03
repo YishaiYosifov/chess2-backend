@@ -129,6 +129,7 @@ if __name__ == "__main__":
     app.register_blueprint(api)
 
     with app.app_context(): db.create_all()
+        
     threading.Thread(target=delete_expired, daemon=True).start()
 
     socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"], use_reloader=False)
