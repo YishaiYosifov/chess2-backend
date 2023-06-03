@@ -81,12 +81,24 @@
 
                         </div>
                         <div class="card-footer">
+                            <div class="btn-group mb-2" role="group" aria-label="Game Actions" id="game-actions-group">
+                                <button type="button" class="btn btn-outline-secondary text-white" id="resign"><i class="bi bi-flag-fill"></i> resign</button>
+                                <button type="button" class="btn btn-outline-secondary text-white" id="draw"><i class="bi bi-plus-slash-minus"></i> draw</button>
+                            </div>
+
                             <div class="input-group mb-3">
                                 <input type="text" class="form-control" placeholder="Message..." aria-label="Username" aria-describedby="chat">
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card" id="action-confirmation" style="display: none;">
+            <div class="card-body">
+                <button class="btn btn-danger" id="confirm-action">Confirm</button>
+                <button class="btn btn-dark" id="cancel-action">Cancel</button>
             </div>
         </div>
 

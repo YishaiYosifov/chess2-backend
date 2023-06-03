@@ -109,7 +109,6 @@ async function initilizePage(username, games) {
         gameElement.find("#black-wins").text(game.black_score);
 
         let results = gameElement.find("#results");
-        console.log(game.white_score == game.black_score && game.black_score == 0.5);
         if (game.white_score == game.black_score && game.black_score == 0.5) {
             results.addClass("bi-plus-slash-minus");
             results.addClass("text-gray");

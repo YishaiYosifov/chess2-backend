@@ -145,10 +145,10 @@ canvas {
     max-width: 400px;
 }
 #info-panel:not(.mobile) #move-history-card {
-    height: 70%;
+    height: 60%;
 }
 #info-panel:not(.mobile) #chat-card {
-    height: 30%;
+    height: 40%;
 }
 
 #move-history-card td, th {
@@ -171,6 +171,12 @@ canvas {
 #move-history-card td:last-child {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
+}
+
+#action-confirmation {
+    display: inline-block;
+    position: absolute;
+    background-color: var(--soft-green);
 }
 
 @media (max-width: 1700px) {

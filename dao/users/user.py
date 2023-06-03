@@ -67,7 +67,10 @@ class User(db.Model):
         return to.user_id == self.user_id or (self.player_in and to == self.player_in)
     
     @property
-    def active_game(self) -> Game: return Game.query.filter((Game.is_over == db.false()) & (Game.white.has(user=self) | Game.black.has(user=self))).first()
+    def active_game(self) -> Game:
+        if not self._active_game: self._active_game = Game.query.filter((Game.is_over == db.false()) & (Game.white.has(user=self) | Game.black.has(user=self))).first()
+        return self._active_game
+    _active_game = None
     
     def get_public_info(self) -> dict:
         from util import column_to_dict

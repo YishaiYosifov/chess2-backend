@@ -202,7 +202,7 @@ class Anarchy {
         disableDraggable();
 
         const gameOverModal = $("#game-over-modal");
-        $("#game-over-reason-text").text("By " + data["reason"]);
+        $("#game-over-reason-text").text(data["reason"]);
 
         const whiteEloText = $("#white-elo-text");
         const blackEloText = $("#black-elo-text");

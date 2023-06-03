@@ -130,6 +130,8 @@ class Anarchy:
         self.game.turn = opponent
         db.session.commit()
     
+    def resign(self, user : User): self.end_game(0 if user == self.game.white else 1, 0 if user == self.game.black else 1, "Resignation")
+    
     def end_game(self, white_results : int, black_results : int, reason : str):
         white_rating, black_rating = self._update_elo(white_results, black_results)
         emit("game_over", {"white_results": white_results, "black_results": black_results, "reason": reason, "white_rating": white_rating, "black_rating": black_rating}, to=self.game.token, namespace="/game")

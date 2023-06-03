@@ -479,3 +479,40 @@ function setViewingMove(newViewingMove) {
         if (turnColor == color) enableDraggable();
     }
 }
+
+// Game Actions
+$("#resign").click(async function() {
+    if (await confirmAction($(this)) == "confirm") gameNamespace.emit("resign");
+})
+$("#draw").click(async function() { console.log(await confirmAction($(this))); })
+
+async function confirmAction(forElement) {
+    const confirmationButtons = $("#game-actions-group").find("button");
+    confirmationButtons.prop("disabled", true);
+
+    const actionConfirmationCard = $("#action-confirmation");
+    actionConfirmationCard
+        .css("top", forElement.offset().top - actionConfirmationCard.height() - 10)
+        .css("left", forElement.offset().left);
+    await actionConfirmationCard.fadeIn(100).promise();
+
+    return new Promise((resolve, reject) => {
+        //$(window).click(reject)
+        $(window).mousedown(reject)
+        $("#cancel-action").mousedown(event => event.stopPropagation());
+        $("#cancel-action").click(reject);
+
+        $("#confirm-action").mousedown(event => event.stopPropagation());
+        $("#confirm-action").click(event => {
+            event.stopPropagation();
+            resolve();
+        });
+    }).then(() => {
+        actionConfirmationCard.fadeOut(100);
+        return "confirm";
+    }).catch(() => {
+        actionConfirmationCard.fadeOut(100);
+        confirmationButtons.prop("disabled", false);
+        return "cancel";
+    });
+}
