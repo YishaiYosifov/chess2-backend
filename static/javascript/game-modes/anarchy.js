@@ -1,16 +1,6 @@
-var highlightElement;
-var movingElement;
-var moves;
-
-var allLegalCache = {};
-var boardHeight;
-var boardWidth;
-
-var game;
-
 const pieces = ["knook", "queen", "antiqueen", "rook", "horse", "xook", "bishop", "archbishop", "king", "pawn", "child-pawn"]
 
-async function baseConstructBoard() {
+async function anarchyConstructBoard() {
     const boardContainer = $("#board");
 
     const promotionCard = $("#promotion-card");
@@ -24,13 +14,13 @@ async function baseConstructBoard() {
         image.attr("id", `promotion-${piece}`);
 
         image.attr("draggable", "false");
-        image.attr("src", `../static/assets/pieces/${piece}-${color}.png`);
+        image.attr("src", `../static/assets/pieces/${piece}-${game.localUser.color}.png`);
         image.appendTo(promotionCard);
     }
 
-    let tempBoard = structuredClone(board);
-    const colorMod = color == "white" ? 0 : 1
-    if (color == "white") tempBoard.reverse();
+    let tempBoard = structuredClone(game.board);
+    const colorMod = game.localUser.color == "white" ? 0 : 1
+    if (game.localUser.color == "white") tempBoard.reverse();
     else {
         for (const element of $("#board-card").children()) $("#board-card").prepend(element);
     }
@@ -38,7 +28,7 @@ async function baseConstructBoard() {
     for (const [rowIndex, row] of tempBoard.entries()) {
         for (const [columnIndex, column] of row.entries()) {
             let fixedRowIndex = rowIndex;
-            if (color == "white") fixedRowIndex = board.length - fixedRowIndex - 1;
+            if (game.localUser.color == "white") fixedRowIndex = game.boardHeight - fixedRowIndex - 1;
 
             const square = squareHTML.clone();
             square.attr("id", `${fixedRowIndex}-${columnIndex}`);
@@ -57,44 +47,31 @@ async function baseConstructBoard() {
 }
 
 class Anarchy {
-    constructor() {
+    constructor(gameData) {
+        this.white = gameData.white;
+        this.black = gameData.black;
+        this.board = gameData.board;
+
+        this.boardWidth = this.board[0].length;
+        this.boardHeight = this.board.length;
+        this.highlightElement;
+        this.movingElement;
+
+        this.isGameOver = gameData.is_over;
+        this.moves = gameData.moves;
+        this.allLegalCache = {};
+
+        this.turnColor = gameData.turn == this.white.user_id ? "white" : "black";
+        this.localUser = authInfo.user_id == this.white.user_id ? this.white : this.black;
+
         game = this;
-        if (gameData["is_over"]) return;
-        if (turnColor == color) enableDraggable();
+        if (gameData.is_over) return;
 
         gameNamespace.on("move", this.socketioMove);
         gameNamespace.on("game_over", this.socketioGameOver);
         gameNamespace.on("exception", this.socketioException);
         gameNamespace.on("clock_sync", this.socketioSyncClock);
-
-        $(`[color=${color}]`).mousedown(this.mouseDownShowLegal);
-    
-        $(".square").mousedown(function(event) {
-            if (event.which == 1) {
-                clearAllHighlights();
-                clearAllArrows();
-            }
-            else highlightElement = $(this);
-        });
-        $(".square").mouseup(function(event) {
-            if (event.which == 1) return;
-    
-            const currentSquare = $(this);
-            if (currentSquare.is(highlightElement)) {
-                if (currentSquare.hasClass("highlight")) clearHighlight(currentSquare)
-                else highlightSquare(currentSquare);
-            } else {
-                const highlightElementID = highlightElement.attr("id");
-                const currentSquareID = currentSquare.attr("id");
-                if (highlightElementID in arrows && currentSquareID in arrows[highlightElementID]) clearArrow(highlightElement, currentSquare);
-                else drawArrow(highlightElement, currentSquare);
-            }
-        });
-    
-        $(".square").click(function() {
-            if ($(this).find(".valid-move").is(":hidden") || isGameOver) return;
-            game.moveListener(movingElement, $(this));
-        });
+        gameNamespace.on("draw_request", this.socketioDrawRequest);
     }
 
     async moveListener(originElementImage, destinationElement) {
@@ -115,8 +92,8 @@ class Anarchy {
         disableDraggable();
     
         let move_data = {};
-        const originSquare = board[originY][originX]
-        if (originSquare.piece.name.includes("pawn") && (destinationY == board.length - 1 || destinationY == 0)) {
+        const originSquare = game.board[originY][originX]
+        if (originSquare.piece.name.includes("pawn") && (destinationY == game.board.length - 1 || destinationY == 0)) {
             const promotionCard = $("#promotion-card");
             promotionCard.appendTo(destinationElement)
             promotionCard.fadeIn(300);
@@ -146,8 +123,8 @@ class Anarchy {
                 if (originX > destinationX) destinationX = 2;
                 else destinationX = 6;
             } else if (originX == destinationX && Math.abs(originY - destinationY) > 1) {
-                if (originY > destinationY) destinationY = Math.floor(boardHeight / 2) - 1;
-                else destinationY = Math.floor(boardHeight / 2);
+                if (originY > destinationY) destinationY = Math.floor(game.boardHeight / 2) - 1;
+                else destinationY = Math.floor(game.boardHeight / 2);
             }
         } else if (["bishop", "xook"].includes(originSquare.piece.name)) {
             if (originX == destinationX) destinationY = originY + (originY > destinationY ? -2 : 2)
@@ -160,45 +137,45 @@ class Anarchy {
 
     async movePiece(moveLog, promoteTo) {
         addMoveToTable(moveLog);
-        moves.push(moveLog);
+        game.moves.push(moveLog);
 
-        if (viewingMove == null) movingElement = null;
-        allLegalCache = {};
+        if (viewingMove == null) game.movingElement = null;
+        game.allLegalCache = {};
 
         for (const [index, capture] of Object.entries(moveLog["captured"])) {
             if (viewingMove == null) {
                 const capturedPieceImage = $(`#${capture.y}-${capture.x}`).find(".piece");
                 capturedPieceImage.delay(index * 30).fadeOut(100, function() { $(this).remove(); });
             }
-            board[capture.y][capture.x].piece = null;
+            game.board[capture.y][capture.x].piece = null;
         }
         for (const move of moveLog["moved"]) {
             const [origin, destination] = [move["origin"], move["destination"]];
-            const tempPiece = Object.assign({}, board[origin.y][origin.x].piece);
+            const tempPiece = Object.assign({}, game.board[origin.y][origin.x].piece);
             if (viewingMove == null) {
                 const originPieceImage = $(`#${origin.y}-${origin.x}`).find(".piece");
                 const destinationPiece = $(`#${destination.y}-${destination.x}`);
 
-                if (move.piece.includes("pawn") && (destination.y == 0 || destination.y == boardHeight - 1)) {
+                if (move.piece.includes("pawn") && (destination.y == 0 || destination.y == game.boardHeight - 1)) {
                     tempPiece.name = promoteTo;
                     originPieceImage.attr("src", `../static/assets/pieces/${promoteTo}-${tempPiece.color}.png`);
                 }
                 animateMovement(originPieceImage, destinationPiece);
             }
 
-            board[origin.y][origin.x].piece = null;
-            board[destination.y][destination.x].piece = tempPiece;
+            game.board[origin.y][origin.x].piece = null;
+            game.board[destination.y][destination.x].piece = tempPiece;
         }
     }
 
     socketioSyncClock(data) {
-        white.clock = data.white;
-        black.clock = data.black;
+        game.white.clock = data.white;
+        game.black.clock = data.black;
         updateTimer();
     }
 
     async socketioGameOver(data) {
-        isGameOver = true;
+        game.isGameOver = true;
         disableDraggable();
 
         const gameOverModal = $("#game-over-modal");
@@ -215,38 +192,37 @@ class Anarchy {
             gameOverModal.addClass("draw");
         }
 
-        whiteEloText.text(white["rating"]);
-        blackEloText.text(black["rating"]);
+        whiteEloText.text(game.white["rating"]);
+        blackEloText.text(game.black["rating"]);
 
-        gameOverModal.modal({backdrop: "static"});
         await gameOverModal.modal("show").promise();
         await sleep(450);
 
-        if (white["rating"] != data["white_rating"]) await eloTextAnimation(whiteEloText, white["rating"], data["white_rating"]);
-        if (black["rating"] != data["black_rating"]) eloTextAnimation(blackEloText, black["rating"], data["black_rating"]);
+        if (game.white["rating"] != data["white_rating"]) await eloTextAnimation(whiteEloText, game.white["rating"], data["white_rating"]);
+        if (game.black["rating"] != data["black_rating"]) eloTextAnimation(blackEloText, game.black["rating"], data["black_rating"]);
     }
 
     async socketioMove(data) {
         await game.movePiece(data["move_log"], data["promote_to"]);
+        if (game.moves.length >= 2) $("#resign span").text("resign");
     
-        turnColor = data.turn;
-        if (!data.is_over && data.turn == color) enableDraggable();
+        game.turnColor = data.turn;
+        if (!data.is_over && data.turn == game.localUser.color) enableDraggable();
         else disableDraggable();
     }
 
     async socketioException(data) {
         console.error(data);
-        if (turnColor == color) enableDraggable();
-        if (movingElement) {
-            revertPiece(movingElement);
-            movingElement = null;
+        if (game.turnColor == game.localUser.color) enableDraggable();
+        if (game.movingElement) {
+            revertPiece(game.movingElement);
+            game.movingElement = null;
         }
     
         if (data["code"] == 5) {
-
             const forcedMoves = data["message"];
             for (let i = 0; i < 2; i++) {
-                if (movingElement) return;
+                if (game.movingElement) return;
     
                 for (const [fromSquare, toSquare] of forcedMoves) {
                     const fromElement = $(`#${fromSquare.y}-${fromSquare.x}`);
@@ -263,19 +239,21 @@ class Anarchy {
         } else showAlert("Something went wrong. Please refresh the page");
     }
 
+    socketioDrawRequest = async () => $("#draw-request").fadeIn(100);
+
     async mouseDownShowLegal(event) {
-        if (event.which != 1 || turnColor != color || isGameOver || viewingMove != null) return;
+        if (event.which != 1 || game.turnColor != game.localUser.color || game.isGameOver || viewingMove != null) return;
 
         $(".valid-move").hide().parent().droppable().droppable("disable");
     
-        movingElement = $(this);
-        const id = movingElement.parent().attr("id");
+        game.movingElement = $(this);
+        const id = game.movingElement.parent().attr("id");
         let [y, x] = id.split("-");
         x = parseInt(x);
         y = parseInt(y);
     
-        let legalMoves = allLegalCache[id] ?? await (await apiRequest("/game/live/get_legal", {"game_token": gameToken, "x": x, "y": y})).json();
-        allLegalCache[id] = legalMoves;
+        let legalMoves = game.allLegalCache[id] ?? await (await apiRequest("/game/live/get_legal", {"game_token": gameToken, "x": x, "y": y})).json();
+        game.allLegalCache[id] = legalMoves;
         for (const validMove of legalMoves) {
             const moveIndicator = $(`#${validMove.y}-${validMove.x}`).find(".valid-move");
             moveIndicator.fadeIn(300);

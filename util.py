@@ -236,6 +236,7 @@ class SocketIOErrors(Enum):
 
     PROMOTION_ERROR = 6
     SERVER_ERROR = 7
+    NOT_FOUND = 8
 class SocketIOException(Exception):
     def __init__(self, code : SocketIOErrors, message : str):
         super().__init__(message)

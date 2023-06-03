@@ -14,6 +14,9 @@ class Player(db.Model):
     clock_synced_since_last_turn_at = db.Column(db.Double, server_default=db.text("(UNIX_TIMESTAMP())"))
     clock = db.Column(db.Double)
 
+    is_requesting_draw = db.Column(db.Boolean, server_default=db.text("FALSE"))
+    ignore_draw_requests = db.Column(db.Boolean, server_default=db.text("FALSE"))
+
     @hybrid_property
     def game(self): return self.game_white or self.game_black
 

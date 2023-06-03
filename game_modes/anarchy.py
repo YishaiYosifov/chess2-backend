@@ -15,7 +15,7 @@ class Anarchy:
     def move(self, user : User, origin : dict, destination : dict, args):
         self.game : Game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
-        player : Player = self.game.white if user == self.game.white else self.game.black
+        player : Player = self._get_player(user)
 
         # Check if both the origin and the destination squares are valid
         try:
@@ -131,19 +131,76 @@ class Anarchy:
         db.session.commit()
     
     def resign(self, user : User): self.end_game(0 if user == self.game.white else 1, 0 if user == self.game.black else 1, "Resignation")
+
+    # region Draw Management
+
+    def request_draw(self, user : User):
+        player : Player = self._get_player(user)
+        if player.is_requesting_draw: raise SocketIOException(SocketIOErrors.BAD_REQUEST, "You already have an outgoing draw request")
+
+        player.is_requesting_draw = True
+        if not self._get_opponent(user).ignore_draw_requests: emit("draw_request", include_self=False, to=self.game.token)
+
+        db.session.commit()
+
+    def ignore_draw_requests(self, user : User):
+        opponent = self._get_opponent(user)
+        if not opponent.is_requesting_draw:
+            raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
+
+        player : Player = self._get_player(user)
+        player.ignore_draw_requests = True
+        
+        opponent.is_requesting_draw = False
+        emit("draw_declined", include_self=False, to=self.game.token)
+
+        db.session.commit()
+    
+    def decline_draw(self, user : User):
+        opponent = self._get_opponent(user)
+        if not opponent.is_requesting_draw:
+            raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
+
+        opponent.is_requesting_draw = False
+        emit("draw_declined", include_self=False, to=self.game.token)
+        db.session.commit()
+    
+    def accept_draw(self, user : User):
+        if not self._get_opponent(user).is_requesting_draw:
+            raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
+        self.end_game(0.5, 0.5, "Agreement")
+
+    # endregion
     
     def end_game(self, white_results : int, black_results : int, reason : str):
-        white_rating, black_rating = self._update_elo(white_results, black_results)
-        emit("game_over", {"white_results": white_results, "black_results": black_results, "reason": reason, "white_rating": white_rating, "black_rating": black_rating}, to=self.game.token, namespace="/game")
+        if len(self.game.moves) < 2:
+            data = {
+                "white_results": 0.5,
+                "black_results": 0.5,
+                "reason": "Aborted"
+            }
+            data["white_rating"] = self.game.white.user.rating(self.game.game_settings.mode).elo
+            data["black_rating"] = self.game.black.user.rating(self.game.game_settings.mode).elo
+            
+            for delete in [self.game, self.game.white, self.game.black]: db.session.delete(delete)
+        else:
+            data = {
+                "white_results": white_results,
+                "black_results": black_results,
+                "reason": reason
+            }
+            data["white_rating"], data["black_rating"] = self._update_elo(white_results, black_results)
 
-        self.game.is_over = True
-        self.game.ended_at = time.time()
+            self.game.is_over = True
+            self.game.ended_at = time.time()
         
-        self.game.white.score = white_results
-        self.game.black.score = black_results
-        if self.game.match:
-            self.game.match.white.score += white_results
-            self.game.match.black.score += black_results
+            self.game.white.score = white_results
+            self.game.black.score = black_results
+            if self.game.match:
+                self.game.match.white.score += white_results
+                self.game.match.black.score += black_results
+        emit("game_over", data, to=self.game.token, namespace="/game")
+
         db.session.commit()
     
     def sync_clock(self):
@@ -163,6 +220,8 @@ class Anarchy:
             }, to=self.game.token, namespace="/game")
     
     # region Helpers
+
+    def _get_player(self, user : User) -> Player: return self.game.white if user == self.game.white else self.game.black
 
     def _get_opponent(self, user : User) -> Player:
         if user == self.game.white: return self.game.black

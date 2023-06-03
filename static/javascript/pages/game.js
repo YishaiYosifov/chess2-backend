@@ -4,74 +4,85 @@ const squareHTML = $($.parseHTML(`
     </div>
 `));
 const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`));
-const moveTableItem = $($.parseHTML(`
-
-`))
 
 const gameToken = window.location.pathname.split("/").pop();
 const CSSProperties = getComputedStyle(document.documentElement, null);
 
-var gameData;
-var board;
-
-var turnColor;
-var white;
-var black;
-
 var animatingMovement = false;
-var isGameOver = false;
+var game;
 
 async function main() {
-    await loadAuthInfo()
-    const userID = authInfo.user_id;
+    await loadAuthInfo();
     gameData = await (await apiRequest("/game/live/get_game", {"game_token": gameToken})).json();
-    
-    white = await (await apiRequest(`/profile/${gameData.white.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
-    white["rating"] = await (await apiRequest(`/profile/${gameData.white.user_id}/get_ratings`, {"mode": gameData.mode})).json();
-    white = Object.assign(white, gameData.white);
+    game = new Anarchy(gameData);
+    $("#draw").prop("disabled", game.localUser.is_requesting_draw);
 
-    black = await (await apiRequest(`/profile/${gameData.black.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
-    black["rating"] = await (await apiRequest(`/profile/${gameData.black.user_id}/get_ratings`, {"mode": gameData.mode})).json();
-    black = Object.assign(black, gameData.black);
-
-    color = userID == black.user_id ? "black" : "white";
-    turnColor = gameData.turn == white.user_id ? "white" : "black";
-    isGameOver = gameData.is_over;
-
-    board = gameData.board;
-    moves = gameData.moves;
-    if (!moves.length) $("#move-history-title").text("No Moves");
-
-    boardHeight = board.length;
-    boardWidth = board[0].length;
-    
-    await baseConstructBoard();
-    if (isGameOver) updateTimer(null, gameData.ended_at)
-    else {
-        apiRequest("/game/live/sync_clock");
-        const timer = setInterval(() => {
-            updateTimer(turnColor);
-            if (isGameOver) clearInterval(timer);
-        }, 100);
-    }
     for (setColor of ["white", "black"]) {
-        user = setColor == "white" ? white : black
+        user = setColor == "white" ? game.white : game.black
+        let userInfo = await (await apiRequest(`/profile/${user.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
+        userInfo["rating"] = await (await apiRequest(`/profile/${user.user_id}/get_ratings`, {"mode": gameData.mode})).json();
+        Object.assign(user, userInfo);
+
         $(`.profile-picture-${setColor}`).attr("src", `../static/uploads/${user.user_id}/profile-picture.jpeg`);
         $(`.username-${setColor}`).append(user.username);
         $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
     }
+    await anarchyConstructBoard();
 
+    if (!game.isGameOver && game.turnColor == game.localUser.color) enableDraggable();
+    if (!game.moves.length) $("#move-history-title").text("No Moves");
+    if (game.moves.length < 2) $("#resign span").text("abort");
+    
+    if (game.isGameOver) updateTimer(null, gameData.ended_at)
+    else {
+        apiRequest("/game/live/sync_clock");
+        const timer = setInterval(() => {
+            updateTimer(game.turnColor);
+            if (game.isGameOver) clearInterval(timer);
+        }, 100);
+    }
+
+    function profilePicturesLoaded() {
+        setBoardWidth();
+        game.moves.forEach(addMoveToTable);
+    }
     const profilePictures = $(".profile-picture-white, .profile-picture-black");
-    const totalPictures = profilePictures.length;
-    let loaded = 0;
-    profilePictures.on("load", function() {
-        loaded++;
-        if (loaded === totalPictures) {
-            setBoardWidth();
-            moves.forEach(addMoveToTable)
+    
+    if (profilePictures.toArray().every(picture => picture.complete)) profilePicturesLoaded();
+    else {
+        profilePictures.on("load", function() {
+            if (profilePictures.toArray().every(picture => picture.complete)) profilePicturesLoaded();
+        });
+    }
+
+    $(`[color=${game.localUser.color}]`).mousedown(game.mouseDownShowLegal);
+    
+    $(".square").mousedown(function(event) {
+        if (event.which == 1) {
+            clearAllHighlights();
+            clearAllArrows();
+        }
+        else game.highlightElement = $(this);
+    });
+    $(".square").mouseup(function(event) {
+        if (event.which == 1) return;
+
+        const currentSquare = $(this);
+        if (currentSquare.is(game.highlightElement)) {
+            if (currentSquare.hasClass("highlight")) clearHighlight(currentSquare)
+            else highlightSquare(currentSquare);
+        } else {
+            const highlightElementID = game.highlightElement.attr("id");
+            const currentSquareID = currentSquare.attr("id");
+            if (highlightElementID in arrows && currentSquareID in arrows[highlightElementID]) clearArrow(game.highlightElement, currentSquare);
+            else drawArrow(game.highlightElement, currentSquare);
         }
     });
-    const game = new Anarchy();
+
+    $(".square").click(function() {
+        if ($(this).find(".valid-move").is(":hidden") || game.isGameOver) return;
+        game.moveListener(game.movingElement, $(this));
+    });
 }
 
 $("#new-game").click(() => window.location.replace("/play?s=1"));
@@ -80,8 +91,8 @@ main();
 function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;
     
-    if (!onlyFor || onlyFor == "white") $("#clock-white").text(formatSeconds(white.clock - timestamp));
-    if (!onlyFor || onlyFor == "black") $("#clock-black").text(formatSeconds(black.clock - timestamp));
+    if (!onlyFor || onlyFor == "white") $("#clock-white").text(formatSeconds(game.white.clock - timestamp));
+    if (!onlyFor || onlyFor == "black") $("#clock-black").text(formatSeconds(game.black.clock - timestamp));
 }
 
 function setWinner(winner) {
@@ -89,7 +100,7 @@ function setWinner(winner) {
     $(`#${winner}-elo-text`).addClass("bg-success");
     $(`#${loser}-elo-text`).addClass("bg-danger");
 
-    const isWinner = winner == color
+    const isWinner = winner == game.localUser.color
     $("#game-over-modal").addClass(isWinner ? "victory" : "defeat");
     $("#game-over-results-text").text(isWinner ? "VICTORY" : "DEFEAT")
 }
@@ -112,9 +123,9 @@ async function eloTextAnimation(textElement, currentElo, newElo) {
 }
 
 function enableDraggable() {
-    if (isGameOver) return;
+    if (game.isGameOver) return;
     
-    $(`img[color="${color}"]`).draggable({
+    $(`img[color="${game.localUser.color}"]`).draggable({
         start: function(event, ui) { 
             $(this).draggable("option", "cursorAt", {
                 left: Math.floor(this.clientWidth / 2),
@@ -131,7 +142,7 @@ function enableDraggable() {
 
 function disableDraggable() {
     $(".valid-move").hide();
-    $(`img[color="${color}"]`).draggable().draggable("disable");
+    $(`img[color="${game.localUser.color}"]`).draggable().draggable("disable");
 }
 
 function revertPiece(pieceImage) {
@@ -333,7 +344,7 @@ $(window).on("resize", () => {
 
 // Move History
 function addMoveToTable(move, i) {
-    if (i == undefined) i = moves.length;
+    if (i == undefined) i = game.moves.length;
     i++;
     move = structuredClone(move);
 
@@ -393,21 +404,21 @@ function addMoveToTable(move, i) {
 
 var viewingMove = null;
 $(window).on("keydown", e => {
-    if (animatingMovement || !moves) return;
+    if (animatingMovement || !game.moves.length) return;
     
     let newViewingMove = viewingMove;
     if (e.key == "ArrowUp") {
         revertToIndex(0);
         return;
     } else if (e.key == "ArrowDown") {
-        revertToIndex(moves.length);
+        revertToIndex(game.moves.length);
         return;
     } else if (e.key == "ArrowLeft") {
-        if (viewingMove == null) newViewingMove = moves.length;
+        if (viewingMove == null) newViewingMove = game.moves.length;
         else if (viewingMove - 1 < 0) return;
         newViewingMove--;
         
-        const move = moves[newViewingMove];
+        const move = game.moves[newViewingMove];
         for (const moved of move.moved) {
             animateMovement($(`#${moved.destination.y}-${moved.destination.x}`).find(".piece"), $(`#${moved.origin.y}-${moved.origin.x}`));
         }
@@ -419,9 +430,9 @@ $(window).on("keydown", e => {
             $(`#${captured.y}-${captured.x}`).append(piece);
         }
     } else if (e.key == "ArrowRight") {
-        if (viewingMove == null || viewingMove >= moves.length) return;
+        if (viewingMove == null || viewingMove >= game.moves.length) return;
 
-        const move = moves[viewingMove];
+        const move = game.moves[viewingMove];
 
         for (const captured of move.captured) {
             $(`#${captured.y}-${captured.x}`).find(".piece").remove()
@@ -438,15 +449,15 @@ $(window).on("keydown", e => {
 function revertToIndex(moveIndex) {
     if (typeof(moveIndex) != "number") moveIndex = $(this).attr("id").split("-").at(-1);
 
-    const revertBoard = structuredClone(board);
-    for (const [i, move] of Object.entries(moves.slice(moveIndex).reverse())) {
+    const revertBoard = structuredClone(game.board);
+    for (const [i, move] of Object.entries(game.moves.slice(moveIndex).reverse())) {
         for (const moved of move.moved) {
             const destination = revertBoard[moved.destination.y][moved.destination.x];
             revertBoard[moved.origin.y][moved.origin.x].piece = Object.assign({}, destination.piece);
             destination.piece = null;
         }
 
-        const pieceColor = i % 2 == moves.length % 2 ? "white" : "black";
+        const pieceColor = i % 2 == game.moves.length % 2 ? "white" : "black";
         for (const captured of move.captured) revertBoard[captured.y][captured.x].piece = {"name": captured.piece, "color": pieceColor};
     }
 
@@ -458,7 +469,7 @@ function revertToIndex(moveIndex) {
                 const piece = pieceHTML.clone();
                 piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.png`);
                 piece.attr("color", square.piece.color);
-                if (square.piece.color == color) piece.mousedown(game.mouseDownShowLegal);
+                if (square.piece.color == game.localUser.color) piece.mousedown(game.mouseDownShowLegal);
 
                 squareElement.append(piece);
             }
@@ -470,21 +481,25 @@ function revertToIndex(moveIndex) {
 function setViewingMove(newViewingMove) {
     $("#move-history-table").find("td").css("border-bottom", "");
 
-    if (newViewingMove < moves.length) {
+    if (newViewingMove < game.moves.length) {
         disableDraggable();
         $(`#move-${newViewingMove}`).css("border-bottom", "solid cornflowerblue");
         viewingMove = newViewingMove;
     } else {
         viewingMove = null;
-        if (turnColor == color) enableDraggable();
+        if (game.turnColor == game.localUser.color) enableDraggable();
     }
 }
 
 // Game Actions
 $("#resign").click(async function() {
     if (await confirmAction($(this)) == "confirm") gameNamespace.emit("resign");
-})
-$("#draw").click(async function() { console.log(await confirmAction($(this))); })
+});
+$("#draw").click(async function() {
+    game.localUser.is_requesting_draw = true;
+    if (await confirmAction($(this)) == "confirm") gameNamespace.emit("request_draw");
+    else game.localUser.is_requesting_draw = false;
+});
 
 async function confirmAction(forElement) {
     const confirmationButtons = $("#game-actions-group").find("button");
@@ -496,8 +511,13 @@ async function confirmAction(forElement) {
         .css("left", forElement.offset().left);
     await actionConfirmationCard.fadeIn(100).promise();
 
+    function resetButtons() {
+        actionConfirmationCard.fadeOut(100);
+        $("#draw").prop("disabled", game.localUser.is_requesting_draw);
+        $("#resign").prop("disabled", false);
+    }
+
     return new Promise((resolve, reject) => {
-        //$(window).click(reject)
         $(window).mousedown(reject)
         $("#cancel-action").mousedown(event => event.stopPropagation());
         $("#cancel-action").click(reject);
@@ -508,11 +528,31 @@ async function confirmAction(forElement) {
             resolve();
         });
     }).then(() => {
-        actionConfirmationCard.fadeOut(100);
+        resetButtons();
         return "confirm";
     }).catch(() => {
-        actionConfirmationCard.fadeOut(100);
-        confirmationButtons.prop("disabled", false);
+        resetButtons()
         return "cancel";
     });
 }
+
+// Draw Management
+$("#accept-draw").click(() => {
+    $("#draw-request").fadeOut(100);
+    gameNamespace.emit("accept_draw");
+});
+
+$("#decline-draw").click(() => {
+    $("#draw-request").fadeOut(100);
+    gameNamespace.emit("decline_draw");
+});
+
+$("#ignore-draws").click(() => {
+    $("#draw-request").fadeOut(100);
+    gameNamespace.emit("ignore_draw_requests");
+});
+
+gameNamespace.on("draw_declined", () => {
+    game.localUser.is_requesting_draw = false;
+    $("#draw").prop("disabled", false);
+});
