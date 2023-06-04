@@ -348,8 +348,7 @@ $(window).on("resize", () => {
 
 // Move History
 function addMoveToTable(move, i) {
-    if (i == undefined) i = game.moves.length;
-    i++;
+    if (i == undefined) i = game.moves.length - 1;
     move = structuredClone(move);
 
     $("#move-history-title").text("Move History");
@@ -410,51 +409,25 @@ var viewingMove = null;
 $(window).on("keydown", e => {
     if (animatingMovement || !game.moves.length) return;
     
-    let newViewingMove = viewingMove;
-    if (e.key == "ArrowUp") {
-        revertToIndex(0);
-        return;
-    } else if (e.key == "ArrowDown") {
-        revertToIndex(game.moves.length);
-        return;
-    } else if (e.key == "ArrowLeft") {
-        if (viewingMove == null) newViewingMove = game.moves.length;
-        else if (viewingMove - 1 < 0) return;
-        newViewingMove--;
-        
-        const move = game.moves[newViewingMove];
-        for (const moved of move.moved) {
-            animateMovement($(`#${moved.destination.y}-${moved.destination.x}`).find(".piece"), $(`#${moved.origin.y}-${moved.origin.x}`));
-        }
-        for (const captured of move.captured) {
-            const piece = pieceHTML.clone();
-            const color = newViewingMove % 2 == 0 ? "black" : "white";
-            piece.attr("src", `../static/assets/pieces/${captured.piece}-${color}.png`);
-            piece.attr("color", color);
-            $(`#${captured.y}-${captured.x}`).append(piece);
-        }
-    } else if (e.key == "ArrowRight") {
-        if (viewingMove == null || viewingMove >= game.moves.length) return;
-
-        const move = game.moves[viewingMove];
-
-        for (const captured of move.captured) {
-            $(`#${captured.y}-${captured.x}`).find(".piece").remove()
-        }
-        for (const moved of move.moved) {
-            animateMovement($(`#${moved.origin.y}-${moved.origin.x}`).find(".piece"), $(`#${moved.destination.y}-${moved.destination.x}`));
-        }
-        newViewingMove++;
-    }
-    else return;
-    setViewingMove(newViewingMove);
+    if (e.key == "ArrowUp") revertToIndex(0);
+    else if (e.key == "ArrowDown") revertToIndex(game.moves.length - 1);
+    else if (e.key == "ArrowLeft") revertBackwards();
+    else if (e.key == "ArrowRight") revertForwards();
 });
 
 function revertToIndex(moveIndex) {
-    if (typeof(moveIndex) != "number") moveIndex = $(this).attr("id").split("-").at(-1);
+    if (animatingMovement) return;
+    else if (typeof(moveIndex) != "number") moveIndex = parseInt($(this).attr("id").split("-").at(-1));
+    
+    if (viewingMove == null) viewingMove = game.moves.length - 1;
+    if (Math.abs(moveIndex - viewingMove) == 1) {
+        if (moveIndex > viewingMove) revertForwards();
+        else revertBackwards();
+        return;
+    }
 
     const revertBoard = structuredClone(game.board);
-    for (const [i, move] of Object.entries(game.moves.slice(moveIndex).reverse())) {
+    for (const [i, move] of Object.entries(game.moves.slice(moveIndex + 1).reverse())) {
         for (const moved of move.moved) {
             const destination = revertBoard[moved.destination.y][moved.destination.x];
             revertBoard[moved.origin.y][moved.origin.x].piece = Object.assign({}, destination.piece);
@@ -479,13 +452,50 @@ function revertToIndex(moveIndex) {
             }
         }
     }
-    setViewingMove(moveIndex);
+    setViewingMove(moveIndex)
+}
+
+function revertBackwards() {
+    let newViewingMove;
+    if (viewingMove == null) newViewingMove = game.moves.length - 2;
+    else newViewingMove = viewingMove - 1;
+    if (newViewingMove < -1) return;
+
+    const move = game.moves[newViewingMove + 1];
+    
+    for (const moved of move.moved) {
+        animateMovement($(`#${moved.destination.y}-${moved.destination.x}`).find(".piece"), $(`#${moved.origin.y}-${moved.origin.x}`));
+    }
+    for (const captured of move.captured) {
+        const piece = pieceHTML.clone();
+        const color = newViewingMove % 2 == 0 ? "white" : "black";
+        piece.attr("src", `../static/assets/pieces/${captured.piece}-${color}.png`);
+        piece.attr("color", color);
+        $(`#${captured.y}-${captured.x}`).append(piece);
+    }
+
+    setViewingMove(newViewingMove)
+}
+function revertForwards() {
+    if (viewingMove == null) return;
+
+    let newViewingMove = viewingMove + 1;
+    const move = game.moves[newViewingMove]
+    
+    for (const captured of move.captured) {
+        $(`#${captured.y}-${captured.x}`).find(".piece").remove()
+    }
+    for (const moved of move.moved) {
+        animateMovement($(`#${moved.origin.y}-${moved.origin.x}`).find(".piece"), $(`#${moved.destination.y}-${moved.destination.x}`));
+    }
+
+    setViewingMove(newViewingMove)
 }
 
 function setViewingMove(newViewingMove) {
     $("#move-history-table").find("td").css("border-bottom", "");
 
-    if (newViewingMove < game.moves.length) {
+    if (newViewingMove < game.moves.length - 1) {
         disableDraggable();
         $(`#move-${newViewingMove}`).css("border-bottom", "solid cornflowerblue");
         viewingMove = newViewingMove;
