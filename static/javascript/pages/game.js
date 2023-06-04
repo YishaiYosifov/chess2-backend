@@ -16,6 +16,7 @@ async function main() {
     gameData = await (await apiRequest("/game/live/get_game", {"game_token": gameToken})).json();
     game = new Anarchy(gameData);
     $("#draw").prop("disabled", game.localUser.is_requesting_draw);
+    if (game.opponent.is_requesting_draw) $("#draw-request").show();
 
     for (setColor of ["white", "black"]) {
         user = setColor == "white" ? game.white : game.black
@@ -28,6 +29,15 @@ async function main() {
         $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
     }
     await anarchyConstructBoard();
+
+    const pieceImages = $("#board").find("img");
+    let loadedPieces = 0;
+    pieceImages.on("load", () => {
+        loadedPieces++;
+        if (loadedPieces >= pieceImages.length) $("#board-loading").hide();
+    }).each(function() {
+        if (this.complete) $(this).trigger("load");
+    })
 
     if (!game.isGameOver && game.turnColor == game.localUser.color) enableDraggable();
     if (!game.moves.length) $("#move-history-title").text("No Moves");
@@ -42,18 +52,12 @@ async function main() {
         }, 100);
     }
 
-    function profilePicturesLoaded() {
-        setBoardWidth();
-        game.moves.forEach(addMoveToTable);
-    }
-    const profilePictures = $(".profile-picture-white, .profile-picture-black");
+    game.moves.forEach(addMoveToTable);
     
-    if (profilePictures.toArray().every(picture => picture.complete)) profilePicturesLoaded();
-    else {
-        profilePictures.on("load", function() {
-            if (profilePictures.toArray().every(picture => picture.complete)) profilePicturesLoaded();
-        });
-    }
+    // Wait for profile pictures to load before setting board width
+    const profilePictures = $(".profile-picture-white, .profile-picture-black");
+    setBoardWidth();
+    profilePictures.on("load", setBoardWidth);
 
     $(`[color=${game.localUser.color}]`).mousedown(game.mouseDownShowLegal);
     

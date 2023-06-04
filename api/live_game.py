@@ -24,7 +24,7 @@ def get_board(args):
     game : Game = Game.query.filter_by(token=args.game_token).first()
     if not game: raise NotFound("Game Not Found")
 
-    game_dict = column_to_dict(game, include=["moves", "is_over", "ended_at"])
+    game_dict = column_to_dict(game, include=["moves", "is_over", "ended_at", "client_legal_move_cache"])
     if game.match: game_dict["match"] = column_to_dict(game, include=["white_score", "black_score"])
     else: game_dict["match"] = {"white_score": 0, "black_score": 0}
     return jsonify(game_dict | {
@@ -34,20 +34,3 @@ def get_board(args):
         "board": [[square.to_dict() for square in row] for row in game.board],
         "mode": game.game_settings.mode,
     }), 200
-
-@live_game.route("/get_legal", methods=["POST"])
-@requires_args(Argument("game_token", type=str, required=True), Argument("x", type=int, required=True), Argument("y", type=int, required=True))
-def get_legal_moves(args):
-    game : Game = Game.query.filter_by(token=args.game_token).first()
-    if not game: raise NotFound("Game Not Found")
-
-    try: square = game.board[args.y, args.x]
-    except IndexError: raise BadRequest("Invalid Square")
-    if not square.piece: raise BadRequest("Invalid Square")
-
-    legal_moves = game.get_legal_moves({"x": args.x, "y": args.y})
-    db.session.commit()
-    return jsonify(
-        list(
-            map(lambda move: {"x": move.x, "y": move.y}, legal_moves)
-        )), 200

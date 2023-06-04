@@ -10,12 +10,8 @@ function disconnect() {
 }
 connect();
 
-$(window).on("beforeunload", () => { disconnect(); });
-$(window).on("pageshow", () => {
-    if (performance.getEntriesByType("navigation")[0].type == "back_forward") {
-        disconnect();
-        connect();
-    }
+$(window).on("pageshow", (event) => {
+    if (event.originalEvent.persisted) window.location.reload();
 });
 
 socket.on("connect", () => socket.emit("connected"));

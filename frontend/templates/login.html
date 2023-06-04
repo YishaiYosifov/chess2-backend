@@ -23,7 +23,7 @@
         <script src="static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
         
         <div class="container fixed-top mt-5 text-center" id="errors" style="max-width: 350px;">
         </div>

@@ -57,12 +57,13 @@ class Anarchy {
         this.highlightElement;
         this.movingElement;
 
+        this.legalMovesCache = gameData.client_legal_move_cache;
         this.isGameOver = gameData.is_over;
         this.moves = gameData.moves;
-        this.allLegalCache = {};
 
         this.turnColor = gameData.turn == this.white.user_id ? "white" : "black";
         this.localUser = authInfo.user_id == this.white.user_id ? this.white : this.black;
+        this.opponent = authInfo.user_id == this.white.user_id ? this.black : this.white;
 
         game = this;
         if (gameData.is_over) return;
@@ -140,7 +141,6 @@ class Anarchy {
         game.moves.push(moveLog);
 
         if (viewingMove == null) game.movingElement = null;
-        game.allLegalCache = {};
 
         for (const [index, capture] of Object.entries(moveLog["captured"])) {
             if (viewingMove == null) {
@@ -205,6 +205,7 @@ class Anarchy {
     async socketioMove(data) {
         await game.movePiece(data["move_log"], data["promote_to"]);
         if (game.moves.length >= 2) $("#resign span").text("resign");
+        game.legalMovesCache = data.legal_moves;
     
         game.turnColor = data.turn;
         if (!data.is_over && data.turn == game.localUser.color) enableDraggable();
@@ -251,9 +252,8 @@ class Anarchy {
         let [y, x] = id.split("-");
         x = parseInt(x);
         y = parseInt(y);
-    
-        let legalMoves = game.allLegalCache[id] ?? await (await apiRequest("/game/live/get_legal", {"game_token": gameToken, "x": x, "y": y})).json();
-        game.allLegalCache[id] = legalMoves;
+
+        let legalMoves = game.legalMovesCache[`(${x}, ${y})`] ?? [];
         for (const validMove of legalMoves) {
             const moveIndicator = $(`#${validMove.y}-${validMove.x}`).find(".valid-move");
             moveIndicator.fadeIn(300);

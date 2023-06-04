@@ -468,6 +468,11 @@ PIECE_DATA = {
         "validate": lambda game, origin, destination: (abs(origin["x"] - destination["x"]) + abs(origin["y"] - destination["y"])) % 2 == 0,
         "collisions": [straight_collision],
 
-        "all_legal": lambda game, origin: [square for index, square in enumerate(straight_legal(game, origin)) if index % 2 == 1]
+        "all_legal": lambda game, origin: [
+                                                square for square in straight_legal(game, origin)
+                                                if (square.x + square.y) % 2 == (
+                                                    1 if game.board[origin["y"], origin["x"]].piece.color == "white" else 0
+                                                )
+                                            ]
     }
 }

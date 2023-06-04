@@ -124,6 +124,20 @@ class Anarchy:
         player.clock_synced_since_last_turn_at = time.time()
         self.sync_clock()
 
+        # Cache all legal moves
+        self.game.client_legal_move_cache = {}
+        for row in self.game.board:
+            for square in row:
+                if not square.piece: continue
+
+                legal_moves = list(PIECE_DATA.get(square.piece.name)["all_legal"](self.game, {"x": square.x, "y": square.y}))
+                if not legal_moves: continue
+
+                self.game.client_legal_move_cache[str((square.x, square.y))] = list(
+                    map(lambda move: {"x": move.x, "y": move.y}, legal_moves)
+                )
+        move_data["legal_moves"] = self.game.client_legal_move_cache
+
         # Emit the move
         emit("move", move_data, to=self.game.token)
 
@@ -220,7 +234,6 @@ class Anarchy:
             }, to=self.game.token, namespace="/game")
     
     # region Helpers
-
     def _get_player(self, user : User) -> Player: return self.game.white if user == self.game.white else self.game.black
 
     def _get_opponent(self, user : User) -> Player:

@@ -7,8 +7,8 @@ import time
 
 from sqlalchemy.ext.mutable import MutableList, MutableDict
 
+from extensions import BOARD, BOARD_STARTING_MOVES, PIECE_DATA
 if TYPE_CHECKING: from game_modes import Anarchy
-from extensions import BOARD, PIECE_DATA
 from .game_settings import GameSettings
 from .player import Player
 from app import db
@@ -37,10 +37,10 @@ class Game(db.Model):
     turn_id = db.Column(db.Integer, db.ForeignKey("players.player_id"))
     turn = db.relationship("Player", foreign_keys=[turn_id], uselist=False)
 
+    client_legal_move_cache = db.Column(MutableDict.as_mutable(db.PickleType), default=BOARD_STARTING_MOVES)
     board = db.Column(db.PickleType, default=BOARD)
     board_hashes = db.Column(MutableList.as_mutable(db.PickleType), default=[])
     moves = db.Column(MutableList.as_mutable(db.PickleType), default=[])
-    legal_move_cache = db.Column(MutableDict.as_mutable(db.PickleType), default={})
 
     last_50_move_reset = db.Column(db.Integer, server_default=db.text("0"))
 

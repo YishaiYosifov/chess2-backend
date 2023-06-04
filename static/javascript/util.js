@@ -69,7 +69,6 @@ function isDigit(text) { return /^\d+$/.test(text); }
 
 var authInfo;
 async function loadAuthInfo() {
-
     authInfo = await getLocalStorage("auth-info", {});
     if (["/login", "/signup"].includes(location.pathname) || Object.keys(authInfo).length) return;
 

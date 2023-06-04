@@ -44,37 +44,50 @@ const navItem = $($.parseHTML(`
     </li>
 `))
 
+function createNavbar(navbarItems) {
+    const isLoggedIn = Object.keys(authInfo).length && authInfo["auth_method"] != "guest";
+
+    const offsetTop = navbar.find("#offset-top");
+    const offsetBottom = navbar.find("#offset-bottom");
+    const navbarSeperator = navbar.find("#navbar-seperator");
+    for (const item of navbarItems) {
+        if ((item["auth_req"] == 1 && !isLoggedIn) ||
+            (item["auth_req"] == 2 && isLoggedIn)) continue;
+
+        const navItemTemplate = navItem.clone();
+        const navText = navItemTemplate.find("a");
+        if (item["path"] == window.location.pathname.split("/")[1]) navText.addClass("active");
+
+        navText.attr("href", `${location.protocol}//${location.host}/${item["path"]}` );
+        navText.find("i").addClass(item["icon"])
+
+        navText.append(item["label"])
+
+        if (item["side"] == "top") {
+            offsetTop.append(navItemTemplate.clone());
+            navItemTemplate.insertBefore(navbarSeperator);
+        }
+        else {
+            offsetBottom.append(navItemTemplate.clone());
+            navItemTemplate.insertAfter(navbarSeperator);
+        }
+    };
+    $("body").prepend(navbar);
+}
+
 function loadNavbar() {
+    localStorageNavbar = getLocalStorage("navbar", []);
+    if (localStorageNavbar.length) createNavbar(localStorageNavbar);
+
     const root = location.protocol + "//" + location.host
     $.getJSON(`${root}/static/navbar.json`, async navbarItems => {
-        const isLoggedIn = Object.keys(authInfo).length && authInfo["auth_method"] != "guest";
+        const navbarItemsString = JSON.stringify(navbarItems);
+        if (JSON.stringify(localStorageNavbar) != navbarItemsString) {
+            $(".navbar").remove();
 
-        const offsetTop = navbar.find("#offset-top");
-        const offsetBottom = navbar.find("#offset-bottom");
-        const navbarSeperator = navbar.find("#navbar-seperator");
-        for (const item of navbarItems) {
-            if ((item["auth_req"] == 1 && !isLoggedIn) ||
-                (item["auth_req"] == 2 && isLoggedIn)) continue;
-    
-            const navItemTemplate = navItem.clone();
-            const navText = navItemTemplate.find("a");
-            if (item["path"] == window.location.pathname.split("/")[1]) navText.addClass("active");
-    
-            navText.attr("href", root + "/" + item["path"]);
-            navText.find("i").addClass(item["icon"])
-
-            navText.append(item["label"])
-    
-            if (item["side"] == "top") {
-                offsetTop.append(navItemTemplate.clone());
-                navItemTemplate.insertBefore(navbarSeperator);
-            }
-            else {
-                offsetBottom.append(navItemTemplate.clone());
-                navItemTemplate.insertAfter(navbarSeperator);
-            }
-        };
-        $("body").prepend(navbar);
+            localStorage.setItem("navbar", navbarItemsString);
+            createNavbar(navbarItems);
+        }
     });
 }
 loadAuthInfo().then(loadNavbar);
