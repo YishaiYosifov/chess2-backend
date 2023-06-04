@@ -14,7 +14,7 @@ game = Blueprint("pre_game", __name__, url_prefix="/game")
 game.register_blueprint(live_game)
 
 @game.route("/pool/start", methods=["POST"])
-@requires_args(Argument("mode", type=str, required=True), Argument("time_control", type=int, required=True), Argument("increment", type=int, required=True))
+@requires_args(Argument("mode", type=str, required=True), Argument("time_control", type=float, required=True), Argument("increment", type=int, required=True))
 @requires_auth(allow_guests=True)
 def start_pool_game(user : User, args):
     """

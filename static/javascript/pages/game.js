@@ -39,18 +39,12 @@ async function main() {
         if (this.complete) $(this).trigger("load");
     })
 
-    if (!game.isGameOver && game.turnColor == game.localUser.color) enableDraggable();
+    if (!game.isGameOver && game.turn == game.localUser) enableDraggable();
     if (!game.moves.length) $("#move-history-title").text("No Moves");
     if (game.moves.length < 2) $("#resign span").text("abort");
     
     if (game.isGameOver) updateTimer(null, gameData.ended_at)
-    else {
-        apiRequest("/game/live/sync_clock");
-        const timer = setInterval(() => {
-            updateTimer(game.turnColor);
-            if (game.isGameOver) clearInterval(timer);
-        }, 100);
-    }
+    else apiRequest("/game/live/sync_clock");
 
     game.moves.forEach(addMoveToTable);
     
@@ -95,8 +89,13 @@ main();
 function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;
     
-    if (!onlyFor || onlyFor == "white") $("#clock-white").text(formatSeconds(game.white.clock - timestamp));
-    if (!onlyFor || onlyFor == "black") $("#clock-black").text(formatSeconds(game.black.clock - timestamp));
+    let isTimeout = false;
+    for (user of [game.white, game.black]) {
+        const clock = user.clock - timestamp;
+        if (clock <= 0) isTimeout = true;
+        if (!onlyFor || onlyFor == user) $(`#clock-${user.color}`).text(formatSeconds(clock));
+    }
+    return isTimeout;
 }
 
 function setWinner(winner) {
@@ -140,7 +139,7 @@ function enableDraggable() {
         cursor: "grabbing",
         revert: "invalid",
         revertDuration: 100,
-        zIndex: 1
+        zIndex: 50
     }).draggable("enable");
 }
 
@@ -452,7 +451,7 @@ function revertToIndex(moveIndex) {
             }
         }
     }
-    setViewingMove(moveIndex)
+    setViewingMove(moveIndex);
 }
 
 function revertBackwards() {
@@ -501,7 +500,7 @@ function setViewingMove(newViewingMove) {
         viewingMove = newViewingMove;
     } else {
         viewingMove = null;
-        if (game.turnColor == game.localUser.color) enableDraggable();
+        if (game.turn == game.localUser) enableDraggable();
     }
 }
 

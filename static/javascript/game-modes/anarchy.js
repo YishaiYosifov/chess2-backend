@@ -61,7 +61,7 @@ class Anarchy {
         this.isGameOver = gameData.is_over;
         this.moves = gameData.moves;
 
-        this.turnColor = gameData.turn == this.white.user_id ? "white" : "black";
+        this.turn = gameData.turn == this.white.user_id ? this.white : this.black;
         this.localUser = authInfo.user_id == this.white.user_id ? this.white : this.black;
         this.opponent = authInfo.user_id == this.white.user_id ? this.black : this.white;
 
@@ -172,6 +172,17 @@ class Anarchy {
         game.white.clock = data.white;
         game.black.clock = data.black;
         updateTimer();
+
+        if (data.is_timeout) return;
+        const timer = setInterval(() => {
+            const isTimeout = updateTimer(game.turn);
+
+            if (game.isGameOver) clearInterval(timer);
+            if (isTimeout) {
+                clearInterval(timer);
+                apiRequest("/game/live/sync_clock");
+            }
+        }, 100);
     }
 
     async socketioGameOver(data) {
@@ -207,14 +218,14 @@ class Anarchy {
         if (game.moves.length >= 2) $("#resign span").text("resign");
         game.legalMovesCache = data.legal_moves;
     
-        game.turnColor = data.turn;
+        game.turn = data.turn == "white" ? game.white : game.black;
         if (!data.is_over && data.turn == game.localUser.color) enableDraggable();
         else disableDraggable();
     }
 
     async socketioException(data) {
         console.error(data);
-        if (game.turnColor == game.localUser.color) enableDraggable();
+        if (game.turn == game.localUser) enableDraggable();
         if (game.movingElement) {
             revertPiece(game.movingElement);
             game.movingElement = null;
@@ -243,7 +254,7 @@ class Anarchy {
     socketioDrawRequest = async () => $("#draw-request").fadeIn(100);
 
     async mouseDownShowLegal(event) {
-        if (event.which != 1 || game.turnColor != game.localUser.color || game.isGameOver || viewingMove != null) return;
+        if (event.which != 1 || game.turn != game.localUser || game.isGameOver || viewingMove != null) return;
 
         $(".valid-move").hide().parent().droppable().droppable("disable");
     

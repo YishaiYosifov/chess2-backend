@@ -13,7 +13,6 @@ class Anarchy:
     def __init__(self, game : Game): self.game = game
 
     def move(self, user : User, origin : dict, destination : dict, args):
-        self.game : Game = db.session.merge(self.game)
         if user != self.game.turn: raise SocketIOException(SocketIOErrors.CONFLICT, "Wrong User")
         player : Player = self._get_player(user)
 
@@ -187,12 +186,21 @@ class Anarchy:
     # endregion
     
     def end_game(self, white_results : int, black_results : int, reason : str):
+        if self.game.is_over: return
+
+        updated_rows = Game.query.filter_by(game_id=self.game.game_id, is_over=False).update({"is_over": True})
+        if updated_rows > 0: db.session.commit()
+        else:
+            db.session.rollback()
+            return
+
         if len(self.game.moves) < 2:
             data = {
                 "white_results": 0.5,
                 "black_results": 0.5,
                 "reason": "Aborted"
             }
+
             data["white_rating"] = self.game.white.user.rating(self.game.game_settings.mode).elo
             data["black_rating"] = self.game.black.user.rating(self.game.game_settings.mode).elo
             
@@ -205,7 +213,6 @@ class Anarchy:
             }
             data["white_rating"], data["black_rating"] = self._update_elo(white_results, black_results)
 
-            self.game.is_over = True
             self.game.ended_at = time.time()
         
             self.game.white.score = white_results
@@ -213,24 +220,27 @@ class Anarchy:
             if self.game.match:
                 self.game.match.white.score += white_results
                 self.game.match.black.score += black_results
-        emit("game_over", data, to=self.game.token, namespace="/game")
-
+        
         db.session.commit()
+        emit("game_over", data, to=self.game.token, namespace="/game")
     
     def sync_clock(self):
         timestamp = time.time()
         
+        is_timeout = False
         for player in [self.game.black, self.game.white]:
             if player != self.game.turn:
                 player.clock += abs(time.time() - player.clock_synced_since_last_turn_at)
                 player.clock_synced_since_last_turn_at = time.time()
 
             if player.clock <= timestamp:
+                is_timeout = True
                 if player == self.game.white: self.end_game(1, 0, "Timeout")
                 else: self.end_game(0, 1, "Timeout")
         emit("clock_sync", {
                 "white": self.game.white.clock,
-                "black": self.game.black.clock
+                "black": self.game.black.clock,
+                "is_timeout": is_timeout
             }, to=self.game.token, namespace="/game")
     
     # region Helpers

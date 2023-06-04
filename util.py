@@ -86,7 +86,7 @@ def requires_args(*arguments : reqparse.Argument):
                 # If there are any missing / bad arguments, return them through socket io / http request
                 message = "\n".join([f"{argument}: {help}" for argument, help in error.data["message"].items()])
                 if is_socket: raise SocketIOException(SocketIOErrors.BAD_ARGUMENT, message)
-                else: raise BadRequest("Missing Arguments:\n" + message)
+                else: raise BadRequest("Missing / Bad Arguments:\n" + message)
 
             # If there are any empty arguments with a default value, set the arg to the default value
             for arg_name, value in parsed.copy().items():
