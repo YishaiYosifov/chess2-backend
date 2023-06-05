@@ -134,11 +134,6 @@ canvas {
     max-width: 100px;
 }
 
-.clock {
-    justify-content: space-between;
-    max-width: 100px;
-}
-
 #info-panel.mobile {
     margin-top: 20px;
     height: 600px;

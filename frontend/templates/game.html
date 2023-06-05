@@ -36,14 +36,21 @@
             <div class="row justify-content-center">
                 <div class="col-auto">
                     <div class="card text-white p-2" id="board-card">
-                        <div class="card-header text-white row col-12 align-items-center p-0" id="small-profile-white" style="justify-content: space-between">
+                        <div class="card-header text-white row col-12 align-items-center p-0" id="small-profile-black" style="justify-content: space-between">
                             <span class="username-black limit-text col-auto m-0 text-white-50" style="display: inline-block; max-width: 60%;">
-                                <img class="img-fluid profile-picture-black me-3 rounded" style="width: 100%; height: 100%; max-height: 60px; max-width: 60px;">
-                                <img class="img-fluid country-black me-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
+                                <img class="img-fluid profile-picture-white me-3 rounded" style="width: 100%; height: 100%; max-height: 60px; max-width: 60px;">
+                                <span></span>
+                                <img class="img-fluid country-white ms-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
                             </span>
-                            <div class="col-auto d-flex bg-warning text-dark py-2 rounded clock">
-                                <i class="bi bi-clock-fill"></i>
-                                <span class="align-middle ms-2 me-2" id="clock-black"></span>
+                            <div class="row col-auto">
+                                <div class="col-auto bg-danger text-dark py-2 rounded me-3 align-items-center stall-warning" id="black-stall-warning" style="display: none;">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span class="align-middle ms-2 me-2" style="font-size: 15px;">Play/auto-resign: 20s</span>
+                                </div>
+                                <div class="col-auto bg-warning text-dark py-2 rounded clock" id="clock-black" style="max-width: 110px; display: flex;">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span class="align-middle ms-2 me-2"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body px-1 justify-content-center d-flex">
@@ -53,14 +60,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer text-white row col-12 align-items-center p-0" id="small-profile-black" style="justify-content: space-between">
-                            <span class="username-white limit-text col-auto m-0 text-white-50" style="display: inline-block; max-width: 60%;">
+                        <div class="card-footer text-white row col-12 align-items-center p-0" id="small-profile-white" style="justify-content: space-between">
+                            <span class="username-white col-auto m-0 text-white-50 flex-limit-text">
                                 <img class="img-fluid profile-picture-white me-3 rounded" style="width: 100%; height: 100%; max-height: 60px; max-width: 60px;">
-                                <img class="img-fluid country-white me-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
+                                <span></span>
+                                <img class="img-fluid country-white ms-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
                             </span>
-                            <div class="col-auto d-flex bg-warning text-dark py-2 rounded clock">
-                                <i class="bi bi-clock-fill"></i>
-                                <span class="align-middle ms-2 me-2" id="clock-white"></span>
+                            <div class="row col-auto">
+                                <div class="col-auto bg-danger text-dark py-2 rounded align-items-center stall-warning" id="white-stall-warning" style="display: none;">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span class="align-middle ms-2 me-2" style="font-size: 15px;">Play/auto-resign: 20s</span>
+                                </div>
+                                <div class="col-auto bg-warning text-dark py-2 rounded clock" id="clock-white" style="max-width: 110px; display: flex;">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span class="align-middle ms-2 me-2"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -97,9 +111,8 @@
                                 <button class="btn btn-outline-secondary text-white" id="resign"><i class="bi bi-flag-fill"></i> <span>resign</span></button>
                                 <button class="btn btn-outline-secondary text-white" id="draw"><i class="bi bi-plus-slash-minus"></i> <span>draw</span></button>
                             </div>
-
                             <div class="input-group mb-3">
-                                <input class="form-control" placeholder="Message..." aria-label="Username" aria-describedby="chat">
+                                <input class="form-control" placeholder="Message..." aria-label="Message" aria-describedby="chat">
                             </div>
                         </div>
                     </div>

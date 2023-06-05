@@ -82,3 +82,11 @@ div.card {
     overflow: hidden;
     white-space: nowrap;
 }
+
+.flex-limit-text {
+    display: inline-block;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

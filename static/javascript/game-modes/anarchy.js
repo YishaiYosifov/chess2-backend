@@ -48,6 +48,8 @@ async function anarchyConstructBoard() {
 
 class Anarchy {
     constructor(gameData) {
+        this.gameData = gameData;
+
         this.white = gameData.white;
         this.black = gameData.black;
         this.board = gameData.board;
@@ -176,12 +178,7 @@ class Anarchy {
         if (data.is_timeout) return;
         const timer = setInterval(() => {
             const isTimeout = updateTimer(game.turn);
-
-            if (game.isGameOver) clearInterval(timer);
-            if (isTimeout) {
-                clearInterval(timer);
-                apiRequest("/game/live/sync_clock");
-            }
+            if (game.isGameOver || isTimeout) clearInterval(timer);
         }, 100);
     }
 
@@ -214,12 +211,17 @@ class Anarchy {
     }
 
     async socketioMove(data) {
+        $(".stall-warning").hide();
+        $(".clock").show();
+
         await game.movePiece(data["move_log"], data["promote_to"]);
         if (game.moves.length >= 2) $("#resign span").text("resign");
         game.legalMovesCache = data.legal_moves;
     
         game.turn = data.turn == "white" ? game.white : game.black;
-        if (!data.is_over && data.turn == game.localUser.color) enableDraggable();
+        game.turn.turn_started_at = Date.now() / 1000;
+        
+        if (!data.is_over && game.turn == game.localUser) enableDraggable();
         else disableDraggable();
     }
 

@@ -1,3 +1,14 @@
+const firstMovesStallTimeout = 25;
+const stallTimeouts = {
+    "1": 60,
+    "3": 90,
+    "5": 120,
+    "10": 200,
+    "15": 210,
+    "30": 470,
+    "180": 200
+};
+
 const squareHTML = $($.parseHTML(`
     <div class="square">
         <img class="img-fluid valid-move" src="../static/assets/valid-move.png" draggable="false">
@@ -5,8 +16,8 @@ const squareHTML = $($.parseHTML(`
 `));
 const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`));
 
-const gameToken = window.location.pathname.split("/").pop();
 const CSSProperties = getComputedStyle(document.documentElement, null);
+const gameToken = window.location.pathname.split("/").pop();
 
 var animatingMovement = false;
 var game;
@@ -21,11 +32,11 @@ async function main() {
     for (setColor of ["white", "black"]) {
         user = setColor == "white" ? game.white : game.black
         let userInfo = await (await apiRequest(`/profile/${user.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
-        userInfo["rating"] = await (await apiRequest(`/profile/${user.user_id}/get_ratings`, {"mode": gameData.mode})).json();
+        userInfo["rating"] = await (await apiRequest(`/profile/${user.user_id}/get_ratings`, {"mode": game.gameData.game_settings.mode})).json();
         Object.assign(user, userInfo);
 
         $(`.profile-picture-${setColor}`).attr("src", `../static/uploads/${user.user_id}/profile-picture.jpeg`);
-        $(`.username-${setColor}`).append(user.username);
+        $(`.username-${setColor} span`).text(user.username);
         $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
     }
     await anarchyConstructBoard();
@@ -50,8 +61,8 @@ async function main() {
     
     // Wait for profile pictures to load before setting board width
     const profilePictures = $(".profile-picture-white, .profile-picture-black");
-    setBoardWidth();
-    profilePictures.on("load", setBoardWidth);
+    updateBoardSize();
+    profilePictures.on("load", updateBoardSize);
 
     $(`[color=${game.localUser.color}]`).mousedown(game.mouseDownShowLegal);
     
@@ -90,10 +101,34 @@ function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;
     
     let isTimeout = false;
+    
+    // Stall Timeout
+    const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
+    const timeUntilStallTimeout = Math.max(0, stallTimeout - (timestamp - game.turn.turn_started_at));
+
+    if (timeUntilStallTimeout < 20) {
+        const stallWarning = $(`#${game.turn.color}-stall-warning`);
+        if (stallWarning.is(":hidden")) {
+            $(`#clock-${game.turn.color}`).hide();
+            stallWarning.show();
+            updateBoardSize();
+        }
+        stallWarning.text(`Play/auto-resign: ${Math.round(timeUntilStallTimeout)}s`);
+    }
+
+    if (timeUntilStallTimeout <= 0) {
+        apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
+        isTimeout = true;
+    }
+
+    // Regular Timeout
     for (user of [game.white, game.black]) {
         const clock = user.clock - timestamp;
-        if (clock <= 0) isTimeout = true;
-        if (!onlyFor || onlyFor == user) $(`#clock-${user.color}`).text(formatSeconds(clock));
+        if (clock <= 0) {
+            isTimeout = true;
+            apiRequest("/game/live/sync_clock");
+        }
+        if (!onlyFor || onlyFor == user) $(`#clock-${user.color} span`).text(formatSeconds(clock));
     }
     return isTimeout;
 }
@@ -283,7 +318,7 @@ function clearAllArrows() {
     $("canvas").remove();
 }
 
-function setBoardWidth() {
+function updateBoardSize() {
     const windowHeight = $(window).height();
     const windowWidth = $(window).width();
 
@@ -333,7 +368,7 @@ var resizeTimeout;
 $(window).on("resize", () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(function() {
-        setBoardWidth();
+        updateBoardSize();
         
         const arrowsCopy = Object.assign({}, arrows);
         clearAllArrows();

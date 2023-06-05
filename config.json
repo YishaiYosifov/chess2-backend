@@ -4,6 +4,17 @@
     "INCREMENTS": [0, 2, 5, 10],
     "ACCEPTABLE_RATING_DIFFERENCE": 300,
 
+    "STALL_TIMEOUTES": {
+        "1": 60,
+        "3": 90,
+        "5": 120,
+        "10": 200,
+        "15": 210,
+        "30": 470,
+        "180": 200
+    },
+    "FIRST_MOVES_STALL_TIMEOUT": 25,
+
     "PIECE_SET": [
         ["rook", "horse", "xook", "queen", "king", "bishop", "horse", "rook"],
         ["child-pawn", "antiqueen", "pawn", "pawn", "pawn", "pawn", "knook", "child-pawn"],

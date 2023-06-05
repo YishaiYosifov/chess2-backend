@@ -105,22 +105,23 @@ class Anarchy:
         board_hash = self._hash_board()
         if self.game.board_hashes.count(board_hash) >= 3:
             move_data["is_over"] = True
-            self.end_game(0.5, 0.5, "3 Fold Repetition")
+            self._end_game(0.5, 0.5, "3 Fold Repetition")
         elif current_move_number - self.game.last_50_move_reset >= 100:
             move_data["is_over"] = True
-            self.end_game(0.5, 0.5, "50 Move Rule")
+            self._end_game(0.5, 0.5, "50 Move Rule")
         else:
             # Check if the king was captured
             for square in move_log["captured"]:
                 if square["piece"] == "king":
-                    self.end_game(1 if player.color == "white" else 0, 1 if player.color == "black" else 0, "King Captured")
+                    self._end_game(1 if player.color == "white" else 0, 1 if player.color == "black" else 0, "King Captured")
                     move_data["is_over"] = True
                     break
         self.game.board_hashes.append(board_hash)
 
         # Update and sync the clock
         player.clock += self.game.game_settings.increment
-        player.clock_synced_since_last_turn_at = time.time()
+        player.clock_synced_at = time.time()
+        opponent.turn_started_at = time.time()
         self.sync_clock()
 
         # Cache all legal moves
@@ -143,7 +144,7 @@ class Anarchy:
         self.game.turn = opponent
         db.session.commit()
     
-    def resign(self, user : User): self.end_game(0 if user == self.game.white else 1, 0 if user == self.game.black else 1, "Resignation")
+    def resign(self, user : User): self._end_game(0 if user == self.game.white else 1, 0 if user == self.game.black else 1, "Resignation")
 
     # region Draw Management
 
@@ -181,11 +182,40 @@ class Anarchy:
     def accept_draw(self, user : User):
         if not self._get_opponent(user).is_requesting_draw:
             raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
-        self.end_game(0.5, 0.5, "Agreement")
+        self._end_game(0.5, 0.5, "Agreement")
 
     # endregion
     
-    def end_game(self, white_results : int, black_results : int, reason : str):
+    def sync_clock(self):
+        timestamp = time.time()
+        
+        is_timeout = False
+        for player in [self.game.black, self.game.white]:
+            if player != self.game.turn:
+                player.clock += abs(time.time() - player.clock_synced_at)
+                player.clock_synced_at = time.time()
+
+            if player.clock <= timestamp:
+                is_timeout = True
+                if player == self.game.white: self._end_game(1, 0, "Timeout")
+                else: self._end_game(0, 1, "Timeout")
+        emit("clock_sync", {
+                "white": self.game.white.clock,
+                "black": self.game.black.clock,
+                "is_timeout": is_timeout
+            }, to=self.game.token, namespace="/game")
+    
+    def alert_stalling(self, user : User) -> bool:
+        player : Player = self._get_player(user)
+        stalling_timeout = CONFIG["STALL_TIMEOUTES"][str(int(self.game.game_settings.time_control / 60))] if len(self.game.moves) > 2 else CONFIG["FIRST_MOVES_STALL_TIMEOUT"]
+        if time.time() - player.turn_started_at < stalling_timeout: return
+
+        if player == self.game.white: self._end_game(0, 1, "Game Abandoned")
+        else: self._end_game(1, 0, "Game Abandoned")
+    
+    # region Helpers
+
+    def _end_game(self, white_results : int, black_results : int, reason : str):
         if self.game.is_over: return
 
         updated_rows = Game.query.filter_by(game_id=self.game.game_id, is_over=False).update({"is_over": True})
@@ -223,27 +253,7 @@ class Anarchy:
         
         db.session.commit()
         emit("game_over", data, to=self.game.token, namespace="/game")
-    
-    def sync_clock(self):
-        timestamp = time.time()
-        
-        is_timeout = False
-        for player in [self.game.black, self.game.white]:
-            if player != self.game.turn:
-                player.clock += abs(time.time() - player.clock_synced_since_last_turn_at)
-                player.clock_synced_since_last_turn_at = time.time()
 
-            if player.clock <= timestamp:
-                is_timeout = True
-                if player == self.game.white: self.end_game(1, 0, "Timeout")
-                else: self.end_game(0, 1, "Timeout")
-        emit("clock_sync", {
-                "white": self.game.white.clock,
-                "black": self.game.black.clock,
-                "is_timeout": is_timeout
-            }, to=self.game.token, namespace="/game")
-    
-    # region Helpers
     def _get_player(self, user : User) -> Player: return self.game.white if user == self.game.white else self.game.black
 
     def _get_opponent(self, user : User) -> Player:

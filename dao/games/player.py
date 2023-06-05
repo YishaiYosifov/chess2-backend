@@ -11,7 +11,9 @@ class Player(db.Model):
     color = db.Column(db.Text(10))
 
     score = db.Column(db.Float, server_default=db.text("0"))
-    clock_synced_since_last_turn_at = db.Column(db.Double, server_default=db.text("(UNIX_TIMESTAMP())"))
+
+    turn_started_at = db.Column(db.Integer, server_default=db.text("(UNIX_TIMESTAMP())"))
+    clock_synced_at = db.Column(db.Double, server_default=db.text("(UNIX_TIMESTAMP())"))
     clock = db.Column(db.Double)
 
     is_requesting_draw = db.Column(db.Boolean, server_default=db.text("FALSE"))
