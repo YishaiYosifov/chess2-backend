@@ -1,3 +1,5 @@
+import time
+
 from flask_socketio import disconnect, join_room, emit
 from flask_restful.reqparse import Argument
 from flask import request
@@ -15,8 +17,13 @@ def game_connected(user : User):
     
     join_room(user.active_game.token)
 
-    player = user.active_game.get_game_class()._get_player(user)
-    if player.is_connected: disconnect(player.sid)
+    game_class = user.active_game.get_game_class()
+    game_class._get_opponent(user).buffer_emit("opponent_connected")
+
+    player = game_class._get_player(user)
+    if player.is_connected:
+        emit("remote_connection", to=player.sid)
+        disconnect(player.sid)
 
     player.sid = request.sid
     player.is_loading = False
@@ -32,8 +39,12 @@ def game_connected(user : User):
 def game_disconnected(user : User):
     if not user.active_game: return
 
-    player = user.active_game.get_game_class()._get_opponent(user)
+    game_class = user.active_game.get_game_class()
+    player = game_class._get_opponent(user)
     player.is_connected = False
+    player.disconnected_at = time.time()
+
+    game_class._get_opponent(user).buffer_emit("opponent_disconnected")
     db.session.commit()
 
 @socketio.on("move", namespace="/game")

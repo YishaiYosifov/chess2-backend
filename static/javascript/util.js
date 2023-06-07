@@ -140,3 +140,74 @@ class PromiseQueue {
 
     get isActive() { return this.queue.length > 0 || this.promise != null; }
 }
+
+//#region Alert
+
+const alertHTML = $($.parseHTML(`
+    <div class="container mt-3 col-md-5 mx-auto alert alert-dismissible fade show text-center" style="display: none;" role="alert">
+        <div id="alertText" style="white-space: pre-wrap;"></div>
+        <button class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+`))
+
+const URLAlerts = {
+    "session-expired": {"urls": ["/login"], "message": "Your session expired, please log in again!", color: "danger"},
+    "settings-updated": {"urls": ["/settings"], "message": "Updated!", color: "success"},
+    "password-updated": {"urls": ["/settings"], "message": "Password Updated!", color: "success"},
+    "account-deleted": {"urls": ["/"], "message": "Your account has been deleted.", color: "info"}
+}
+
+function alert() {
+    const message = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
+    const urlMessage = new URLSearchParams(location.search).get("a");
+    let color;
+    if (urlMessage) {
+        if (!(urlMessage in URLAlerts)) return;
+
+        const alertData = URLAlerts[urlMessage];
+        if (!window.location.pathname.includes(alertData["urls"])) return;
+
+        message = alertData["message"];
+        color = alertData["color"];
+
+        pathname = window.location.pathname.split("/").pop();
+        pathname = (pathname == "") ? "/" : pathname;
+        window.history.replaceState({}, null, pathname);
+    }
+    else if (message == "None") return;
+    else {
+        let messageData = JSON.parse(message);
+        message = messageData["message"];
+        color = messageData["color"];
+    }
+
+    showAlert(message, color);
+}
+alert()
+
+function showAlert(message, color="danger") {
+    $(".alert").remove();
+
+    const alertObject = alertHTML.clone();
+    alertObject.addClass(`alert-${color}`)
+    alertObject.find("#alertText").text(message);
+
+    if ($("#header").length) alertObject.insertAfter("#header");
+    else if ($(".navbar").length) alertObject.insertAfter(".navbar");
+    else $("body").prepend(alertObject);
+
+    alertObject.fadeIn(300);
+}
+
+//#endregion
+
+//#region Password Confirmation
+
+async function confirmPassword() {
+    $("#password-confirmation").modal("show");
+
+    return await new Promise((resolve) => $("#password-confirmation-submit").click(resolve))
+                                .then(() => $("#password").val());
+}
+
+//#endregion

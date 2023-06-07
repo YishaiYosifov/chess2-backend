@@ -1,3 +1,4 @@
+const disconnectionTimeout = 62;
 const firstMovesStallTimeout = 25;
 const stallTimeouts = {
     "1": 60,
@@ -106,6 +107,8 @@ async function main() {
 }
 
 $(".new-game-button").click(() => window.location.replace("/play?s=1"));
+
+gameNamespace = io("/game");
 loadAuthInfo().then(main)
 
 function updateTimer(onlyFor = null, timestamp = null) {
@@ -113,8 +116,8 @@ function updateTimer(onlyFor = null, timestamp = null) {
     
     let isTimeout = false;
     
-    // Stall Timeout
-    /*if (!game.isGameOver) {
+    if (!game.isGameOver) {
+        // Stall Timeout
         const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
         const timeUntilStallTimeout = Math.max(0, stallTimeout - (timestamp - game.turn.turn_started_at));
     
@@ -132,7 +135,13 @@ function updateTimer(onlyFor = null, timestamp = null) {
             apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
             isTimeout = true;
         }
-    }*/
+
+        // Disconnection Timeout
+        if (!game.opponent.is_connected && disconnectionTimeout - (timestamp - game.opponent.disconnected_at) <= 0) {
+            apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
+            isTimeout = true;
+        }
+    }
 
     // Regular Timeout
     for (user of [game.white, game.black]) {
@@ -621,3 +630,23 @@ gameNamespace.on("draw_declined", () => {
     game.localUser.is_requesting_draw = false;
     $("#draw").prop("disabled", false);
 });
+
+
+//#region Non-directly game related socketio listeners
+
+drawRequest = async () => $("#draw-request").fadeIn(100);
+
+function remoteConnection() {
+    game.isGameOver = true;
+    $("#disconnected").fadeIn(300);
+    $("body").css("overflow", "hidden");
+}
+
+function opponentDisconnected() {
+    game.opponent.is_connected = false;
+    game.opponent.disconnected_at = Date.now() / 1000;
+};
+
+opponentConnected = () => game.opponent.is_connected = true;
+
+//#endregion

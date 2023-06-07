@@ -77,7 +77,11 @@ class Anarchy {
         gameNamespace.on("game_over", this.socketioGameOver);
         gameNamespace.on("exception", this.socketioException);
         gameNamespace.on("clock_sync", this.socketioSyncClock);
-        gameNamespace.on("draw_request", this.socketioDrawRequest);
+        gameNamespace.on("draw_request", drawRequest);
+
+        gameNamespace.on("opponent_disconnected", opponentDisconnected);
+        gameNamespace.on("opponent_connected", opponentConnected);
+        gameNamespace.on("remote_connection", remoteConnection);
     }
 
     async moveListener(originElementImage, destinationElement) {
@@ -261,8 +265,6 @@ class Anarchy {
             }
         } else showAlert("Something went wrong. Please refresh the page");
     }
-
-    socketioDrawRequest = async () => $("#draw-request").fadeIn(100);
 
     async mouseDownShowLegal(event) {
         if (event.which != 1 || game.turn != game.localUser || game.isGameOver || viewingMove != null) return;

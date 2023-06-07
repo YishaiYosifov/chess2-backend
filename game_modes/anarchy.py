@@ -213,7 +213,9 @@ class Anarchy:
     
     def alert_stalling(self, user : User) -> bool:
         player : Player = self._get_player(user)
+
         stalling_timeout = CONFIG["STALL_TIMEOUTES"][str(int(self.game.game_settings.time_control / 60))] if len(self.game.moves) > 2 else CONFIG["FIRST_MOVES_STALL_TIMEOUT"]
+        if not player.is_connected: stalling_timeout = min(stalling_timeout, CONFIG["DISCONNECTION_TIMEOUT"])
         if time.time() - player.turn_started_at < stalling_timeout: return
 
         if player == self.game.white: self._end_game(0, 1, "Game Abandoned")
@@ -291,15 +293,6 @@ class Anarchy:
         db.session.add_all([new_white_rating, new_black_rating])
 
         return new_white_rating.elo, new_black_rating.elo
-    
-    def _hash_board(self) -> int:
-        return hash(
-            tuple(
-                tuple(
-                    square.piece.name + square.piece.color if square.piece else "" for square in row
-                ) for row in self.game.board
-            )
-        )
 
     # endregion
 

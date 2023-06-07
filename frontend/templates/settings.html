@@ -24,8 +24,7 @@
         <link href="static/css/main.css" rel="stylesheet">
         <link href="static/css/settings.css" rel="stylesheet">
 
-        <script src="static/javascript/socketio/active-socketio.js"></script>
-        <script src="static/javascript/addons.js" alert="{{alert}}"></script>
+        <script src="static/javascript/active-socketio.js"></script>
     </head>
     <body>
         <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
@@ -141,7 +140,7 @@
             </div>
         </div>
 
-        <script src="static/javascript/util.js"></script>
+        <script src="static/javascript/util.js" alert="{{alert}}"></script>
         <script src="static/javascript/navbar.js"></script>
         <script src="static/javascript/pages/settings.js"></script>
     </body>
