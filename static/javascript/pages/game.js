@@ -106,8 +106,6 @@ async function main() {
 }
 
 $(".new-game-button").click(() => window.location.replace("/play?s=1"));
-
-gameNamespace = io("/game");
 loadAuthInfo().then(main)
 
 function updateTimer(onlyFor = null, timestamp = null) {

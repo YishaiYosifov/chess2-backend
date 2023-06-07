@@ -81,25 +81,6 @@ def connected(user : User):
 
     if user.incoming_games: emit("incoming_games", [game.inviter_id for game in user.incoming_games])
 
-@socketio.on("connect", namespace="/game")
-@requires_auth(allow_guests=True)
-def game_connected(user : User):
-    if not user.active_game:
-        disconnect()
-        return
-    
-    join_room(user.active_game.token)
-
-    player = user.active_game.get_game_class()._get_player(user)
-    player.sid = request.sid
-    player.is_loading = False
-
-    for buffered_request in player.socketio_loading_buffer:
-        emit(buffered_request["event"], buffered_request["data"], to=player.sid)
-    player.socketio_loading_buffer = []
-    
-    db.session.commit()
-
 # Delete expired columns
 def delete_expired():
     while True:

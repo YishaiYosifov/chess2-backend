@@ -246,7 +246,7 @@ class Anarchy {
             const forcedMoves = data["message"];
             for (let i = 0; i < 2; i++) {
                 if (game.movingElement) return;
-    
+
                 for (const [fromSquare, toSquare] of forcedMoves) {
                     const fromElement = $(`#${fromSquare.y}-${fromSquare.x}`);
                     const toElement = $(`#${toSquare.y}-${toSquare.x}`);

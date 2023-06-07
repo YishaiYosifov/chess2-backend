@@ -21,6 +21,9 @@ class Player(db.Model):
     clock_synced_at = db.Column(db.Double, server_default=db.text("(UNIX_TIMESTAMP())"))
     clock = db.Column(db.Double)
 
+    is_connected = db.Column(db.Boolean, server_default=db.text("FALSE"))
+    disconnected_at = db.Column(db.Integer, server_default=db.text("(UNIX_TIMESTAMP())"))
+    
     is_loading = db.Column(db.Boolean, server_default=db.text("FALSE"))
     socketio_loading_buffer = db.Column(MutableList.as_mutable(db.PickleType), default=[])
 

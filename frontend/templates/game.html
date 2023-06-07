@@ -26,11 +26,23 @@
         <link href="../static/css/main.css" rel="stylesheet">
         <link href="../static/css/game.css" rel="stylesheet">
 
-        <script src="../static/javascript/active-socketio.js"></script>
+        <script src="../static/javascript/socketio/active-socketio.js"></script>
+        <script src="../static/javascript/socketio/game-socketio.js"></script>
         <script src="../static/javascript/addons.js" alert="{{alert}}"></script>
     </head>
     <body>
         <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
+
+        <div class="fill-absolute" id="disconnected">
+            <div class="container">
+                <div class="row">
+                    <div class="position-absolute top-50 start-50 translate-middle card border-0 text-center text-white col-11 col-md-8 col-lg-6" style="max-width: 850px;">
+                        <h1 class="mt-4">Connected from another device!</h1>
+                        <p class="mb-4"><span role="button" class="text-warning" onclick="location.reload()">Click here</span> / Refresh the page to reconnect</p>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div id="main-container" class="container-fluid">
             <div class="row justify-content-center">
@@ -55,7 +67,7 @@
                         </div>
                         <div class="card-body px-1 justify-content-center d-flex">
                             <div class="m-0" id="board" oncontextmenu="return false;">
-                                <div class="full-width-absolute text-center" id="board-loading">
+                                <div class="fill-absolute text-center" id="board-loading">
                                     <h1 class="limit-text w-100">Loading...</h1>
                                 </div>
                             </div>
@@ -96,7 +108,7 @@
                     </div>
                     <div class="card mt-3 mx-auto mx-0" id="chat-card">
                         <div class="card-body" style="overflow: auto; position: relative;">
-                            <div class="text-center text-white full-width-absolute" id="draw-request" style="display: none; background-color: var(--dark-secondary);">
+                            <div class="text-center text-white fill-absolute" id="draw-request" style="display: none; background-color: var(--dark-secondary);">
                                 <h1 class="mt-3">Draw Request</h1>
                                 <div class="btn-group" role="group" aria-label="Draw Options">
                                     <button class="btn btn-success" id="accept-draw"><i class="bi bi-check"></i> Accept</button>
