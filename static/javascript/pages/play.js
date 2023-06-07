@@ -13,7 +13,7 @@ async function main() {
 
     let savedSettings = getLocalStorage("game-settings");
     if (savedSettings) settings = savedSettings;
-    $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${settings["mode"]}.jpg`)
+    $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${settings["mode"]}.webp`)
 
     for (const [setting, value] of Object.entries(settings)) {
         $(`[setting="${setting}"]`).find("button").filter(function() {
@@ -40,13 +40,13 @@ $(".setting-button").click(function() {
     let setting = parent.attr("setting");
     settings[setting] = value;
 
-    if (setting == "mode") $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${value}.jpg`);
+    if (setting == "mode") $("#mode-preview").attr("src", `/static/assets/modes/thumbnails/${value}.webp`);
     
     localStorage.setItem("game-settings", JSON.stringify(settings));
 });
 
 $("#play").click(async function() {
-    const response = await (await apiRequest("/game/pool/start", settings));
+    const response = await apiRequest("/game/pool/start", settings);
     if (!response.ok) {
         if (response.status == 409) showAlert(await response.text());
         else showAlert("Something went wrong.");
@@ -70,4 +70,4 @@ $("#cancel").click(() => {
     $("*[setting] *").prop("disabled", false);
 });
 
-main();
+loadAuthInfo().then(main);

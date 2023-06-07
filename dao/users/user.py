@@ -173,6 +173,7 @@ class User(db.Model):
     
     @classmethod
     def create_guest(cls):
+        print("Created Guest")
         guest = cls(username=f"guest-{uuid.uuid4().hex[:8]}", auth_method=AuthMethods.GUEST)
         guest.insert()
 

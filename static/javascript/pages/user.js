@@ -54,7 +54,7 @@ async function main() {
     const username = window.location.pathname.split("/").pop();
 
     userInfo = await (await apiRequest(`/profile/${username}/get_info`)).json();
-    $("#profile-picture").prop("src", `/static/uploads/${userInfo.user_id}/profile-picture.jpeg`);
+    $("#profile-picture").prop("src", `/static/uploads/${userInfo.user_id}/profile-picture.webp`);
 
     let usernameGroup = $("#username-group");
     let usernameText = $(`<span id="username limit-text" data-bs-placement="left" style="width: 280px;">${userInfo.username}</span>`);
@@ -101,7 +101,7 @@ async function initilizePage(username, games) {
         });
 
         let modeImage = gameElement.find("#mode-image");
-        modeImage.prop("src", `../static/assets/modes/${game.game_settings.mode}.png`);
+        modeImage.prop("src", `../static/assets/modes/${game.game_settings.mode}.webp`);
         modeImage.prop("title", game.game_settings.mode);
         new bootstrap.Tooltip(modeImage);
 
@@ -137,7 +137,7 @@ async function initilizePage(username, games) {
 
         const ratingElement = ratingHTML.clone();
 
-        ratingElement.find("#rating-image").attr("src", `../static/assets/modes/${mode}.png`)
+        ratingElement.find("#rating-image").attr("src", `../static/assets/modes/${mode}.webp`)
 
         ratingElement.find("#elo").text(rating);
         ratingElement.find("#rating-mode").text(mode);

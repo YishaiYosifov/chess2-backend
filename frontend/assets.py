@@ -20,7 +20,7 @@ FLAG_HEIGHT = 27
 def country(country_code):
     if not country_code in COUNTRIES: raise NotFound
 
-    flags = Image.open("static/assets/flags.png")
+    flags = Image.open("static/assets/flags.webp")
     index = list(COUNTRIES.keys()).index(country_code)
 
     from_x = index * FLAG_WIDTH
@@ -32,17 +32,17 @@ def country(country_code):
     ))
 
     buffer = io.BytesIO()
-    flag.save(buffer, "png")
+    flag.save(buffer, "webp")
     buffer.seek(0)
 
-    return send_file(buffer, mimetype="image/jpeg")
+    return send_file(buffer, mimetype="image/webp")
 
-@assets.route("/static/uploads/<user_id>/profile-picture.jpeg")
+@assets.route("/static/uploads/<user_id>/profile-picture.webp")
 def profile_picture(user_id : str):
     """
     Get a user's profile picture. If the user hasn't uploaded a picture yet, return the default one
     """
 
     root_path = os.path.dirname(assets.root_path)
-    if os.path.exists(f"static/uploads/{user_id}/profile-picture.jpeg"): return send_from_directory(os.path.join(root_path, f"static/uploads/{user_id}"), "profile-picture.jpeg", mimetype="image/jpeg")
-    else: return send_from_directory(os.path.join(root_path, "static/assets"), "default-profile-picture.jpg", mimetype="image/jpg")
+    if os.path.exists(f"static/uploads/{user_id}/profile-picture.webp"): return send_from_directory(os.path.join(root_path, f"static/uploads/{user_id}"), "profile-picture.jpeg", mimetype="image/webp")
+    else: return send_from_directory(os.path.join(root_path, "static/assets"), "default-profile-picture.webp", mimetype="image/webp")

@@ -47,7 +47,7 @@ async function main() {
     username.attr("title", userInfo["username"]);
     new bootstrap.Tooltip(username);
 
-    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.jpeg"`);
+    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.webp"`);
 }
 main()
 
@@ -61,7 +61,7 @@ async function selectProfilePicture() {
         showAlert("Something went wrong.");
         return;
     }
-    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.jpeg?${new Date().getTime()}"`);
+    $("#profile-picture").css("background", `url("/static/uploads/${userInfo["user_id"]}/profile-picture.webp?${new Date().getTime()}"`);
     showAlert("Profile Picture Updated", "success");
 }
 

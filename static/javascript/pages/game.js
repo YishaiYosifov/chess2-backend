@@ -11,7 +11,7 @@ const stallTimeouts = {
 
 const squareHTML = $($.parseHTML(`
     <div class="square">
-        <img class="img-fluid valid-move" src="../static/assets/valid-move.png" draggable="false">
+        <img class="img-fluid valid-move" src="../static/assets/valid-move.webp" draggable="false">
     </div>
 `));
 const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">`));
@@ -19,47 +19,58 @@ const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">
 const CSSProperties = getComputedStyle(document.documentElement, null);
 const gameToken = window.location.pathname.split("/").pop();
 
-var animatingMovement = false;
 var game;
 
 async function main() {
-    await loadAuthInfo();
-    gameData = await (await apiRequest("/game/live/get_game", {"game_token": gameToken})).json();
+    gameData = await (await apiRequest("/game/live/load_game", {"game_token": gameToken})).json();
     game = new Anarchy(gameData);
+    await anarchyConstructBoard();
+    updateBoardSize();
+
     $("#draw").prop("disabled", game.localUser.is_requesting_draw);
     if (game.opponent.is_requesting_draw) $("#draw-request").show();
 
-    for (setColor of ["white", "black"]) {
-        user = setColor == "white" ? game.white : game.black
-        let userInfo = await (await apiRequest(`/profile/${user.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
-        userInfo["rating"] = await (await apiRequest(`/profile/${user.user_id}/get_ratings`, {"mode": game.gameData.game_settings.mode})).json();
-        Object.assign(user, userInfo);
+    (async () => {
+        for (setColor of ["white", "black"]) {
+            user = setColor == "white" ? game.white : game.black
+            let userInfo = await (await apiRequest(`/profile/${user.user_id}/get_info`, {"include": ["username", "country_alpha"]})).json();
+            userInfo["rating"] = await (await apiRequest(`/profile/${user.user_id}/get_ratings`, {"mode": game.gameData.game_settings.mode})).json();
+            Object.assign(user, userInfo);
+    
+            $(`.profile-picture-${setColor}`).attr("src", `../static/uploads/${user.user_id}/profile-picture.webp`);
+            $(`.username-${setColor} span`).text(user.username);
+            $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
 
-        $(`.profile-picture-${setColor}`).attr("src", `../static/uploads/${user.user_id}/profile-picture.jpeg`);
-        $(`.username-${setColor} span`).text(user.username);
-        $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
-    }
-    await anarchyConstructBoard();
+            if (game.isGameOver) updateTimer(null, gameData.ended_at)
+            else apiRequest("/game/live/sync_clock");
+        }
+    })();
 
-    const pieceImages = $("#board").find("img");
+    const pieceImages = $("#board").find(".piece");
     let loadedPieces = 0;
     pieceImages.on("load", () => {
         loadedPieces++;
-        if (loadedPieces >= pieceImages.length) $("#board-loading").hide();
+        if (loadedPieces >= pieceImages.length) {
+            $("#board-loading").hide();
+            game.isLoading = false;
+            game.moveLoadingBuffer.forEach(moveData => game.socketioMove(moveData));
+        }
     }).each(function() {
         if (this.complete) $(this).trigger("load");
     })
 
-    if (!game.isGameOver && game.turn == game.localUser) enableDraggable();
+    if (game.isGameOver) $("#chat-over").show();
+    else {
+        $("#chat-active").show();
+
+        if (game.turn == game.localUser) enableDraggable();
+        if (game.moves.length < 2) $("#resign span").text("abort");
+    }
     if (!game.moves.length) $("#move-history-title").text("No Moves");
-    if (game.moves.length < 2) $("#resign span").text("abort");
-    
-    if (game.isGameOver) updateTimer(null, gameData.ended_at)
-    else apiRequest("/game/live/sync_clock");
 
     game.moves.forEach(addMoveToTable);
     
-    // Wait for profile pictures to load before setting board width
+    // Update the board size as profile pictures load
     const profilePictures = $(".profile-picture-white, .profile-picture-black");
     updateBoardSize();
     profilePictures.on("load", updateBoardSize);
@@ -94,8 +105,10 @@ async function main() {
     });
 }
 
-$("#new-game").click(() => window.location.replace("/play?s=1"));
-main();
+$(".new-game-button").click(() => window.location.replace("/play?s=1"));
+
+gameNamespace = io("/game");
+loadAuthInfo().then(main)
 
 function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;
@@ -103,30 +116,32 @@ function updateTimer(onlyFor = null, timestamp = null) {
     let isTimeout = false;
     
     // Stall Timeout
-    const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
-    const timeUntilStallTimeout = Math.max(0, stallTimeout - (timestamp - game.turn.turn_started_at));
-
-    if (timeUntilStallTimeout < 20) {
-        const stallWarning = $(`#${game.turn.color}-stall-warning`);
-        if (stallWarning.is(":hidden")) {
-            $(`#clock-${game.turn.color}`).hide();
-            stallWarning.show();
-            updateBoardSize();
+    /*if (!game.isGameOver) {
+        const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
+        const timeUntilStallTimeout = Math.max(0, stallTimeout - (timestamp - game.turn.turn_started_at));
+    
+        if (timeUntilStallTimeout < 20) {
+            const stallWarning = $(`#${game.turn.color}-stall-warning`);
+            if (stallWarning.is(":hidden")) {
+                $(`#clock-${game.turn.color}`).hide();
+                stallWarning.show();
+                updateBoardSize();
+            }
+            stallWarning.text(`Play/auto-resign: ${Math.round(timeUntilStallTimeout)}s`);
         }
-        stallWarning.text(`Play/auto-resign: ${Math.round(timeUntilStallTimeout)}s`);
-    }
-
-    if (timeUntilStallTimeout <= 0) {
-        apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
-        isTimeout = true;
-    }
+    
+        if (timeUntilStallTimeout <= 0) {
+            apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
+            isTimeout = true;
+        }
+    }*/
 
     // Regular Timeout
     for (user of [game.white, game.black]) {
         const clock = user.clock - timestamp;
         if (clock <= 0) {
             isTimeout = true;
-            apiRequest("/game/live/sync_clock");
+            if (!game.isGameOver) apiRequest("/game/live/sync_clock");
         }
         if (!onlyFor || onlyFor == user) $(`#clock-${user.color} span`).text(formatSeconds(clock));
     }
@@ -209,31 +224,32 @@ function clearAllHighlights() {
     $(".highlight").each((i, square) => clearHighlight($(square)));
 }
 
+var moveAnimationQueue = new PromiseQueue();
 async function animateMovement(originElementImage, destinationElement) {
-    animatingMovement = true;
-
-    const tempPiece = originElementImage.clone();
-    tempPiece
-        .css("position", "absolute")
-        .css("left", originElementImage.offset().left)
-        .css("top", originElementImage.offset().top)
-        .css("width", originElementImage.width())
-        .css("height", originElementImage.height())
-        .css("z-index", 1);
-    originElementImage.detach();
-
-    tempPiece.appendTo("body");
-    await tempPiece.animate({
-        left: destinationElement.offset().left,
-        top: destinationElement.offset().top
-    }, 100).promise();
-
-    destinationElement.find(".piece").remove();
-
-    tempPiece.remove();
-    originElementImage.css("left", "").css("top", "");
-    originElementImage.appendTo(destinationElement);
-    animatingMovement = false;
+    moveAnimationQueue.add(async resolve => {
+        const tempPiece = originElementImage.clone();
+        tempPiece
+            .css("position", "absolute")
+            .css("left", originElementImage.offset().left)
+            .css("top", originElementImage.offset().top)
+            .css("width", originElementImage.width())
+            .css("height", originElementImage.height())
+            .css("z-index", 1);
+        originElementImage.detach();
+    
+        tempPiece.appendTo("body");
+        await tempPiece.animate({
+            left: destinationElement.offset().left,
+            top: destinationElement.offset().top
+        }, 100).promise();
+    
+        destinationElement.find(".piece").remove();
+    
+        tempPiece.remove();
+        originElementImage.css("left", "").css("top", "");
+        originElementImage.appendTo(destinationElement);
+        resolve();
+    });
 }
 
 
@@ -393,8 +409,8 @@ function addMoveToTable(move, i) {
         const rook = move.moved[1];
 
         if (king.origin.y == rook.origin.y) {
-            if (rook.origin.x == 0) moveFormatted = "O-O";
-            else moveFormatted = "O-O-O";
+            if (rook.origin.x == 0) moveFormatted = "O-O-O";
+            else moveFormatted = "O-O";
         } else {
             if (rook.origin.y > king.origin.y) moveFormatted = "🠙-O-O";
             else moveFormatted = "🠛-O-O";
@@ -441,7 +457,7 @@ function addMoveToTable(move, i) {
 
 var viewingMove = null;
 $(window).on("keydown", e => {
-    if (animatingMovement || !game.moves.length) return;
+    if (moveAnimationQueue.isActive || !game.moves.length) return;
     
     if (e.key == "ArrowUp") revertToIndex(0);
     else if (e.key == "ArrowDown") revertToIndex(game.moves.length - 1);
@@ -450,7 +466,7 @@ $(window).on("keydown", e => {
 });
 
 function revertToIndex(moveIndex) {
-    if (animatingMovement) return;
+    if (moveAnimationQueue.isActive) return;
     else if (typeof(moveIndex) != "number") moveIndex = parseInt($(this).attr("id").split("-").at(-1));
     
     if (viewingMove == null) viewingMove = game.moves.length - 1;
@@ -478,7 +494,7 @@ function revertToIndex(moveIndex) {
             squareElement.find(".piece").remove();
             if (square.piece && Object.keys(square.piece).length) {
                 const piece = pieceHTML.clone();
-                piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.png`);
+                piece.attr("src", `../static/assets/pieces/${square.piece.name}-${square.piece.color}.webp`);
                 piece.attr("color", square.piece.color);
                 if (square.piece.color == game.localUser.color) piece.mousedown(game.mouseDownShowLegal);
 
@@ -503,7 +519,7 @@ function revertBackwards() {
     for (const captured of move.captured) {
         const piece = pieceHTML.clone();
         const color = newViewingMove % 2 == 0 ? "white" : "black";
-        piece.attr("src", `../static/assets/pieces/${captured.piece}-${color}.png`);
+        piece.attr("src", `../static/assets/pieces/${captured.piece}-${color}.webp`);
         piece.attr("color", color);
         $(`#${captured.y}-${captured.x}`).append(piece);
     }
@@ -544,8 +560,11 @@ $("#resign").click(async function() {
     if (await confirmAction($(this)) == "confirm") gameNamespace.emit("resign");
 });
 $("#draw").click(async function() {
-    game.localUser.is_requesting_draw = true;
-    if (await confirmAction($(this)) == "confirm") gameNamespace.emit("request_draw");
+    if (await confirmAction($(this)) == "confirm"){
+        gameNamespace.emit("request_draw");
+        $("#draw").prop("disabled", true);
+        game.localUser.is_requesting_draw = true
+    }
     else game.localUser.is_requesting_draw = false;
 });
 
@@ -561,7 +580,7 @@ async function confirmAction(forElement) {
 
     function resetButtons() {
         actionConfirmationCard.fadeOut(100);
-        $("#draw").prop("disabled", game.localUser.is_requesting_draw);
+        $("#draw").prop("disabled", false);
         $("#resign").prop("disabled", false);
     }
 

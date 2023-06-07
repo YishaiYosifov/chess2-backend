@@ -52,7 +52,7 @@ def game_helper(**kwargs):
     game = Game.query.filter_by(token=game_token).first()
     if not game: return redirect("/play")
     elif not game.is_over:
-        user = try_get_user_from_session(force_logged_in=False)
+        user = try_get_user_from_session(force_logged_in=False, allow_guests=True)
         if not user or (user != game.white and user != game.black): return redirect("/play")
 
     return True

@@ -191,6 +191,6 @@ def upload_profile_picture(target : str, user : User):
     image = image.resize((160, 160))
 
     # Save it
-    image.save(f"static/uploads/{user.user_id}/profile-picture.jpeg")
+    image.save(f"static/uploads/{user.user_id}/profile-picture.webp", format="webp")
 
     return "Uploaded", 200

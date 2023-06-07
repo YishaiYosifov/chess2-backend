@@ -13,7 +13,6 @@ async function apiRequest(route, json=null) {
 
     if (Object.keys(authInfo).length && authInfo["auth_method"] != "guest" && response.status == 401 && await response.clone().text() == "Not Logged In") {
         localStorage.removeItem("auth-info");
-        console.log(123);
         
         window.location.replace("/login?a=session-expired");
         throw new Error("Session Token Expired");
@@ -45,6 +44,26 @@ function getLocalStorage(name, _default) {
     return value;
 }
 
+function decodeFlaskCookie(value) {
+    if (value.indexOf("\\") == -1) return value;
+
+    value = value.slice(1, -1).replace(/\\"/g, '"');
+    value = value.replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)));
+    return value.replace(/\\\\/g, '\\');
+}
+async function getCookie(name, _default) {
+    const cookies = document.cookie.split(";");
+    for(var i = 0; i < cookies.length; i++) {
+        let [cookieName, cookieValue] = cookies[i].trim().split("=");
+        if (cookieName.startsWith(name)) {
+            try { cookieValue = JSON.parse(decodeFlaskCookie(cookieValue)); }
+            catch (e) {}
+            return cookieValue;
+        }
+    }
+    return _default;
+}
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function togglePasswordVisibility(toggleButton) {
@@ -69,17 +88,12 @@ function isDigit(text) { return /^\d+$/.test(text); }
 
 var authInfo;
 async function loadAuthInfo() {
-    authInfo = await getLocalStorage("auth-info", {});
-    if (["/login", "/signup"].includes(location.pathname) || Object.keys(authInfo).length) return;
-
-    const request = await apiRequest("/profile/me/get_info", {"include": ["user_id", "auth_method"]});
-    if (!request.ok) {
-        if (request.status == 401) return;
-        window.location.replace("/api/auth/logout");
+    authInfo = await getCookie("auth_info", {})
+    if (!authInfo) {
+        window.location.replace("/logout");
+        return;
     }
-
-    authInfo = await request.json();
-    localStorage.setItem("auth-info", JSON.stringify(authInfo));
+    return authInfo;
 }
 loadAuthInfo();
 
@@ -99,3 +113,30 @@ function formatSeconds(seconds) {
 }
 
 numToLetter = num => String.fromCharCode(97 + num);
+
+class PromiseQueue {
+    constructor() {
+        this.queue = [];
+        this.promise;
+    }
+
+    add(task) {
+        if (!this.promise) this._createPromise(task);
+        else this.queue.push(task);
+        return this;
+    }
+
+    _createPromise(task) {
+        this.promise = new Promise(task).then(() => {
+            task = this.queue.shift();
+
+            if (!task) {
+                this.promise = null;
+                return;
+            }
+            this._createPromise(task);
+        });
+    }
+
+    get isActive() { return this.queue.length > 0 || this.promise != null; }
+}

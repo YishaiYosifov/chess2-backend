@@ -4,9 +4,9 @@ from flask_socketio import emit
 
 import numpy
 
+from dao import Game, User, Player, RatingArchive, AuthMethods
 from util import SocketIOException, SocketIOErrors
 from extensions import Square, PIECE_DATA, CONFIG
-from dao import Game, User, Player, RatingArchive
 from app import db
 
 class Anarchy:
@@ -101,12 +101,8 @@ class Anarchy:
         # 50 update move rule
         if move_log["captured"] or any("pawn" in moved["piece"] for moved in move_log["moved"]): self.game.last_50_move_reset = current_move_number
 
-        # 3 fold repetition
-        board_hash = self._hash_board()
-        if self.game.board_hashes.count(board_hash) >= 3:
-            move_data["is_over"] = True
-            self._end_game(0.5, 0.5, "3 Fold Repetition")
-        elif current_move_number - self.game.last_50_move_reset >= 100:
+        if current_move_number - self.game.last_50_move_reset >= 100:
+            # 50 move rule
             move_data["is_over"] = True
             self._end_game(0.5, 0.5, "50 Move Rule")
         else:
@@ -116,7 +112,6 @@ class Anarchy:
                     self._end_game(1 if player.color == "white" else 0, 1 if player.color == "black" else 0, "King Captured")
                     move_data["is_over"] = True
                     break
-        self.game.board_hashes.append(board_hash)
 
         # Update and sync the clock
         player.clock += self.game.game_settings.increment
@@ -124,10 +119,13 @@ class Anarchy:
         opponent.turn_started_at = time.time()
         self.sync_clock()
 
-        # Cache all legal moves
+        # Cache all legal moves and hash the board for 3 fold repetition checking
         self.game.client_legal_move_cache = {}
+        board_hash = []
         for row in self.game.board:
+            board_hash.append([])
             for square in row:
+                board_hash[-1].append(square.piece.name + square.piece.color if square.piece else "")
                 if not square.piece: continue
 
                 legal_moves = list(PIECE_DATA.get(square.piece.name)["all_legal"](self.game, {"x": square.x, "y": square.y}))
@@ -136,10 +134,17 @@ class Anarchy:
                 self.game.client_legal_move_cache[str((square.x, square.y))] = list(
                     map(lambda move: {"x": move.x, "y": move.y}, legal_moves)
                 )
+            board_hash[-1] = tuple(board_hash[-1])
+        board_hash = hash(tuple(board_hash))
+        self.game.board_hashes.append(board_hash)
+        if self.game.board_hashes.count(board_hash) >= 3:
+            move_data["is_over"] = True
+            self._end_game(0.5, 0.5, "3 Fold Repetition")
+
         move_data["legal_moves"] = self.game.client_legal_move_cache
 
         # Emit the move
-        emit("move", move_data, to=self.game.token)
+        self.buffer_emit("move", move_data)
 
         self.game.turn = opponent
         db.session.commit()
@@ -153,7 +158,8 @@ class Anarchy:
         if player.is_requesting_draw: raise SocketIOException(SocketIOErrors.BAD_REQUEST, "You already have an outgoing draw request")
 
         player.is_requesting_draw = True
-        if not self._get_opponent(user).ignore_draw_requests: emit("draw_request", include_self=False, to=self.game.token)
+        opponent = self._get_opponent(user)
+        if not opponent.ignore_draw_requests: opponent.buffer_emit("draw_request")
 
         db.session.commit()
 
@@ -166,7 +172,7 @@ class Anarchy:
         player.ignore_draw_requests = True
         
         opponent.is_requesting_draw = False
-        emit("draw_declined", include_self=False, to=self.game.token)
+        opponent.buffer_emit("draw_declined")
 
         db.session.commit()
     
@@ -176,7 +182,7 @@ class Anarchy:
             raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
 
         opponent.is_requesting_draw = False
-        emit("draw_declined", include_self=False, to=self.game.token)
+        opponent.buffer_emit("draw_declined")
         db.session.commit()
     
     def accept_draw(self, user : User):
@@ -199,11 +205,11 @@ class Anarchy:
                 is_timeout = True
                 if player == self.game.white: self._end_game(1, 0, "Timeout")
                 else: self._end_game(0, 1, "Timeout")
-        emit("clock_sync", {
+        self.buffer_emit("clock_sync", {
                 "white": self.game.white.clock,
                 "black": self.game.black.clock,
                 "is_timeout": is_timeout
-            }, to=self.game.token, namespace="/game")
+            }, commit=True)
     
     def alert_stalling(self, user : User) -> bool:
         player : Player = self._get_player(user)
@@ -241,18 +247,23 @@ class Anarchy:
                 "black_results": black_results,
                 "reason": reason
             }
-            data["white_rating"], data["black_rating"] = self._update_elo(white_results, black_results)
+
+            if self.game.white.user.auth_method == self.game.black.user.auth_method == AuthMethods.GUEST:
+                data["white_rating"] = self.game.white.user.rating(self.game.game_settings.mode).elo
+                data["black_rating"] = self.game.black.user.rating(self.game.game_settings.mode).elo
+            else:
+                data["white_rating"], data["black_rating"] = self._update_elo(white_results, black_results)
 
             self.game.ended_at = time.time()
-        
+    
             self.game.white.score = white_results
             self.game.black.score = black_results
             if self.game.match:
                 self.game.match.white.score += white_results
                 self.game.match.black.score += black_results
         
+        self.buffer_emit("game_over", data)
         db.session.commit()
-        emit("game_over", data, to=self.game.token, namespace="/game")
 
     def _get_player(self, user : User) -> Player: return self.game.white if user == self.game.white else self.game.black
 
@@ -291,3 +302,11 @@ class Anarchy:
         )
 
     # endregion
+
+    def buffer_emit(self, event : str, data : any, commit=False):
+        emit(event, data, to=self.game.token, namespace="/game")
+
+        for player in [self.game.white, self.game.black]:
+            if player.is_loading:
+                player.socketio_loading_buffer.append({"event": event, "data": data})
+        if commit: db.session.commit()

@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 
 import threading
+import json
 import time
 import os
 
-from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized
-from flask import redirect, session, request
-from flask_socketio import emit, join_room
+from werkzeug.exceptions import HTTPException, InternalServerError
+from flask import redirect, session, request, make_response
+from flask_socketio import emit, join_room, disconnect
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -72,7 +73,7 @@ def google_login():
 
 # endregion
 
-@socketio.on("connected")
+@socketio.on("connect")
 @requires_auth(allow_guests=True)
 def connected(user : User):
     user.sid = request.sid
@@ -83,9 +84,21 @@ def connected(user : User):
 @socketio.on("connect", namespace="/game")
 @requires_auth(allow_guests=True)
 def game_connected(user : User):
-    url_parts = request.referrer.split("/")
-    if url_parts[-2] == "game": join_room(url_parts[-1])
-    elif user.active_game: join_room(user.active_game.token)
+    if not user.active_game:
+        disconnect()
+        return
+    
+    join_room(user.active_game.token)
+
+    player = user.active_game.get_game_class()._get_player(user)
+    player.sid = request.sid
+    player.is_loading = False
+
+    for buffered_request in player.socketio_loading_buffer:
+        emit(buffered_request["event"], buffered_request["data"], to=player.sid)
+    player.socketio_loading_buffer = []
+    
+    db.session.commit()
 
 # Delete expired columns
 def delete_expired():
@@ -96,7 +109,7 @@ def delete_expired():
             expired_guests : list[User] = User.query.filter(
                 (User.last_accessed < (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")) &
                 (User.auth_method == AuthMethods.GUEST)
-            )
+            ).all()
             for user in expired_guests: user.delete()
 
             EmailVerification.query.filter(EmailVerification.created_at < (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")).delete()
@@ -107,6 +120,18 @@ def delete_expired():
 
 @app.errorhandler(HTTPException)
 def http_error_handler(exception : HTTPException): return exception.description, exception.code
+
+@app.after_request
+def drop_response(response):
+    new_response = make_response(response)
+    if "text/html" in response.content_type and hasattr(request, "cached_session_user"):
+        new_response.set_cookie("auth_info", json.dumps(
+            {
+                "auth_method": request.cached_session_user.auth_method.value,
+                "user_id": request.cached_session_user.user_id
+            })
+        )
+    return new_response
 
 if __name__ == "__main__":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -129,7 +154,6 @@ if __name__ == "__main__":
     app.register_blueprint(api)
 
     with app.app_context(): db.create_all()
-        
     threading.Thread(target=delete_expired, daemon=True).start()
 
     socketio.run(app, "0.0.0.0", debug=CONFIG["DEBUG"], use_reloader=False)

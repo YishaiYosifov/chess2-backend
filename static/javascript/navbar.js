@@ -19,7 +19,7 @@ const navbar = $($.parseHTML(`
             <div class="offcanvas-header">
                 <a href="/" class="nav-link offcanvas-title">
                     <h5>
-                        <img src="/static/assets/logo.png" alt="Logo" width="30" height="30" class="d-inline-block align-text-top rounded">
+                        <img src="/static/assets/logo.webp" alt="Logo" width="30" height="30" class="d-inline-block align-text-top rounded">
                         <b>Chess 2</b>
                     </h5>
                 </a>

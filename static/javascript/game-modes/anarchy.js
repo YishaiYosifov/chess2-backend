@@ -14,7 +14,7 @@ async function anarchyConstructBoard() {
         image.attr("id", `promotion-${piece}`);
 
         image.attr("draggable", "false");
-        image.attr("src", `../static/assets/pieces/${piece}-${game.localUser.color}.png`);
+        image.attr("src", `../static/assets/pieces/${piece}-${game.localUser.color}.webp`);
         image.appendTo(promotionCard);
     }
 
@@ -36,7 +36,7 @@ async function anarchyConstructBoard() {
 
             if (column.piece) {
                 const piece = pieceHTML.clone();
-                piece.attr("src", `../static/assets/pieces/${column.piece.name}-${column.piece.color}.png`);
+                piece.attr("src", `../static/assets/pieces/${column.piece.name}-${column.piece.color}.webp`);
                 piece.attr("color", column.piece.color);
                 piece.appendTo(square)
             }
@@ -66,6 +66,9 @@ class Anarchy {
         this.turn = gameData.turn == this.white.user_id ? this.white : this.black;
         this.localUser = authInfo.user_id == this.white.user_id ? this.white : this.black;
         this.opponent = authInfo.user_id == this.white.user_id ? this.black : this.white;
+
+        this.isLoading = true;
+        this.moveLoadingBuffer = [];
 
         game = this;
         if (gameData.is_over) return;
@@ -160,7 +163,7 @@ class Anarchy {
 
                 if (move.piece.includes("pawn") && (destination.y == 0 || destination.y == game.boardHeight - 1)) {
                     tempPiece.name = promoteTo;
-                    originPieceImage.attr("src", `../static/assets/pieces/${promoteTo}-${tempPiece.color}.png`);
+                    originPieceImage.attr("src", `../static/assets/pieces/${promoteTo}-${tempPiece.color}.webp`);
                 }
                 animateMovement(originPieceImage, destinationPiece);
             }
@@ -183,6 +186,8 @@ class Anarchy {
     }
 
     async socketioGameOver(data) {
+        $("#chat-active").fadeOut(100, () => $("#chat-over").fadeIn());
+        
         game.isGameOver = true;
         disableDraggable();
 
@@ -211,6 +216,10 @@ class Anarchy {
     }
 
     async socketioMove(data) {
+        if (game.isLoading) {
+            game.moveLoadingBuffer.push(data);
+            return;
+        }
         $(".stall-warning").hide();
         $(".clock").show();
 

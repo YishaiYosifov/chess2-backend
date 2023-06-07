@@ -49,7 +49,7 @@ def start_pool_game(user : User, args):
             db.session.commit()
 
             # Return the game id to both players
-            emit("game_started", {"game_id": game_id}, room=opponent.sid, namespace="/")
+            emit("game_started", {"game_id": game_id}, to=opponent.sid, namespace="/")
             return game_id
     
     # If a valid game was not found, add a new game to the pool

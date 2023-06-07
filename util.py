@@ -41,13 +41,8 @@ def requires_auth(allow_guests : bool=False):
             # Create a guest user / get the user from the session
             try: user = try_get_user_from_session(allow_guests=allow_guests)
             except Unauthorized as exception:
-                if allow_guests:
-                    user = User.create_guest()
-                    request.cached_session_user = user
-                    db.session.commit()
-                else:
-                    if request.path == "/socket.io/": raise SocketIOException(SocketIOErrors.UNAUTHORIZED, exception.description)
-                    raise
+                if request.path == "/socket.io/": raise SocketIOException(SocketIOErrors.UNAUTHORIZED, exception.description)
+                raise
             else:
                 if not allow_guests and user.auth_method == AuthMethods.GUEST: raise Unauthorized("Not Logged In")
 

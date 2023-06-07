@@ -43,7 +43,7 @@
                                 <img class="img-fluid country-white ms-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
                             </span>
                             <div class="row col-auto">
-                                <div class="col-auto bg-danger text-dark py-2 rounded me-3 align-items-center stall-warning" id="black-stall-warning" style="display: none;">
+                                <div class="col-auto bg-danger py-2 rounded align-items-center stall-warning" id="black-stall-warning" style="display: none;">
                                     <i class="bi bi-clock-fill"></i>
                                     <span class="align-middle ms-2 me-2" style="font-size: 15px;">Play/auto-resign: 20s</span>
                                 </div>
@@ -67,7 +67,7 @@
                                 <img class="img-fluid country-white ms-2" data-bs-placement="top" style="width: 100%; height: 100%; max-width: 20px; max-height: 20px;">
                             </span>
                             <div class="row col-auto">
-                                <div class="col-auto bg-danger text-dark py-2 rounded align-items-center stall-warning" id="white-stall-warning" style="display: none;">
+                                <div class="col-auto bg-danger py-2 rounded align-items-center stall-warning" id="white-stall-warning" style="display: none;">
                                     <i class="bi bi-clock-fill"></i>
                                     <span class="align-middle ms-2 me-2" style="font-size: 15px;">Play/auto-resign: 20s</span>
                                 </div>
@@ -107,12 +107,20 @@
                             </div>
                         </div>
                         <div class="card-footer">
-                            <div class="btn-group mb-2" role="group" aria-label="Game Actions" id="game-actions-group">
-                                <button class="btn btn-outline-secondary text-white" id="resign"><i class="bi bi-flag-fill"></i> <span>resign</span></button>
-                                <button class="btn btn-outline-secondary text-white" id="draw"><i class="bi bi-plus-slash-minus"></i> <span>draw</span></button>
+                            <div id="chat-active" style="display: none;">
+                                <div class="btn-group mb-2" role="group" aria-label="Game Actions" id="game-actions-group">
+                                    <button class="btn btn-outline-secondary text-white" id="resign"><i class="bi bi-flag-fill"></i> <span>resign</span></button>
+                                    <button class="btn btn-outline-secondary text-white" id="draw"><i class="bi bi-plus-slash-minus"></i> <span>draw</span></button>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <input class="form-control" placeholder="Message..." aria-label="Message" aria-describedby="chat">
+                                </div>
                             </div>
-                            <div class="input-group mb-3">
-                                <input class="form-control" placeholder="Message..." aria-label="Message" aria-describedby="chat">
+                            <div class="row col-12 mx-auto pb-2" id="chat-over" style="display: none;">
+                                <div class="btn-group col-12" role="group" aria-label="New Game Actions">
+                                    <button class="btn btn-success new-game-button fs-4"><i class="bi bi-plus"></i> New Game</button>
+                                    <button class="btn btn-secondary text-white rematch-button"><i class="bi bi-arrow-clockwise"></i> REMATCH</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -149,8 +157,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-info" id="new-game">New Game</button>
-                        <button class="btn btn-info">Rematch</button>
+                        <button class="btn btn-info new-game-button">New Game</button>
+                        <button class="btn btn-info rematch-button">Rematch</button>
 
                         <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
