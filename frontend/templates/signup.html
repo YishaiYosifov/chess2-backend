@@ -23,20 +23,15 @@
     <body>
         <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
         
-        <div class="container">
+        <div class="container mt-5">
             <div class="row">
-                <div class="mx-auto text-center my-5 d-flex justify-content-center">
-                    <img src="/static/assets/logo.webp" alt="Logo" width="50" height="50" class="rounded">
-                    <h1 class="text-light ms-3">Chess 2</h1>
-                </div>
-            </div>
-            <div class="row" id="header">
                 <div class="col-md-6 mx-auto text-center">
                     <h1 class="text-light">Sign Up</h1>
                     <h4 class="text-light">And start bricking PIPIs</h4>
                     <hr>
                 </div>
             </div>
+            <div id="alert-wrapper"></div>
             <div class="row">
                 <div class="col-md-6 mx-auto text-center">
                     <hr>

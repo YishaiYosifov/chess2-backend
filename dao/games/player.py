@@ -1,5 +1,4 @@
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.ext.mutable import MutableList
 
 from flask_socketio import emit
 
@@ -23,9 +22,6 @@ class Player(db.Model):
 
     is_connected = db.Column(db.Boolean, server_default=db.text("FALSE"))
     disconnected_at = db.Column(db.Integer, server_default=db.text("(UNIX_TIMESTAMP())"))
-    
-    is_loading = db.Column(db.Boolean, server_default=db.text("FALSE"))
-    socketio_loading_buffer = db.Column(MutableList.as_mutable(db.PickleType), default=[])
 
     is_requesting_draw = db.Column(db.Boolean, server_default=db.text("FALSE"))
     ignore_draw_requests = db.Column(db.Boolean, server_default=db.text("FALSE"))
@@ -37,9 +33,3 @@ class Player(db.Model):
         from ..users.user import User
         if not isinstance(to, User) and not isinstance(to, Player): return False
         return to.user_id == self.user_id
-    
-    def buffer_emit(self, event : str, data : any = None, commit=False):
-        if self.is_loading: self.socketio_loading_buffer.append({"event": event, "data": data})
-        else: emit(event, data, to=self.sid, namespace="/game")
-
-        if commit: db.session.commit()

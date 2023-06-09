@@ -35,7 +35,10 @@ async function isUsernameValid(username) {
         showError("username", "• Username too long!");
         return false;
     } else if (username.includes(" ")) {
-        showError("username", "Username can't include a space!");
+        showError("username", "• Username can't include a space!");
+        return;
+    } else if (Array.from(username).every(char => char >= 0 && char <= 9)) {
+        showError("username", "• Username can't be just numbers!")
         return;
     }
     hideError("username");

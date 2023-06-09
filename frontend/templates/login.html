@@ -22,17 +22,13 @@
     </head>
     <body>
         <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
-        
-        <div class="container fixed-top mt-5 text-center" id="errors" style="max-width: 350px;">
-        </div>
-        <div class="container">
-            <div class="row" id="header">
-                <div class="mx-auto text-center my-5 d-flex justify-content-center">
-                    <img src="/static/assets/logo.webp" alt="Logo" width="50" height="50" class="rounded">
-                    <h1 class="text-light ms-3">Chess 2</h1>
-                </div>
+
+        <div class="container mt-5">
+            <div class="row text-center text-white mb-3">
+                <h1>Log into Your Account</h1>
             </div>
-            <div class="row mt-4">
+            <div id="alert-wrapper"></div>
+            <div class="row">
                 <div class="col-md-6 mx-auto text-center">
                     <div class="input-group border-0 mb-3">
                         <span class="input-group-text"><i class="bi bi-person-fill text-light"></i></span>

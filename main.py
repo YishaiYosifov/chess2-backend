@@ -60,12 +60,15 @@ def google_signup():
         if len(username) < 3: username += padding[:4 - len(username)]
         if all(char.isdigit() for char in username): username = f"user-{padding[:5]}"
 
+        added_padding = False
         while True:
             same_username = User.query.filter_by(username=username).first()
             if not same_username: break
+            if added_padding: username = username[:-5]
 
             username = username[:25]
             username += uuid.uuid4()[:5]
+            added_padding = True
 
         user = User(username=username, email=id_info["email"], auth_method=AuthMethods.GMAIL)
         user.insert()

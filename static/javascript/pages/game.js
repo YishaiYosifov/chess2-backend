@@ -20,11 +20,13 @@ const pieceHTML = $($.parseHTML(`<img class="img-fluid piece" draggable="false">
 const CSSProperties = getComputedStyle(document.documentElement, null);
 const gameToken = window.location.pathname.split("/").pop();
 
+var gameNamespace;
 var game;
 
 async function main() {
     gameData = await (await apiRequest("/game/live/load_game", {"game_token": gameToken})).json();
     game = new Anarchy(gameData);
+
     await anarchyConstructBoard();
     updateBoardSize();
 
@@ -40,10 +42,7 @@ async function main() {
     
             $(`.profile-picture-${setColor}`).attr("src", `../static/uploads/${user.user_id}/profile-picture.webp`);
             $(`.username-${setColor} span`).text(user.username);
-            $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`)
-
-            if (game.isGameOver) updateTimer(null, gameData.ended_at)
-            else apiRequest("/game/live/sync_clock");
+            $(`.country-${setColor}`).attr("src", `/assets/country/${user.country_alpha}`);
         }
     })();
 
@@ -52,6 +51,24 @@ async function main() {
     pieceImages.on("load", () => {
         loadedPieces++;
         if (loadedPieces >= pieceImages.length) {
+            gameNamespace = io("/game");
+
+            gameNamespace.on("connect", () => {
+                gameNamespace.on("exception", game.socketioException);
+                gameNamespace.on("game_over", game.socketioGameOver);
+                gameNamespace.on("move", game.socketioMove);
+        
+                gameNamespace.on("opponent_disconnected", opponentDisconnected);
+                gameNamespace.on("opponent_connected", opponentConnected);
+                gameNamespace.on("remote_connection", remoteConnection);
+        
+                gameNamespace.on("draw_declined", drawDeclined)
+                gameNamespace.on("draw_request", drawRequest);
+                gameNamespace.on("clock_sync", syncClock);
+
+                if (game.isGameOver) updateTimer(null, gameData.ended_at)
+                else apiRequest("/game/live/sync_clock");
+            })
             $("#board-loading").hide();
             game.isLoading = false;
             game.moveLoadingBuffer.forEach(moveData => game.socketioMove(moveData));
@@ -107,9 +124,7 @@ async function main() {
 }
 
 $(".new-game-button").click(() => window.location.replace("/play?s=1"));
-
-gameNamespace = io("/game");
-main()
+main();
 
 function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;
@@ -118,7 +133,7 @@ function updateTimer(onlyFor = null, timestamp = null) {
     
     if (!game.isGameOver) {
         // Stall Timeout
-        const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
+        /*const stallTimeout = game.moves.length < 2 ? firstMovesStallTimeout : stallTimeouts[game.gameData.game_settings.time_control / 60];
         const timeUntilStallTimeout = Math.max(0, stallTimeout - (timestamp - game.turn.turn_started_at));
     
         if (timeUntilStallTimeout < 20) {
@@ -140,7 +155,7 @@ function updateTimer(onlyFor = null, timestamp = null) {
         if (!game.opponent.is_connected && disconnectionTimeout - (timestamp - game.opponent.disconnected_at) <= 0) {
             apiRequest("/game/live/alert_stalling", {"user_id": game.turn.user_id});
             isTimeout = true;
-        }
+        }*/
     }
 
     // Regular Timeout
@@ -626,11 +641,10 @@ $("#ignore-draws").click(() => {
     gameNamespace.emit("ignore_draw_requests");
 });
 
-gameNamespace.on("draw_declined", () => {
+function drawDeclined() {
     game.localUser.is_requesting_draw = false;
     $("#draw").prop("disabled", false);
-});
-
+}
 
 //#region Non-directly game related socketio listeners
 
@@ -648,5 +662,17 @@ function opponentDisconnected() {
 };
 
 opponentConnected = () => game.opponent.is_connected = true;
+
+function syncClock(data) {
+    game.white.clock = data.white;
+    game.black.clock = data.black;
+    updateTimer();
+
+    if (data.is_timeout) return;
+    const timer = setInterval(() => {
+        const isTimeout = updateTimer(game.turn);
+        if (game.isGameOver || isTimeout) clearInterval(timer);
+    }, 100);
+}
 
 //#endregion

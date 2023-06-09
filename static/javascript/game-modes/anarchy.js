@@ -72,16 +72,6 @@ class Anarchy {
 
         game = this;
         if (gameData.is_over) return;
-
-        gameNamespace.on("move", this.socketioMove);
-        gameNamespace.on("game_over", this.socketioGameOver);
-        gameNamespace.on("exception", this.socketioException);
-        gameNamespace.on("clock_sync", this.socketioSyncClock);
-        gameNamespace.on("draw_request", drawRequest);
-
-        gameNamespace.on("opponent_disconnected", opponentDisconnected);
-        gameNamespace.on("opponent_connected", opponentConnected);
-        gameNamespace.on("remote_connection", remoteConnection);
     }
 
     async moveListener(originElementImage, destinationElement) {
@@ -175,18 +165,6 @@ class Anarchy {
             game.board[origin.y][origin.x].piece = null;
             game.board[destination.y][destination.x].piece = tempPiece;
         }
-    }
-
-    socketioSyncClock(data) {
-        game.white.clock = data.white;
-        game.black.clock = data.black;
-        updateTimer();
-
-        if (data.is_timeout) return;
-        const timer = setInterval(() => {
-            const isTimeout = updateTimer(game.turn);
-            if (game.isGameOver || isTimeout) clearInterval(timer);
-        }, 100);
     }
 
     async socketioGameOver(data) {

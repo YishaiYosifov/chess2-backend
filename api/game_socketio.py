@@ -14,11 +14,11 @@ def game_connected(user : User):
     if not user.active_game:
         disconnect()
         return
-    
+
     join_room(user.active_game.token)
 
     game_class = user.active_game.get_game_class()
-    game_class._get_opponent(user).buffer_emit("opponent_connected")
+    emit("opponent_connected", to=game_class._get_opponent(user).sid)
 
     player = game_class._get_player(user)
     if player.is_connected:
@@ -26,13 +26,8 @@ def game_connected(user : User):
         disconnect(player.sid)
 
     player.sid = request.sid
-    player.is_loading = False
     player.is_connected = True
 
-    for buffered_request in player.socketio_loading_buffer:
-        emit(buffered_request["event"], buffered_request["data"], to=player.sid)
-    player.socketio_loading_buffer = []
-    
     db.session.commit()
 @socketio.on("disconnect", namespace="/game")
 @requires_auth(allow_guests=True)
@@ -40,11 +35,11 @@ def game_disconnected(user : User):
     if not user.active_game: return
 
     game_class = user.active_game.get_game_class()
-    player = game_class._get_opponent(user)
+    player = game_class._get_player(user)
     player.is_connected = False
     player.disconnected_at = time.time()
 
-    game_class._get_opponent(user).buffer_emit("opponent_disconnected")
+    emit("opponent_disconnected", game_class._get_opponent(user).sid)
     db.session.commit()
 
 @socketio.on("move", namespace="/game")
