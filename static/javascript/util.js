@@ -154,12 +154,14 @@ const URLAlerts = {
     "session-expired": {"urls": ["/login"], "message": "Your session expired, please log in again!", color: "danger"},
     "settings-updated": {"urls": ["/settings"], "message": "Updated!", color: "success"},
     "password-updated": {"urls": ["/settings"], "message": "Password Updated!", color: "success"},
-    "account-deleted": {"urls": ["/"], "message": "Your account has been deleted.", color: "info"}
+    "account-deleted": {"urls": ["/"], "message": "Your account has been deleted.", color: "warning"}
 }
 
 function alert() {
-    const message = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
+    const serverMessage = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
     const urlMessage = new URLSearchParams(location.search).get("a");
+
+    let messageText;
     let color;
     if (urlMessage) {
         if (!(urlMessage in URLAlerts)) return;
@@ -167,21 +169,21 @@ function alert() {
         const alertData = URLAlerts[urlMessage];
         if (!window.location.pathname.includes(alertData["urls"])) return;
 
-        message = alertData["message"];
+        messageText = alertData["message"];
         color = alertData["color"];
 
-        pathname = window.location.pathname.split("/").pop();
+        let pathname = window.location.pathname.split("/").pop();
         pathname = (pathname == "") ? "/" : pathname;
         window.history.replaceState({}, null, pathname);
     }
-    else if (message == "None") return;
+    else if (serverMessage == "None") return;
     else {
-        let messageData = JSON.parse(message);
-        message = messageData["message"];
+        let messageData = JSON.parse(serverMessage);
+        messageText = messageData["message"];
         color = messageData["color"];
     }
 
-    showAlert(message, color);
+    showAlert(messageText, color);
 }
 alert()
 

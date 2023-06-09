@@ -129,11 +129,6 @@ function getChangedSettings() {
     return toUpdate;
 }
 
-$("#account-deletion-confirm").on("hidden.bs.modal", () => {
-    $("#account-deletion-stage-1").show();
-    $("#account-deletion-stage-2").hide();
-});
-
 $("#delete-account").click(async () => {
     $("#account-deletion-confirm").modal("hide");
 

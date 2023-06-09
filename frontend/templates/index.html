@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>Home - Chess 2</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="Content-Language" content="en">
+        <meta name="google" content="notranslate">
+        <meta charset="utf-8">
+        
+        <!-- SocketIO CDN -->
+        <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+
+        <!-- Bootstrap CDN -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js" integrity="sha384-qKXV1j0HvMUeCBQ+QVp7JcfGl760yU08IQ+GpUo5hlbpg51QRiuqHAJz8+BrxE/N" crossorigin="anonymous"></script>
+        
+        <!-- Bootstrap Icons CDN -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+        <!-- JQuery CDN -->
+        <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E=" crossorigin="anonymous"></script>
+
+        <!-- Local Imports -->
+        <link href="static/css/index.css" rel="stylesheet">
+        <link href="static/css/main.css" rel="stylesheet">
+        
+        <script src="static/javascript/active-socketio.js"></script>
+    </head>
+    <body>
+        <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
+        
+        <div class="container">
+            <div class="row justify-content-center text-white mt-5">
+                <div class="text-center d-flex justify-content-center" id="logo">
+                    <img src="/static/assets/logo.webp" class="rounded">
+                    <h1 class="ms-3">Chess 2</h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid mt-5" style="background-color: rgb(30, 30, 30);">
+            <div class="row py-5">
+                <div id="buttons-desktop" class="justify-content-center">
+                    <a href="/user" class="btn btn-lg btn-outline-secondary col-3 d-flex align-items-center justify-content-center text-white authed-button d-none">
+                        <i class="bi bi-person-fill text-info" style="position: relative; top: 2%;"></i>
+                        <span class="ms-2">profile</span>
+                    </a>
+                    <a href="/signup" class="btn btn-lg btn-outline-secondary col-3 ms-2 offset-1 d-flex align-items-center justify-content-center text-white unauthed-button d-none">
+                        <i class="bi bi-plus-square text-info" style="position: relative; top: 2%;"></i>
+                        <span class="ms-2">sign up</span>
+                    </a>
+                    
+                    <a href="/play" class="btn btn-lg btn-success col-3 ms-2 d-flex align-items-center justify-content-center" style="border-bottom: 5px solid darkgreen;">
+                        <img src="/static/assets/pieces/knook-white.webp" style="width: 50px; height: 50px;">
+                        <span>play</span>
+                    </a>
+
+                    <a href="/settings" class="btn btn-lg btn-outline-secondary col-3 ms-2 offset-1 d-flex align-items-center justify-content-center text-white authed-button d-none">
+                        <i class="bi bi-gear-fill text-info" style="position: relative; top: 2%;"></i>
+                        <span class="ms-2">settings</span>
+                    </a>
+                    <a href="/login" class="btn btn-lg btn-outline-secondary col-3 ms-2 offset-1 d-flex align-items-center justify-content-center text-white unauthed-button d-none">
+                        <i class="bi bi-box-arrow-in-left text-info" style="position: relative; top: 2%;"></i>
+                        <span class="ms-2">log in</span>
+                    </a>
+                </div>
+
+                <div id="buttons-mobile" class="justify-content-center">
+                    <div class="btn-group-vertical col-xl-5 col-lg-8 col-11" role="group">
+                        <a class="btn btn-lg btn-outline-secondary mb-3 text-white authed-button d-none" href="/user">
+                            <i class="bi bi-person-fill text-info" style="position: relative; top: 6%;"></i>
+                            <span class="ms-1">profile</span>
+                        </a>
+                        <a class="btn btn-lg btn-outline-secondary mb-3 text-white unauthed-button d-none" href="/user">
+                            <i class="bi bi-plus-square text-info" style="position: relative; top: 6%;"></i>
+                            <span class="ms-1">sign up</span>
+                        </a>
+
+                        <a class="btn btn-lg btn-success mb-3" href="/play" style="border-bottom: 5px solid darkgreen;">
+                            <img src="/static/assets/pieces/knook-white.webp" style="width: 50px; height: 50px;"> play
+                        </a>
+
+                        <a class="btn btn-lg btn-outline-secondary text-white authed-button d-none" href="/signup">
+                            <i class="bi bi-gear-fill text-info" style="position: relative; top: 3%;"></i>
+                            <span class="ms-1">settings</span>
+                        </a>
+                        <a class="btn btn-lg btn-outline-secondary text-white unauthed-button d-none" href="/login">
+                            <i class="bi bi-gear-fill text-info" style="position: relative; top: 3%;"></i>
+                            <span class="ms-1">log in</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="container-fluid pb-5" style="background-color: #1a1a1a;">
+            <div class="row pt-5 text-center text-white">
+                <h1>Varients</h1>
+                <p class="lead text-white-50">Choose your adventure</p>
+            </div>
+            <div class="row mt-3 justify-content-center" id="modes">
+                <div class="col-11 col-sm-auto pb-3">
+                    <div class="card text-white px-3">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">CHSS</h3>
+                        </div>
+                        <img src="/static/assets/modes/thumbnails/chss.webp" class="card-img-bottom mb-3">
+                    </div>
+                </div>
+
+                <div class="col-11 col-sm-auto pb-3">
+                    <div class="card text-white px-3">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">ANARCHY</h3>
+                        </div>
+                        <img src="/static/assets/modes/thumbnails/anarchy.webp" class="card-img-bottom mb-3">
+                    </div>
+                </div>
+
+                <div class="col-11 col-sm-auto pb-3">
+                    <div class="card text-white px-3">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">FOG OF WAR</h3>
+                        </div>
+                        <img src="/static/assets/modes/thumbnails/fogofwar.webp" class="card-img-bottom mb-3">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="static/javascript/util.js" alert="{{alert}}"></script>
+        <script src="static/javascript/navbar.js"></script>
+        <script>
+            loadAuthInfo().then(() => {
+                if (authInfo.auth_method == "guest") {
+                    $(".unauthed-button").removeClass("d-none");
+                    $(".authed-button").remove();
+                }
+                else {
+                    $(".authed-button").removeClass("d-none");
+                    $(".unauthed-button").remove();
+                }
+            });
+        </script>
+    </body>
+</html>

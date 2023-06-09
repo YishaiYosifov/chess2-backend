@@ -121,6 +121,7 @@ class User(db.Model):
         elif len(username) > 30: raise BadRequest("Username Too Long")
         elif len(username) < 1: raise BadRequest("Username Too Short")
         elif " " in username: raise BadRequest("Username can't include a space")
+        elif all(char.isdigit() for char in username): raise BadRequest("Username can't be just numbers")
         elif User.query.filter_by(username=username).first(): raise Conflict("Username Taken")
 
         self.username_last_changed = now

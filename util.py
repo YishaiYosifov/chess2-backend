@@ -112,6 +112,8 @@ def try_get_user_from_session(force_logged_in=True, allow_guests=False) -> User 
         if allow_guests:
             user = User.create_guest()
             db.session.commit()
+            
+            request.cached_session_user = user
             return user
         if force_logged_in: raise Unauthorized("Not Logged In")
         return
@@ -121,6 +123,13 @@ def try_get_user_from_session(force_logged_in=True, allow_guests=False) -> User 
     if not user:
         # If the user was not found, something went wrong
         session.clear()
+
+        if allow_guests:
+            user = User.create_guest()
+            db.session.commit()
+            
+            request.cached_session_user = user
+            return user
         if force_logged_in: raise Unauthorized("Not Logged In")
         return
     elif not allow_guests and user.auth_method == AuthMethods.GUEST:

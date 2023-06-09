@@ -1,0 +1,31 @@
+#modes .card {
+    background-color:rgb(49, 49, 49);
+    max-width: 530px;
+}
+
+#buttons-desktop a {
+    height: 80px;
+    width: 180px;
+    border-bottom: 4px solid dimgray;
+}
+
+#buttons-mobile a {
+    border-bottom: 4px solid dimgray;
+}
+
+@media (max-width: 590px) {
+    #buttons-desktop a {
+        height: 150px;
+        width: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    #buttons-desktop { display: none; }
+    #buttons-mobile { display: flex; }
+}
+
+@media (min-width: 480px) {
+    #buttons-desktop { display: flex; }
+    #buttons-mobile { display: none; }
+}

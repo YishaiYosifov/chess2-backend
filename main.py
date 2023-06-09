@@ -7,7 +7,7 @@ import os
 
 from werkzeug.exceptions import HTTPException, InternalServerError
 from flask import redirect, session, request, make_response
-from flask_socketio import emit, join_room, disconnect
+from flask_socketio import emit
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -16,6 +16,7 @@ from pip._vendor import cachecontrol
 
 import google.auth.transport.requests
 import requests
+import uuid
 
 from frontend import frontend, TEMPLATES, default_template
 from util import try_get_user_from_session, requires_auth
@@ -52,7 +53,21 @@ def google_signup():
     # Generate the session token and log the user in
     user : User = User.query.filter_by(email=id_info["email"]).first()
     if not user:
-        user = User(username=id_info["name"].replace(" ", ""), email=id_info["email"], auth_method=AuthMethods.GMAIL)
+        # If the email username is invalid, fix it / generate a new username
+        username = id_info["name"].replace(" ", "")
+
+        padding = uuid.uuid4().hex
+        if len(username) < 3: username += padding[:4 - len(username)]
+        if all(char.isdigit() for char in username): username = f"user-{padding[:5]}"
+
+        while True:
+            same_username = User.query.filter_by(username=username).first()
+            if not same_username: break
+
+            username = username[:25]
+            username += uuid.uuid4()[:5]
+
+        user = User(username=username, email=id_info["email"], auth_method=AuthMethods.GMAIL)
         user.insert()
     session["user_id"] = user.user_id
     db.session.commit()
@@ -105,13 +120,19 @@ def http_error_handler(exception : HTTPException): return exception.description,
 @app.after_request
 def drop_response(response):
     new_response = make_response(response)
-    if "text/html" in response.content_type and hasattr(request, "cached_session_user"):
-        new_response.set_cookie("auth_info", json.dumps(
-            {
-                "auth_method": request.cached_session_user.auth_method.value,
-                "user_id": request.cached_session_user.user_id
-            })
-        )
+
+    if "text/html" in response.content_type:
+        try: auth_info : dict = json.loads(request.cookies.get("auth_info"))
+        except (ValueError, TypeError): auth_info = {}
+
+        if not auth_info or auth_info.get("user_id") != session.get("user_id"):
+            user = try_get_user_from_session(force_logged_in=False, allow_guests=True)
+            new_response.set_cookie("auth_info", json.dumps(
+                {
+                    "user_id": user.user_id,
+                    "auth_method": user.auth_method.value
+                })
+            )
     return new_response
 
 if __name__ == "__main__":

@@ -7,9 +7,9 @@ var settings = {
 async function main() {
     if (await (await apiRequest("/game/has_outgoing")).json()) {
         $("#outgoing-game").show();
+        $("#play-buttons").hide();
         $("*[setting] *").prop("disabled", true);
     }
-    else $("#play").show();
 
     let savedSettings = getLocalStorage("game-settings");
     if (savedSettings) settings = savedSettings;
@@ -29,7 +29,7 @@ async function main() {
 
 $(".setting-button").click(function() {
     const button = $(this);
-    const parent = button.parent();
+    const parent = button.closest("[setting]");
 
     parent.find(".setting-button").removeClass("bg-secondary");
     button.addClass("bg-secondary");
@@ -56,17 +56,17 @@ $("#play").click(async function() {
         return;
     }
 
-    $(this).hide();
     $("*[setting] *").prop("disabled", true);
 
     $("#outgoing-game").show();
+    $("#play-buttons").hide();
 });
 
 $("#cancel").click(() => {
     apiRequest("/game/cancel");
     
     $("#outgoing-game").hide();
-    $("#play").show();
+    $("#play-buttons").show();
     $("*[setting] *").prop("disabled", false);
 });
 

@@ -64,15 +64,9 @@ def play_helper():
 
 # endregion
 
-@frontend.route("/")
-def index():
-    alert = session.get("alert")
-    if alert: session.pop("alert")
-
-    if try_get_user_from_session(force_logged_in=False): return render_template("index-authorized.html", alert=alert)
-    else: return render_template("index-unauthorized.html", alert=alert)
-
 TEMPLATES = [
+    Template(route="/", template="index.html"),
+    
     Template(route="/login", template="login.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/signup", template="signup.html", auth_req=AuthReq.NOT_AUTHED),
     Template(route="/logout", template="logout.html", auth_req=AuthReq.REQUIRED),

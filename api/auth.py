@@ -1,6 +1,6 @@
 from werkzeug.exceptions import BadRequest, Unauthorized
 
-from flask import Blueprint, redirect, session
+from flask import Blueprint, redirect, session, make_response
 from flask_restful.reqparse import Argument
 
 import shutil
@@ -81,7 +81,10 @@ def logout(user : User):
     """
 
     session.clear()
-    return redirect("/")
+
+    response = make_response(redirect("/"))
+    response.delete_cookie("auth_info")
+    return response
 
 @auth.route("/delete", methods=["POST"])
 @requires_auth()
@@ -93,5 +96,6 @@ def delete(user : User):
     user.delete()
     db.session.commit()
     shutil.rmtree(f"static/uploads/{user.user_id}")
+    logout()
     
     return "Deleted", 200

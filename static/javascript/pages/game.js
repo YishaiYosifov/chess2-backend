@@ -109,7 +109,7 @@ async function main() {
 $(".new-game-button").click(() => window.location.replace("/play?s=1"));
 
 gameNamespace = io("/game");
-loadAuthInfo().then(main)
+main()
 
 function updateTimer(onlyFor = null, timestamp = null) {
     if (!timestamp) timestamp = Date.now() / 1000;

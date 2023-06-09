@@ -29,7 +29,7 @@
     <body>
         <input type="hidden" name="csrf_token" autocomplete="off" value="{{ csrf_token() }}">
         
-        <div class="container-fluid mb-3 mt-2">
+        <div class="container-fluid mb-3 mt-5">
             <div class="row">
                 <div class="col-md-11 col-lg-9 col-xl-7 col-xxl-5 mx-auto" style="max-width: 850px">
                     <h1 class="text-light"><i class="bi bi-gear-fill"></i> Settings</h1>
@@ -43,8 +43,8 @@
                             <div class="col">
                                 <h4 class="mt-3 tt username limit-text" id="username" data-bs-placement="left" style="width: 280px;">username</h4>
                                 <div class="form-floating">
-                                    <textarea class="form-control" input-for-setting="about" style="height: 140px; resize: none;" placeholder="About You"></textarea>
-                                    <label class="text-secondary" for="description" style="height: 35px; margin-top: -1%;">Enter an about you...</label>
+                                    <textarea class="form-control" id="about" input-for-setting="about" style="height: 140px; resize: none;" placeholder="About You"></textarea>
+                                    <label class="text-secondary" for="about" style="height: 35px; margin-top: -1%;">Enter an about you...</label>
                                 </div>
                             </div>
                         </div>
@@ -110,31 +110,17 @@
                 <div class="modal-content text-light" style="background-color: var(--dark-secondary);">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5">Account Deletion</h1>
-                        <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div id="account-deletion-stage-1">
-                        <div class="modal-body">
-                            <h4 class="text-danger" style="text-shadow: 0px 0px 5px black">ARE YOU SURE YOU WANT TO DELETE YOUR ACCOUNT?</h4>
-                        </div>
-                        <div class="modal-footer">
-                            <div class="btn-group-lg" role="group">
-                                <button class="btn btn-danger" onclick="$('#account-deletion-stage-1').hide(); $('#account-deletion-stage-2').show()">Yes</button>
-                                <button  class="btn btn-info" data-bs-dismiss="modal">No</button>
-                            </div>
+                    <div class="modal-body">
+                        <h5>Enter your username</h5>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-person-fill text-white"></i></span>
+                            <input class="form-control" placeholder="Username" aria-label="Username" id="account-deletion-username">
                         </div>
                     </div>
-
-                    <div id="account-deletion-stage-2" style="display: none;">
-                        <div class="modal-body">
-                            <h5>Enter your username</h5>
-                            <div class="input-group mb-3">
-                                <span class="input-group-text"><i class="bi bi-person-fill text-light"></i></span>
-                                <input class="form-control" placeholder="Username" aria-label="Username" id="account-deletion-username">
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-danger" id="delete-account"><i class="bi bi-radioactive"></i> Delete</button>
-                        </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-danger" id="delete-account"><i class="bi bi-radioactive"></i> Delete</button>
                     </div>
                 </div>
             </div>

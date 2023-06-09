@@ -53,7 +53,7 @@ var userInfo = {};
 async function main() {
     const username = window.location.pathname.split("/").pop();
 
-    userInfo = await (await apiRequest(`/profile/${username}/get_info`)).json();
+    userInfo = await (await apiRequest(`/profile/${username}/get_info`, {"include": ["username", "country", "country_alpha", "about"]})).json();
     $("#profile-picture").prop("src", `/static/uploads/${userInfo.user_id}/profile-picture.webp`);
 
     let usernameGroup = $("#username-group");

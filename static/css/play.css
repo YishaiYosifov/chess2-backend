@@ -2,12 +2,14 @@
     background-color: rgba(105, 112, 119, 0.3);
 }
 
-#mode-preview {
-    max-width: 70vmin;
+.settings-button {
+    height: 70px;
+    width: 100%;
+    min-width: 30px;
 }
 
-@media (max-width: 450px) {
-    #mode-preview {
-        max-width: 80vmin;
+@media (max-width: 590px) {
+    .settings-button {
+        height: 50px;
     }
 }
