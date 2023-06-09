@@ -470,9 +470,7 @@ PIECE_DATA = {
 
         "all_legal": lambda game, origin: [
                                                 square for square in straight_legal(game, origin)
-                                                if (square.x + square.y) % 2 == (
-                                                    1 if game.board[origin["y"], origin["x"]].piece.color == "white" else 0
-                                                )
+                                                if (square.x + square.y) % 2 == (origin["x"] + origin["y"]) % 2
                                             ]
     }
 }

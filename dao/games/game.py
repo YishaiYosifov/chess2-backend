@@ -59,7 +59,7 @@ class Game(db.Model):
 
     def get_legal_moves(self, origin) -> list:
         cache_origin = tuple(origin.values())
-        if cache_origin in self.legal_move_cache: return self.legal_move_cache[cache_origin]
+        #if cache_origin in self.legal_move_cache: return self.legal_move_cache[cache_origin]
 
         square = self.board[origin["y"], origin["x"]]
         legal_moves = PIECE_DATA[square.piece.name]["all_legal"](self, origin)
