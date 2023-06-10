@@ -53,19 +53,18 @@ async function main() {
         if (loadedPieces >= pieceImages.length) {
             gameNamespace = io("/game");
 
+            gameNamespace.on("exception", game.socketioException);
+            gameNamespace.on("game_over", game.socketioGameOver);
+            gameNamespace.on("move", game.socketioMove);
+    
+            gameNamespace.on("opponent_disconnected", opponentDisconnected);
+            gameNamespace.on("opponent_connected", opponentConnected);
+            gameNamespace.on("remote_connection", remoteConnection);
+    
+            gameNamespace.on("draw_declined", drawDeclined)
+            gameNamespace.on("draw_request", drawRequest);
+            gameNamespace.on("clock_sync", syncClock);
             gameNamespace.on("connect", () => {
-                gameNamespace.on("exception", game.socketioException);
-                gameNamespace.on("game_over", game.socketioGameOver);
-                gameNamespace.on("move", game.socketioMove);
-        
-                gameNamespace.on("opponent_disconnected", opponentDisconnected);
-                gameNamespace.on("opponent_connected", opponentConnected);
-                gameNamespace.on("remote_connection", remoteConnection);
-        
-                gameNamespace.on("draw_declined", drawDeclined)
-                gameNamespace.on("draw_request", drawRequest);
-                gameNamespace.on("clock_sync", syncClock);
-
                 if (game.isGameOver) updateTimer(null, gameData.ended_at)
                 else apiRequest("/game/live/sync_clock");
             })
@@ -83,6 +82,11 @@ async function main() {
 
         if (game.turn == game.localUser) enableDraggable();
         if (game.moves.length < 2) $("#resign span").text("abort");
+
+        chatNamespace = io("/chat");
+        chatNamespace.on("connect", () => {
+            chatNamespace.on("new_message", addMessage);
+        })
     }
     if (!game.moves.length) $("#move-history-title").text("No Moves");
 
@@ -369,12 +373,11 @@ function updateBoardSize() {
     if (windowWidth >= windowHeight || Math.abs(windowWidth - windowHeight) < 300) {
         profile1Height = profile1.height();
         profile2Height = profile2.height();
-        maxHeight = 1111
         margin = 100;
 
         let height = windowHeight - $(".navbar").height() - profile1Height - profile2Height - margin;
         height = Math.max(370, height);
-        height = Math.min(maxHeight, height);
+        height = Math.min(1111, height);
         board.height(height);
         board.width(height * 0.80459770114);
     } else {
@@ -674,5 +677,23 @@ function syncClock(data) {
         if (game.isGameOver || isTimeout) clearInterval(timer);
     }, 100);
 }
+
+//#endregion
+
+//#region Chat
+
+$("#chat-input").on("keydown", e => {
+    if (e.key == "Enter") sendMessage();
+});
+$("#send-message").click(sendMessage);
+
+async function sendMessage() {
+    const message = $("#chat-input").val();
+    if (message.length == 0) return;
+    
+    chatNamespace.emit("send_message", {"message": message})
+}
+function addMessage(message) {}
+var chatNamespace;
 
 //#endregion

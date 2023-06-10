@@ -91,6 +91,7 @@ def requires_args(*arguments : reqparse.Argument):
 
                     if not arg.default is None: parsed[arg_name] = arg.default
 
+            if is_socket: args = args[1:]
             return function(*args, args=parsed, **kwargs)
 
         wrapper.__name__ = function.__name__

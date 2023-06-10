@@ -158,7 +158,7 @@ const URLAlerts = {
 }
 
 function triggerAlert() {
-    const serverMessage = document.currentScript.getAttribute("alert").replaceAll("'", "\"");
+    const serverMessage = $("script").last().attr("alert").replaceAll("'", "\"");
     const urlMessage = new URLSearchParams(location.search).get("a");
 
     let messageText;

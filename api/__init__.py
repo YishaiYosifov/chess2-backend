@@ -1,2 +1,2 @@
-from .game_socketio import *
+from .socketio import *
 from .api import *

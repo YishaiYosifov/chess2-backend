@@ -28,6 +28,10 @@ def game_connected(user : User):
     player.sid = request.sid
     player.is_connected = True
 
+    player.is_loading = False
+    for buffered_emit in player.buffered_loading_emits: emit(buffered_emit["event"], buffered_emit["data"], to=player.sid, namespace="/game")
+    player.buffered_loading_emits = []
+
     db.session.commit()
 @socketio.on("disconnect", namespace="/game")
 @requires_auth(allow_guests=True)
@@ -50,7 +54,7 @@ def game_disconnected(user : User):
     Argument("destination_x", type=int, required=True), Argument("destination_y", type=int, required=True),
     Argument("promote_to", type=str, default=None)
 )
-def move(_, user : User, args):
+def move(user : User, args):
     if not user.active_game: raise SocketIOException(SocketIOErrors.NOT_FOUND, "No Active Game")
     user.active_game.get_game_class().move(
         user,

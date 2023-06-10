@@ -144,7 +144,7 @@ class Anarchy:
         move_data["legal_moves"] = self.game.client_legal_move_cache
 
         # Emit the move
-        emit("move", move_data, to=self.game.token)
+        self.buffered_emit("move", move_data)
 
         self.game.turn = opponent
         db.session.commit()
@@ -159,7 +159,7 @@ class Anarchy:
 
         player.is_requesting_draw = True
         opponent = self._get_opponent(user)
-        if not opponent.ignore_draw_requests: emit("draw_request", to=opponent.sid)
+        if not opponent.ignore_draw_requests: opponent.buffered_emit("draw_request")
 
         db.session.commit()
 
@@ -172,7 +172,7 @@ class Anarchy:
         player.ignore_draw_requests = True
         
         opponent.is_requesting_draw = False
-        emit("draw_declined", to=opponent.sid)
+        opponent.buffered_emit("draw_declined")
 
         db.session.commit()
     
@@ -182,7 +182,7 @@ class Anarchy:
             raise SocketIOException(SocketIOErrors.BAD_REQUEST, "Opponent doesn't have outgoing draw requests")
 
         opponent.is_requesting_draw = False
-        emit("draw_declined", to=opponent.sid)
+        opponent.buffered_emit("draw_declined")
         db.session.commit()
     
     def accept_draw(self, user : User):
@@ -206,11 +206,11 @@ class Anarchy:
                 if player == self.game.white: self._end_game(1, 0, "Timeout")
                 else: self._end_game(0, 1, "Timeout")
 
-        emit("clock_sync", {
+        self.buffered_emit("clock_sync", {
                 "white": self.game.white.clock,
                 "black": self.game.black.clock,
                 "is_timeout": is_timeout
-            }, to=self.game.token, namespace="/game")
+            })
     
     def alert_stalling(self, user : User) -> bool:
         player : Player = self._get_player(user)
@@ -265,7 +265,7 @@ class Anarchy:
                 self.game.match.white.score += white_results
                 self.game.match.black.score += black_results
         
-        emit("game_over", data, to=self.game.token, namespace="/game")
+        self.buffered_emit("game_over", data)
         db.session.commit()
 
     def _get_player(self, user : User) -> Player: return self.game.white if user == self.game.white else self.game.black
@@ -296,3 +296,10 @@ class Anarchy:
         return new_white_rating.elo, new_black_rating.elo
 
     # endregion
+
+    def buffered_emit(self, event : str, data : any):
+        emit(event, data, to=self.game.token, namespace="/game")
+
+        for player in [self.game.white, self.game.black]:
+            if player.is_loading: player.buffered_loading_emits.append({"event": event, "data": data})
+        db.session.commit()

@@ -1,6 +1,7 @@
 from flask_restful.reqparse import Argument
 from werkzeug.exceptions import NotFound
 from flask import Blueprint, jsonify
+from flask_socketio import emit
 
 from util import requires_args, requires_auth, column_to_dict
 from dao import User, Game
@@ -34,17 +35,17 @@ def alert_stalling(user : User, args):
 @live_game.route("/load_game", methods=["POST"])
 @requires_args(Argument("game_token", type=str))
 @requires_auth(allow_guests=True)
-def get_board(user : User, args):
+def load_game(user : User, args):
     if user.active_game:
-        if user.active_game.token == args.game_token:
-            game = Game.query.filter_by(token=args.game_token).first()
-            if not game: raise NotFound("No Active Game")
-        else: game = user.active_game
-        game.get_game_class()._get_player(user).is_loading = True
-        db.session.commit()
-    else:
-        game = Game.query.filter_by(token=args.game_token).first()
-        if not game: raise NotFound("No Active Game")
+        if user.active_game.token != args.game_token: game = Game.query.filter_by(token=args.game_token).first()
+        game = user.active_game
+    else: game = Game.query.filter_by(token=args.game_token).first()
+    if not game: raise NotFound("Game Not Found")
+
+    player = game.get_game_class()._get_player(user)
+    player.is_loading = True
+    player.buffered_loading_emits = []
+    db.session.commit()
 
     game_dict = column_to_dict(game, include=["moves", "is_over", "ended_at", "client_legal_move_cache"])
     if game.match: game_dict["match"] = column_to_dict(game, include=["white_score", "black_score"])
