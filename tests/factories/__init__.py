@@ -1,20 +1,16 @@
 from typing import TypeVar, Generic
 
-from factory.base import FactoryMetaClass
-
-from app.dependencies import get_db
-from app.main import app
-
-
-class BaseMeta:
-    sqlalchemy_session_factory = lambda: app.dependency_overrides[get_db]()
-    sqlalchemy_session = None
-    sqlalchemy_session_persistence = "commit"
-
+from factory.alchemy import SQLAlchemyModelFactory
+from sqlalchemy.orm import Session
 
 T = TypeVar("T")
 
 
-class BaseMetaFactory(FactoryMetaClass, Generic[T]):
-    def __call__(cls, *args, **kwargs) -> T:
-        return super().__call__(*args, **kwargs)  # type: ignore
+class BaseSQLAlchemyModelFactory(SQLAlchemyModelFactory, Generic[T]):
+    class Meta:
+        sqlalchemy_session_persistence = "commit"
+
+    @classmethod
+    def create(cls, session: Session, **kwargs) -> T:
+        cls._meta.sqlalchemy_session = session  # type: ignore
+        return super().create(**kwargs)

@@ -1,7 +1,6 @@
 from contextlib import nullcontext
 from typing import Type
 
-from factory.alchemy import SQLAlchemyModelFactory
 from sqlalchemy.orm import object_session
 from factory import post_generation, SubFactory, Faker
 
@@ -9,13 +8,13 @@ from app.models.games.runtime_player_info import RuntimePlayerInfo
 from app.utils.user_setup import setup_user
 from app.constants.enums import Variants, Colors
 from app.models.rating import Rating
-from tests.factories import BaseMetaFactory, BaseMeta
+from tests.factories import BaseSQLAlchemyModelFactory
 from app.models.user import User
 from tests.utils import mock_hash
 
 
-class UserFactory(SQLAlchemyModelFactory, metaclass=BaseMetaFactory[User]):
-    class Meta(BaseMeta):
+class UserFactory(BaseSQLAlchemyModelFactory[User]):
+    class Meta:
         model = User
 
     username = Faker("name")
@@ -50,7 +49,7 @@ class UserFactory(SQLAlchemyModelFactory, metaclass=BaseMetaFactory[User]):
     def _create(cls, model_class: Type[User], *args, **kwargs) -> User:
         """
         Create the user and mock the hash if necessary.
-        If the hash is mocked, the default hash will be for the password
+        If the hash is mocked, the default hash will be used for the password
         """
 
         do_mock_hash = kwargs.pop("mock_hash", cls.mock_hash)
@@ -58,11 +57,8 @@ class UserFactory(SQLAlchemyModelFactory, metaclass=BaseMetaFactory[User]):
             return super()._create(model_class, *args, **kwargs)
 
 
-class RuntimePlayerInfoFactory(
-    SQLAlchemyModelFactory,
-    metaclass=BaseMetaFactory[RuntimePlayerInfo],
-):
-    class Meta(BaseMeta):
+class RuntimePlayerInfoFactory(BaseSQLAlchemyModelFactory[RuntimePlayerInfo]):
+    class Meta:
         model = RuntimePlayerInfo
 
     color = Colors.WHITE
