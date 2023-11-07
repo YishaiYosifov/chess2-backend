@@ -1,38 +1,57 @@
-from typing import Annotated
 from http import HTTPStatus
 
-from fastapi import HTTPException, APIRouter, Body
+from fastapi import BackgroundTasks, HTTPException, APIRouter
 
-from app.crud.user_crud import fetch_user_by_selector, create_user
-from app.schemes.user import UserIn
+from app.utils.email_verification import send_verification_email
+from app.schemes.responses import ConflictResponse
+from app.utils.user_setup import setup_user
+from app.schemes.user import UserOut, UserIn
 from app.dependencies import SettingsDep, DBDep
+from app.crud import user_crud
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
 
-@router.post("/register")
-async def register(user: Annotated[UserIn, Body()], db: DBDep, settings: SettingsDep):
+@router.post(
+    "/signup",
+    response_model=UserOut,
+    status_code=HTTPStatus.CREATED,
+    responses={
+        HTTPStatus.CONFLICT: {
+            "description": "Username / email already taken",
+            "model": ConflictResponse,
+        }
+    },
+)
+def signup(
+    user: UserIn,
+    db: DBDep,
+    background_tasks: BackgroundTasks,
+    settings: SettingsDep,
+):
     """
-    Takes a username, email and password and creates a credentials user.
-    This function will also
-        - send a verification email
-        - set the user's country of origin to the ip origin
-        - create the necessary files
+    Takes a username, email and password and creates registers a new user.
+
+    This path operation will also:
+    - send a verification email
+    - create the necessary files
     """
 
-    if await fetch_user_by_selector(db, user.username):
+    if user_crud.fetch_user_by_selector(db, user.username):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail={"username": "Username Taken"},
+            detail={"username": "Username taken"},
+        )
+    elif user_crud.fetch_user_by_selector(db, user.email):
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail={"email": "Email taken"},
         )
 
-    db_user = create_user(db, user)
+    db_user = user_crud.create_user(db, user)
+    if settings.send_verification_email:
+        background_tasks.add_task(send_verification_email, user=db_user)
 
-    try:
-        send_verification_email(user)
-    except GoogleAPIError:
-        pass
+    setup_user(db, db_user)
 
-    await db.commit()
-
-    return success_response(status=HTTPStatus.CREATED)
+    return db_user

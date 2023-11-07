@@ -1,19 +1,19 @@
 from typing import Annotated
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from fastapi import Depends
 
-from .schemes.config import get_setting, Settings
+from .schemes.config import get_settings, Settings
 from .db import SessionLocal
 
 
-async def get_db():
+def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
-        await db.close()
+        db.close()
 
 
-DBDep = Annotated[AsyncSession, Depends(get_db)]
-SettingsDep = Annotated[Settings, Depends(get_setting)]
+DBDep = Annotated[Session, Depends(get_db)]
+SettingsDep = Annotated[Settings, Depends(get_settings)]

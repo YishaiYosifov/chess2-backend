@@ -1,12 +1,8 @@
 from datetime import timedelta, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 from jose import jwt
 
-from app.models.user import User
-
-from ..crud.user_crud import fetch_user_by_selector
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -17,19 +13,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
-
-
-async def authenticate_user(
-    db: AsyncSession,
-    selector: str,
-    password: str,
-) -> User | None:
-    user = await fetch_user_by_selector(db, selector)
-    if not user:
-        return
-    if not verify_password(password, user.hashed_password):
-        return
-    return user
 
 
 def create_access_token(

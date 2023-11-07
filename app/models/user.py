@@ -8,8 +8,8 @@ from sqlalchemy import func, String, Text
 from app.models.games.runtime_player_info import RuntimePlayerInfo
 from app.models.games.game_request import GameRequest
 from app.models.games.game import Game
+from app.constants.enums import Colors
 from app.models.rating import Rating
-from app.enums import Colors
 from app.db import Base
 
 
@@ -25,12 +25,12 @@ class User(Base, kw_only=True):
         nullable=True,
         unique=True,
     )
-    hashed_password: Mapped[str] = mapped_column()
+    hashed_password: Mapped[str]
 
     username: Mapped[str] = mapped_column(String(30), unique=True)
     email: Mapped[str] = mapped_column(String(256), unique=True)
     about: Mapped[str] = mapped_column(String(300), default="")
-    country: Mapped[str] = mapped_column(String(100), default="international")
+    country: Mapped[str | None] = mapped_column(String(100), default=None)
 
     is_email_verified: Mapped[bool] = mapped_column(default=False)
 

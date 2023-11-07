@@ -1,37 +1,55 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, Session
 from sqlalchemy import select
 
-from app.services.auth_service import hash_password
+from app.services.auth_service import verify_password, hash_password
 from app.models.user import User as UserModel
 
 from ..schemes import user as user_schema
 
 
-async def fetch_user_by_selector(db: AsyncSession, selector: str) -> UserModel | None:
+def fetch_user_by_selector(db: Session, selector: str) -> UserModel | None:
     """Fetch a user by their username / email"""
 
-    return (
-        await db.execute(
-            select(UserModel).filter(
-                (UserModel.username == selector) | (UserModel.email == selector)
-            )
+    return db.execute(
+        select(UserModel)
+        .options(
+            joinedload(UserModel.ratings),
+            joinedload(UserModel.game_request),
+            joinedload(UserModel.incoming_games),
+            joinedload(UserModel.player),
         )
+        .filter((UserModel.username == selector) | (UserModel.email == selector))
     ).scalar()
 
 
-async def create_user(
-    db: AsyncSession,
+def create_user(
+    db: Session,
     user: user_schema.UserIn,
-    do_setup: bool = True,
 ) -> UserModel:
     hashed_password = hash_password(user.password)
     db_user = UserModel(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
-        country=user.country,
+        country=str(user.country).lower() if user.country else None,
     )
+
     db.add(db_user)
-    await db.commit()
+    db.commit()
+    db.refresh(db_user)
 
     return db_user
+
+
+async def auth_user(
+    db: Session,
+    selector: str,
+    password: str,
+) -> UserModel | None:
+    user = fetch_user_by_selector(db, selector)
+    if not user:
+        return
+    if not verify_password(password, user.hashed_password):
+        return
+
+    return user

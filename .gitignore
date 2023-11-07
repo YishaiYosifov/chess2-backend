@@ -304,6 +304,5 @@ dist
 # Built Visual Studio Code Extensions
 *.vsix
 
-# Token / config
+# Tokens
 google_tokens/
-config.py

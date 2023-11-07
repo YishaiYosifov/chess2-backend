@@ -7,7 +7,7 @@ from sqlalchemy import func, CheckConstraint, ForeignKey, CHAR
 
 from app.models.games.runtime_player_info import RuntimePlayerInfo
 from app.models.games.piece_positions import PiecePosition
-from app.enums import Variants
+from app.constants.enums import Variants
 from app.db import Base
 
 

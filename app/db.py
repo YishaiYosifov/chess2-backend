@@ -1,25 +1,19 @@
-from contextlib import asynccontextmanager
 import urllib.parse
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import MappedAsDataclass, DeclarativeBase
-from fastapi import FastAPI
+from sqlalchemy.orm import sessionmaker, MappedAsDataclass, DeclarativeBase
+from sqlalchemy import create_engine
+
+from app.schemes.config import get_settings
 
 
 class Base(MappedAsDataclass, DeclarativeBase):
     pass
 
 
-engine = create_async_engine(
-    f"postgresql+asyncpg://postgres"
-    f":{urllib.parse.quote_plus('qai6&@UHDt*BoH$NhgHk')}"
-    "@127.0.0.1/chess2"
+settings = get_settings()
+engine = create_engine(
+    "postgresql+psycopg2://"
+    f"{settings.db_username}:{urllib.parse.quote_plus(settings.db_password)}"
+    f"@{settings.db_host}/{settings.db_name}"
 )
-SessionLocal = async_sessionmaker(engine)
-
-
-@asynccontextmanager
-async def create_tables(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
+SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)

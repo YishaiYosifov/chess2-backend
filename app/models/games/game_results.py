@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, MappedAsDataclass, Mapped
 from sqlalchemy import func, ForeignKey, CHAR
 
-from app.enums import Variants
+from app.constants.enums import Variants
 from app.db import Base
 
 if TYPE_CHECKING:

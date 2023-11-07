@@ -1,0 +1,35 @@
+from factory.alchemy import SQLAlchemyModelFactory
+from factory import SubFactory, Faker
+
+from app.models.games.game_request import GameRequest
+from app.models.games.game import Game
+from tests.factories.user import RuntimePlayerInfoFactory, UserFactory
+from app.constants.enums import Variants
+from tests.factories import BaseMetaFactory, BaseMeta
+
+
+class GameFactory(SQLAlchemyModelFactory, metaclass=BaseMetaFactory[Game]):
+    class Meta(BaseMeta):
+        model = Game
+
+    token = Faker("pystr", max_chars=8)
+
+    variant = Variants.ANARCHY
+    time_control = 600
+    increment = 0
+
+    player_white = SubFactory(RuntimePlayerInfoFactory)
+    player_black = SubFactory(RuntimePlayerInfoFactory)
+
+
+class GameRequestFactory(
+    SQLAlchemyModelFactory, metaclass=BaseMetaFactory[GameRequest]
+):
+    class Meta(BaseMeta):
+        model = GameRequest
+
+    inviter = SubFactory(UserFactory, rating_variants=[Variants.ANARCHY])
+
+    variant = Variants.ANARCHY
+    time_control = 600
+    increment = 0

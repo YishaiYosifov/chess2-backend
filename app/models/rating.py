@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import mapped_column, relationship, MappedAsDataclass, Mapped
+from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import event, func, ForeignKey, Index, DDL
 
-from app.enums import Variants
+from app.constants.enums import Variants
 from app.db import Base
 
 if TYPE_CHECKING:
@@ -73,16 +73,24 @@ archive_ratings_trigger = DDL(
     END;
     $BODY$
     LANGUAGE PLPGSQL;
-
-    CREATE OR REPLACE TRIGGER rating_archiver
-    BEFORE UPDATE
-    ON ratings
-    FOR EACH ROW
-        EXECUTE PROCEDURE archive_ratings();
 """
 )
 event.listen(
     Rating.__table__,
     "after_create",
     archive_ratings_trigger,
+)
+
+test = DDL(
+    """
+    CREATE OR REPLACE TRIGGER rating_archiver
+    BEFORE UPDATE
+    ON ratings
+    FOR EACH ROW
+        EXECUTE PROCEDURE archive_ratings();"""
+)
+event.listen(
+    Rating.__table__,
+    "after_create",
+    test,
 )
