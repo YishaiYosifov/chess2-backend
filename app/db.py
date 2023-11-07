@@ -3,7 +3,7 @@ import urllib.parse
 from sqlalchemy.orm import sessionmaker, MappedAsDataclass, DeclarativeBase
 from sqlalchemy import create_engine
 
-from app.schemes.config import get_settings
+from app.schemas.config import get_settings
 
 
 class Base(MappedAsDataclass, DeclarativeBase):

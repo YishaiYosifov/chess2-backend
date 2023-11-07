@@ -1,12 +1,14 @@
 from datetime import datetime
 
 from pydantic_extra_types.country import CountryAlpha3
-from pydantic import field_validator, BaseModel, EmailStr, Field
+from pydantic import field_validator, EmailStr, Field
 
 from app.constants.constants import STRONG_PASSWORD_REGEX
 
+from .camel_model import CamelModel
 
-class BaseUser(BaseModel):
+
+class BaseUser(CamelModel):
     username: str = Field(max_length=30, pattern="")
     country: CountryAlpha3 | None = None
 
@@ -48,6 +50,6 @@ class UserIn(BaseUser):
 
 
 class UserOut(BaseUser):
-    about: str
+    about: str = ""
     user_id: int
     pfp_last_changed: datetime = Field(default_factory=datetime.now)

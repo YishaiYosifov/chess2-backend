@@ -14,12 +14,12 @@ def mock_hash() -> _patch:
     )
 
 
-def mock_login() -> _patch:
+def mock_verify_password(success: bool) -> _patch:
     """
     Creates a context where the user is logged in.
     This is faster than sending a request to /api/auth/login because it doesn't actually generate a hash.
 
-    :param user: a user object or a user id
+    :param success: a user object or a user id
     """
 
     patch_jwt_in_request = patch.object(

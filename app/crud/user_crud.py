@@ -1,25 +1,74 @@
-from sqlalchemy.orm import joinedload, Session
-from sqlalchemy import select
+from typing import Annotated
+from http import HTTPStatus
 
-from app.services.auth_service import verify_password, hash_password
+from sqlalchemy.orm import Session
+from sqlalchemy import select, ColumnExpressionArgument
+from fastapi import HTTPException, Depends
+
+from app.services.auth_service import (
+    decode_access_token,
+    verify_password,
+    oauth2_scheme,
+    hash_password,
+)
+from app.dependencies import DBDep
 from app.models.user import User as UserModel
 
-from ..schemes import user as user_schema
+from ..schemas import user as user_schema
 
 
-def fetch_user_by_selector(db: Session, selector: str) -> UserModel | None:
-    """Fetch a user by their username / email"""
+def fetch_by(db: Session, *criteria: ColumnExpressionArgument[bool]):
+    return db.execute(select(UserModel).filter(*criteria)).scalar()
 
-    return db.execute(
-        select(UserModel)
-        .options(
-            joinedload(UserModel.ratings),
-            joinedload(UserModel.game_request),
-            joinedload(UserModel.incoming_games),
-            joinedload(UserModel.player),
+
+def fetch_by_email(db: Session, email: str) -> UserModel | None:
+    return fetch_by(db, UserModel.email == email)
+
+
+def fetch_by_username(db: Session, username: str) -> UserModel | None:
+    return fetch_by(db, UserModel.username == username)
+
+
+def generic_fetch(db: Session, selector: int | str):
+    """Fetch user by their username / id"""
+
+    return (
+        db.get(
+            UserModel,
+            selector,
         )
-        .filter((UserModel.username == selector) | (UserModel.email == selector))
-    ).scalar()
+        if isinstance(selector, int)
+        else db.execute(select(UserModel).filter_by(username=selector)).scalar()
+    )
+
+
+async def fetch_authed(
+    db: DBDep,
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> UserModel | None:
+    credentials_exception = HTTPException(
+        status_code=HTTPStatus.UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    user_id = decode_access_token(token)
+    if not user_id:
+        raise credentials_exception
+
+    user = db.get(UserModel, user_id)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+def authenticate(db: Session, username: str, password: str) -> UserModel | None:
+    user = fetch_by_username(db, username)
+    if not user:
+        return
+    if not verify_password(password, user.hashed_password):
+        return
+    return user
 
 
 def create_user(
@@ -39,17 +88,3 @@ def create_user(
     db.refresh(db_user)
 
     return db_user
-
-
-async def auth_user(
-    db: Session,
-    selector: str,
-    password: str,
-) -> UserModel | None:
-    user = fetch_user_by_selector(db, selector)
-    if not user:
-        return
-    if not verify_password(password, user.hashed_password):
-        return
-
-    return user

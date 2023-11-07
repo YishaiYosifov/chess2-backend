@@ -37,7 +37,8 @@ class User(Base, kw_only=True):
     last_color: Mapped[Colors] = mapped_column(default=Colors.BLACK)
 
     email_last_changed: Mapped[datetime | None] = mapped_column(
-        nullable=True, default=None
+        nullable=True,
+        default=None,
     )
 
     username_last_changed: Mapped[datetime | None] = mapped_column(

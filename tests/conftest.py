@@ -1,7 +1,9 @@
+from unittest.mock import patch
 from glob import glob
 import shutil
 
 from fastapi.testclient import TestClient
+from _pytest.fixtures import SubRequest
 from sqlalchemy.orm import Session
 import pytest
 
@@ -37,4 +39,13 @@ def db():
 @pytest.fixture(name="mock_hash")
 def fix_mock_hash():
     with mock_hash():
+        yield
+
+
+@pytest.fixture
+def mock_verify_password(request: SubRequest):
+    with patch(
+        "app.crud.user_crud.verify_password",
+        lambda *args, **kwargs: request.param,
+    ):
         yield

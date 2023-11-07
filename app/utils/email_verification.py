@@ -7,7 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 from app.services.email_service import EmailService
 from app.models.user import User
 
-from ..schemes.config import get_settings
+from ..schemas.config import get_settings
 
 serializer = URLSafeTimedSerializer(get_settings().secret_key)
 

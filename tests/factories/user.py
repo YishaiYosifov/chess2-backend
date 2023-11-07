@@ -19,7 +19,7 @@ class UserFactory(BaseSQLAlchemyModelFactory[User]):
 
     username = Faker("name")
     email = Faker("email")
-    hashed_password = "password"
+    hashed_password = "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"
 
     mock_hash = True
 

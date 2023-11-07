@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
-from .schemes.config import get_settings, Settings
+from .schemas.config import get_settings, Settings
 from .db import SessionLocal
 
 

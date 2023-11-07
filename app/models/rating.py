@@ -48,7 +48,7 @@ class Rating(Base, kw_only=True):
 
 
 # Automatically mark old ratings as non active when new ones are inserted
-archive_ratings_trigger = DDL(
+create_trigger_function = DDL(
     """
     CREATE OR REPLACE FUNCTION archive_ratings()
     RETURNS TRIGGER AS
@@ -73,24 +73,25 @@ archive_ratings_trigger = DDL(
     END;
     $BODY$
     LANGUAGE PLPGSQL;
-"""
+    """
 )
 event.listen(
     Rating.__table__,
     "after_create",
-    archive_ratings_trigger,
+    create_trigger_function,
 )
 
-test = DDL(
+create_trigger = DDL(
     """
     CREATE OR REPLACE TRIGGER rating_archiver
     BEFORE UPDATE
     ON ratings
     FOR EACH ROW
-        EXECUTE PROCEDURE archive_ratings();"""
+        EXECUTE PROCEDURE archive_ratings();
+    """
 )
 event.listen(
     Rating.__table__,
     "after_create",
-    test,
+    create_trigger,
 )

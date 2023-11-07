@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     jwt_algorithm: str = "HS256"
     access_token_expires_minutes: int = 30
+    refresh_token_expires_days: int = 30
 
     db_host: str = ""
     db_name: str = ""
