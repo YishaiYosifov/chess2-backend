@@ -1,17 +1,7 @@
-from typing import Annotated
-from http import HTTPStatus
-
 from sqlalchemy.orm import Session
 from sqlalchemy import select, ColumnExpressionArgument
-from fastapi import HTTPException, Depends
 
-from app.services.auth_service import (
-    decode_access_token,
-    verify_password,
-    oauth2_scheme,
-    hash_password,
-)
-from app.dependencies import DBDep
+from app.services.auth_service import verify_password, hash_password
 from app.models.user import User as UserModel
 
 from ..schemas import user as user_schema
@@ -40,26 +30,6 @@ def generic_fetch(db: Session, selector: int | str):
         if isinstance(selector, int)
         else db.execute(select(UserModel).filter_by(username=selector)).scalar()
     )
-
-
-async def fetch_authed(
-    db: DBDep,
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> UserModel | None:
-    credentials_exception = HTTPException(
-        status_code=HTTPStatus.UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    user_id = decode_access_token(token)
-    if not user_id:
-        raise credentials_exception
-
-    user = db.get(UserModel, user_id)
-    if user is None:
-        raise credentials_exception
-    return user
 
 
 def authenticate(db: Session, username: str, password: str) -> UserModel | None:

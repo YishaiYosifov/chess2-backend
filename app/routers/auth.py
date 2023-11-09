@@ -6,10 +6,10 @@ from fastapi import BackgroundTasks, HTTPException, APIRouter, Depends
 
 from app.utils.email_verification import send_verification_email
 from app.services.auth_service import create_refresh_token, create_access_token
-from app.schemas.responses import UnauthorizedError, ConflictError, RefreshToken
+from app.schemas.responses import ResponseError, AccessToken, AuthTokens
 from app.utils.user_setup import setup_user
 from app.schemas.user import UserOut, UserIn
-from app.dependencies import SettingsDep, DBDep
+from app.dependencies import AuthedUserRefreshDep, SettingsDep, DBDep
 from app.crud import user_crud
 
 router = APIRouter(tags=["auth"], prefix="/auth")
@@ -22,7 +22,7 @@ router = APIRouter(tags=["auth"], prefix="/auth")
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Username / email already taken",
-            "model": ConflictError,
+            "model": ResponseError[dict[str, str]],
         }
     },
 )
@@ -60,16 +60,7 @@ def signup(
     return db_user
 
 
-@router.post(
-    "/login",
-    response_model=RefreshToken,
-    responses={
-        HTTPStatus.UNAUTHORIZED: {
-            "description": "Incorrect username / password",
-            "model": UnauthorizedError,
-        },
-    },
-)
+@router.post("/login", response_model=AuthTokens)
 def login(
     db: DBDep,
     settings: SettingsDep,
@@ -93,4 +84,15 @@ def login(
         user.user_id,
         expires_in_days=settings.refresh_token_expires_days,
     )
-    return RefreshToken(access_token=access_token, refresh_token=refresh_token)
+    return AuthTokens(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.get("/refresh-access-token", response_model=AccessToken)
+def refresh_access_token(user: AuthedUserRefreshDep, settings: SettingsDep):
+    """Generate a new access token using a refresh token"""
+
+    access_token = create_access_token(
+        user.user_id,
+        expires_in_minutes=settings.access_token_expires_minutes,
+    )
+    return AccessToken(access_token=access_token)

@@ -1,3 +1,7 @@
+import os
+
+os.environ["ENV"] = ".env.test.local"
+
 from unittest.mock import patch
 from glob import glob
 import shutil

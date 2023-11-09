@@ -84,7 +84,7 @@ def test_signup_success(client: TestClient, db: Session):
             "password": "securePassword123",
         },
     )
-    assert response.status_code == HTTPStatus.CREATED, response.json
+    assert response.status_code == HTTPStatus.CREATED, response.json()
 
     user = db.execute(select(User)).scalar_one()
     assert user.username == "test-username"
@@ -112,4 +112,4 @@ def test_signup_conflict(client: TestClient, db: Session, data: dict):
 
     UserFactory.create(session=db, username="test-user", email="test@example.com")
     response = client.post("/auth/signup", json=data)
-    assert response.status_code == HTTPStatus.CONFLICT, response.json
+    assert response.status_code == HTTPStatus.CONFLICT, response.json()

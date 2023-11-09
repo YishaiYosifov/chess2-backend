@@ -5,8 +5,11 @@ import time
 
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 from jose import jwt, JWTError
 
+from app.models.jti_blocklist import JTIBlocklist
 from app.schemas.config import get_settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,7 +25,10 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def encode_jwt_token(data: dict, expires_in_delta: timedelta):
+# region encode jwt
+
+
+def _encode_jwt_token(data: dict, expires_in_delta: timedelta):
     """
     Encode a jwt token with specified data.
     This function automatically sets exp, iat and nbf
@@ -31,17 +37,14 @@ def encode_jwt_token(data: dict, expires_in_delta: timedelta):
     :param expires_in_delta: time until the token expires
     """
 
-    to_encode: dict = data.copy()
     expire = datetime.utcnow() + expires_in_delta
-
     timestamp = int(time.time())
-    to_encode.update(
-        {
-            "exp": expire,
-            "iat": timestamp,
-            "nbf": timestamp,
-        }
-    )
+    to_encode = {
+        "exp": expire,
+        "iat": timestamp,
+        "nbf": timestamp,
+    }
+    to_encode.update(data)
 
     settings = get_settings()
     encoded_jwt = jwt.encode(
@@ -64,8 +67,8 @@ def create_access_token(
     :return: the encoded jwt access token
     """
 
-    return encode_jwt_token(
-        {"sub": user_id, "type": "access"},
+    return _encode_jwt_token(
+        {"sub": str(user_id), "type": "access"},
         timedelta(minutes=expires_in_minutes),
     )
 
@@ -82,9 +85,9 @@ def create_refresh_token(
     :return: the encoded jwt refresh token
     """
 
-    return encode_jwt_token(
+    return _encode_jwt_token(
         {
-            "sub": user_id,
+            "sub": str(user_id),
             "type": "refresh",
             "jti": str(uuid.uuid4()),
         },
@@ -92,13 +95,25 @@ def create_refresh_token(
     )
 
 
-def decode_access_token(token: str) -> int | None:
-    """
-    Try to get the user id from a jwt token.
+# endregion
 
-    :param token: the jwt token itself
-    :return: the user_id if the decode was successful, otherwise None
+
+# region decode jwt
+
+
+def _decode_jwt_token(token: str, options: dict[str, bool] = {}) -> dict[str, Any]:
     """
+    Decode a jwt token
+
+    :param options: options to update the default decode options
+    :return: a dictionary containing the jwt payload
+    """
+
+    options = {
+        "require_exp": True,
+        "require_iat": True,
+        "require_nbf": True,
+    } | options
 
     settings = get_settings()
     try:
@@ -106,9 +121,51 @@ def decode_access_token(token: str) -> int | None:
             token,
             settings.secret_key,
             algorithms=[settings.jwt_algorithm],
+            options=options,
         )
-
-        user_id: Any | None = payload.get("sub")
-        return user_id if isinstance(user_id, int) else None
+        return payload
     except JWTError:
+        return {}
+
+
+def _get_jwt_indentity(payload: dict[str, Any]) -> int | None:
+    """
+    Try to get the user id from a jwt token.
+
+    :param payload: the decoded payload returned from the jwt token
+    :return: the user_id if it was found, otherwise None
+    """
+
+    user_id: str | None = payload.get("sub")
+    return int(user_id) if user_id and user_id.isnumeric() else None
+
+
+def decode_access_token(token: str):
+    payload = _decode_jwt_token(token)
+    if payload.get("type") != "access":
         return
+
+    return _get_jwt_indentity(payload)
+
+
+def _check_token_revocation(db: Session, payload: dict[str, Any]) -> bool:
+    """
+    Check if the token jti is blocklisted
+
+    :param db: an sqlalchemy session to check for revocation in
+    :param payload: the decoded payload returned from the jwt token
+    :return: whether the token is revoked
+    """
+
+    return db.execute(select(JTIBlocklist).filter_by(jti=payload.get("jti"))).scalar()
+
+
+def decode_refresh_token(db: Session, token: str) -> int | None:
+    payload = _decode_jwt_token(token)
+    if payload.get("type") != "refresh" or _check_token_revocation(db, payload):
+        return
+
+    return _get_jwt_indentity(payload)
+
+
+# endregion

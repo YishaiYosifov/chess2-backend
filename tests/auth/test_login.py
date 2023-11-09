@@ -48,5 +48,5 @@ def test_login_success(db: Session, client: TestClient):
     response_json: dict | None = response.json()
     assert response_json
 
-    assert "accessToken" in response_json
-    assert "refreshToken" in response_json
+    assert "access_token" in response_json
+    assert "refresh_token" in response_json

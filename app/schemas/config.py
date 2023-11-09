@@ -1,6 +1,8 @@
 from functools import lru_cache
+import os
 
 from pydantic_settings import SettingsConfigDict, BaseSettings
+from dotenv import load_dotenv
 
 
 class Settings(BaseSettings):
@@ -18,7 +20,7 @@ class Settings(BaseSettings):
     frontend_urls: list[str] = ["http://192.168.1.159:3000", "http://127.0.0.1:3000"]
     send_verification_email: bool = True
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=os.getenv("ENV"))
 
 
 @lru_cache()
