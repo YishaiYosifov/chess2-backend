@@ -2,7 +2,6 @@ from functools import lru_cache
 import os
 
 from pydantic_settings import SettingsConfigDict, BaseSettings
-from dotenv import load_dotenv
 
 
 class Settings(BaseSettings):

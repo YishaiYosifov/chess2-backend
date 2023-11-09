@@ -1,9 +1,14 @@
 from unittest.mock import _patch, patch
 
+from fastapi import FastAPI
+
 from app.models.games.game import Game
 from app.constants.enums import Colors
+from app.dependencies import authed_user_refresh, authed_user
 from app.models.user import User
 from app.crud import user_crud
+
+from .dep_overrider import DependencyOverrider
 
 
 def mock_hash() -> _patch:
@@ -14,20 +19,23 @@ def mock_hash() -> _patch:
     )
 
 
-def mock_verify_password(success: bool) -> _patch:
+def mock_login(app: FastAPI, user: User) -> DependencyOverrider:
     """
     Creates a context where the user is logged in.
-    This is faster than sending a request to /api/auth/login because it doesn't actually generate a hash.
+    This is faster than sending a request to /auth/login because it doesn't actually generate a hash.
 
-    :param success: a user object or a user id
+    :param user: a user object to mock login into
     """
 
-    patch_jwt_in_request = patch.object(
-        user_crud,
-        "verify_password",
-        return_value=True,
+    override = lambda: user
+    override_authed_user = DependencyOverrider(
+        app,
+        overrides={
+            authed_user: override,
+            authed_user_refresh: override,
+        },
     )
-    return patch_jwt_in_request
+    return override_authed_user
 
 
 def is_user_in_game(user: User, game: Game) -> bool:

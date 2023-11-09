@@ -84,16 +84,12 @@ def build_gmail_service(
 
     creds = get_creds(scopes, credentials_file, token_file)
 
-    try:
-        return build(
-            "gmail",
-            api_version,
-            credentials=creds,
-            static_discovery=False,
-        )
-    except:
-        print(f"Failed to create gmail service instance for google api::{api_version}")
-        raise
+    return build(
+        "gmail",
+        api_version,
+        credentials=creds,
+        static_discovery=False,
+    )
 
 
 class EmailService:

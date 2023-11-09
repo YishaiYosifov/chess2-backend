@@ -1,16 +1,17 @@
+import shutil
 import os
 
 
-def get_uploads_path(user_id: int):
+def create_or_replace_folder(path: str):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+
+    os.makedirs(path)
+
+
+def get_or_create_uploads_folder(user_id: int):
+    uploads_path = os.path.join("uploads", str(user_id))
+    if not os.path.exists(uploads_path):
+        create_or_replace_folder(uploads_path)
+
     return os.path.join("uploads", str(user_id))
-
-
-def snake_to_camel(to_convert: str) -> str:
-    """Convert from snake_case to camelCase"""
-
-    return "".join(
-        [
-            word.title() if index else word
-            for index, word in enumerate(to_convert.split("_"))
-        ]
-    )

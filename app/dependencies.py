@@ -60,5 +60,8 @@ class AuthedUser:
         return user
 
 
-AuthedUserRefreshDep = Annotated[User, Security(AuthedUser(refresh=True))]
-AuthedUserDep = Annotated[User, Security(AuthedUser())]
+authed_user_refresh = AuthedUser(refresh=True)
+authed_user = AuthedUser()
+
+AuthedUserRefreshDep = Annotated[User, Security(authed_user_refresh)]
+AuthedUserDep = Annotated[User, Security(authed_user)]

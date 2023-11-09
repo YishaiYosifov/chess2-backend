@@ -161,7 +161,7 @@ def _check_token_revocation(db: Session, payload: dict[str, Any]) -> bool:
 
 
 def decode_refresh_token(db: Session, token: str) -> int | None:
-    payload = _decode_jwt_token(token)
+    payload = _decode_jwt_token(token, {"require_jti": True})
     if payload.get("type") != "refresh" or _check_token_revocation(db, payload):
         return
 
