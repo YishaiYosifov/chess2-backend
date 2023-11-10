@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import timedelta, datetime
+from typing import Any
 from http import HTTPStatus
 from abc import abstractmethod, ABC
 
@@ -12,30 +13,35 @@ from ..models.user import User
 
 
 class Setting(ABC):
-    def __init__(self, db: Session, user: User):
-        self.db = db
+    def __init__(self, user: User) -> None:
         self.user = user
 
     @abstractmethod
-    def update(self, value: str):
+    def update(self, value: str) -> None:
         pass
 
 
 class ValidationSetting(Setting, ABC):
+    def __init__(self, user: User, db: Session) -> None:
+        self.user = user
+        self.db = db
+
     @abstractmethod
-    def validate(self, value):
+    def validate(self, value: Any) -> bool:
         """Validate that the setting is able to be updated"""
 
 
-class PasswordSetting(Setting):
-    def update(self, value: str):
-        # TODO
-        pass
-
-
 class EmailSetting(ValidationSetting):
-    def __init__(self, user: User):
-        self.user = user
+    def __init__(
+        self,
+        user: User,
+        db: Session,
+        edit_timedelta: timedelta,
+        verification_url: str,
+    ):
+        self.verification_url = verification_url
+        self.edit_timedelta = edit_timedelta
+        super().__init__(user, db)
 
     def update(self, new_email: str):
         """
@@ -45,12 +51,16 @@ class EmailSetting(ValidationSetting):
         but it will call the `validate` function.
         """
 
+        self.validate(new_email)
+
         self.user.is_email_verified = False
         self.user.email_last_changed = datetime.now()
         self.user.email = new_email
 
-        # TODO: this method shouldn't be in the user class. it should probably be in some email service
-        email_verification.send_verification_email(self.user)
+        email_verification.send_verification_email(
+            self.user.email,
+            self.verification_url,
+        )
 
     def validate(self, new_email: str):
         """
@@ -59,21 +69,24 @@ class EmailSetting(ValidationSetting):
             - check if the email was changed too recently
         """
 
-        if user_crud.fetch_by(email=new_email):
-            fail_abort({"email": "Email Taken"}, HTTPStatus.CONFLICT)
+        user_crud.original_email_or_raise(self.db, new_email)
 
         now = datetime.utcnow()
-        email_edit_every = current_app.config.get("EMAIL_EDIT_EVERY", timedelta(days=1))
         if (
             self.user.email_last_changed
-            and self.user.email_last_changed + email_edit_every > now
+            and self.user.email_last_changed + self.edit_timedelta > now
         ):
-            fail_abort(
-                {"email": "Email changed too recently"}, HTTPStatus.TOO_MANY_REQUESTS
+            raise HTTPException(
+                status_code=HTTPStatus.TOO_MANY_REQUESTS,
+                detail={"email": "Email changed too recently"},
             )
 
 
 class UsernameSetting(ValidationSetting):
+    def __init__(self, user: User, db: Session, edit_timedelta: timedelta):
+        self.edit_timedelta = edit_timedelta
+        super().__init__(user, db)
+
     def update(self, new_username: str):
         """
         Update the user's username.
@@ -94,21 +107,14 @@ class UsernameSetting(ValidationSetting):
             - check if the username was changed too recently
         """
 
-        if user_crud.fetch_by(self.db, User.username == new_username):
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail={"username": "Username Taken"},
-            )
+        user_crud.original_username_or_raise(self.db, new_username)
 
         now = datetime.utcnow()
-        username_edit_every = current_app.config.get(
-            "USERNAME_EDIT_EVERY", timedelta(weeks=4)
-        )
         if (
             self.user.username_last_changed
-            and self.user.username_last_changed + username_edit_every > now
+            and self.user.username_last_changed + self.edit_timedelta > now
         ):
-            fail_abort(
-                {"username": "Username changed too recently"},
-                HTTPStatus.TOO_MANY_REQUESTS,
+            raise HTTPException(
+                status_code=HTTPStatus.TOO_MANY_REQUESTS,
+                detail={"username": "Username changed too recently"},
             )

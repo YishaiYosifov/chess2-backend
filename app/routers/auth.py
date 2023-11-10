@@ -40,16 +40,8 @@ def signup(
     - create the necessary files
     """
 
-    if user_crud.fetch_by_username(db, user.username):
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail={"username": "Username taken"},
-        )
-    elif user_crud.fetch_by_email(db, user.email):
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail={"email": "Email taken"},
-        )
+    user_crud.original_username_or_raise(db, user.username)
+    user_crud.original_email_or_raise(db, user.email)
 
     db_user = user_crud.create_user(db, user)
     if settings.send_verification_email:

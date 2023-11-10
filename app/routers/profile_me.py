@@ -1,3 +1,4 @@
+from datetime import timedelta
 from http import HTTPStatus
 import os
 import io
@@ -8,15 +9,43 @@ import aiofiles
 
 from app.schemas.responses import ResponseError
 from app.utils.common import get_or_create_uploads_folder
-from app.schemas.user import UserSettings
-from app.dependencies import AuthedUserDep
+from app.schemas.user import UserSettings, UserOut
+from app.dependencies import AuthedUserDep, SettingsDep, DBDep
+from app.services import settings_service
 
 router = APIRouter(tags=["profile-me"], prefix="/profile/me")
 
 
-@router.patch("/change-settings")
-def change_settings(settings: UserSettings, user: AuthedUserDep):
-    pass
+@router.patch("/change-settings", response_model=UserOut)
+def change_settings(
+    db: DBDep,
+    user: AuthedUserDep,
+    to_edit: UserSettings,
+    settings: SettingsDep,
+):
+    special_updates: dict[str, settings_service.Setting] = {
+        "username": settings_service.UsernameSetting(
+            user,
+            db,
+            timedelta(days=settings.edit_username_every_days),
+        ),
+        "email": settings_service.EmailSetting(
+            user,
+            db,
+            timedelta(days=settings.edit_email_every_days),
+            settings.verification_url,
+        ),
+    }
+
+    to_edit_changed = to_edit.model_dump(exclude_unset=True)
+    for setting, new_value in to_edit_changed.items():
+        if not setting in special_updates:
+            setattr(user, setting, new_value)
+            continue
+        special_updates[setting].update(new_value)
+    db.commit()
+
+    return user
 
 
 @router.put(

@@ -1,13 +1,15 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic_extra_types.country import CountryAlpha3
-from pydantic import field_validator, BaseModel, EmailStr, Field
+from pydantic import field_validator, ConfigDict, BaseModel, EmailStr, Field
 
 from app.constants.constants import STRONG_PASSWORD_REGEX
+from app.utils.common import PartialModel
 
 
 class BaseUser(BaseModel):
-    username: str = Field(max_length=30, pattern="")
+    username: Annotated[str, Field(max_length=30)]
     country: CountryAlpha3 | None = None
 
     @field_validator("username")
@@ -46,12 +48,14 @@ class UserIn(BaseUser):
             )
         return value
 
+    model_config = ConfigDict(from_attributes=True)
 
-class UserSettings(UserIn):
+
+class UserSettings(UserIn, metaclass=PartialModel):
     pass
 
 
 class UserOut(BaseUser):
     about: str = ""
     user_id: int
-    pfp_last_changed: datetime = Field(default_factory=datetime.now)
+    pfp_last_changed: Annotated[datetime, Field(default_factory=datetime.now)]

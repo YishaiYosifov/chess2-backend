@@ -1,5 +1,31 @@
+from typing import Any
 import shutil
 import os
+
+from pydantic.main import _model_construction
+from pydantic import BaseModel
+
+
+class PartialModel(_model_construction.ModelMetaclass):
+    """Make every field in a pydantic model optional"""
+
+    def __new__(
+        cls,
+        name: str,
+        bases: tuple[Any, ...],
+        namespaces: dict[str, Any],
+        **kwargs: Any,
+    ):
+        for base in bases:
+            if not issubclass(base, BaseModel):
+                continue
+
+            # If the base is a pydantic model, loop over its fields and set the default value to None
+            # thus making it optional
+            for field in base.model_fields.values():
+                field.default = None
+
+        return super().__new__(cls, name, bases, namespaces, **kwargs)
 
 
 def create_or_replace_folder(path: str):
