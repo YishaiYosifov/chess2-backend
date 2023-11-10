@@ -8,9 +8,15 @@ import aiofiles
 
 from app.schemas.responses import ResponseError
 from app.utils.common import get_or_create_uploads_folder
+from app.schemas.user import UserSettings
 from app.dependencies import AuthedUserDep
 
 router = APIRouter(tags=["profile-me"], prefix="/profile/me")
+
+
+@router.patch("/change-settings")
+def change_settings(settings: UserSettings, user: AuthedUserDep):
+    pass
 
 
 @router.put(
@@ -21,12 +27,17 @@ router = APIRouter(tags=["profile-me"], prefix="/profile/me")
             "model": ResponseError[str],
         },
         HTTPStatus.BAD_REQUEST: {
-            "description": "Unknwon image type",
+            "description": "Bad image",
             "model": ResponseError[str],
         },
     },
 )
 async def upload_profile_picture(user: AuthedUserDep, pfp: UploadFile):
+    """
+    Change a user's profile picture.
+    The picture must be < 1mb and a valid image.
+    """
+
     bytes = await pfp.read()
     if len(bytes) > 1024 * 1024:
         raise HTTPException(
@@ -34,11 +45,14 @@ async def upload_profile_picture(user: AuthedUserDep, pfp: UploadFile):
             detail="Profile picture cannot be bigger than 1mb",
         )
 
+    # Convert the uploaded file into a PIL object.
+    # If the conversion fails, or img.verify fails, it means the image is bad.
     load_buffer = io.BytesIO(bytes)
     try:
         img = Image.open(load_buffer)
         img.verify()
 
+        # A reopen is required after calling .verify()
         load_buffer.seek(0)
         img = Image.open(load_buffer)
     except:

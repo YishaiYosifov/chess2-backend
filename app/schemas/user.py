@@ -47,6 +47,10 @@ class UserIn(BaseUser):
         return value
 
 
+class UserSettings(UserIn):
+    pass
+
+
 class UserOut(BaseUser):
     about: str = ""
     user_id: int

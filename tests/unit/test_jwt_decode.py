@@ -2,16 +2,22 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from app.schemas.config import Settings
 from app.services import auth_service
 
 
 @patch.object(auth_service.jwt, "decode")
-def test_decode_jwt_token(mock_jwt_decode: MagicMock):
+def test_decode_jwt_token(mock_jwt_decode: MagicMock, settings: Settings):
     """
     Test the helper decode jwt token function.
     Check if it handles options correctly.
     """
-    auth_service._decode_jwt_token("token", {"require_exp": False, "require_jti": True})
+    auth_service._decode_jwt_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
+        "token",
+        {"require_exp": False, "require_jti": True},
+    )
 
     expected_options = {
         "require_exp": False,
@@ -68,6 +74,7 @@ def test_decode_tokens(
     payload: dict[str, str],
     success: bool,
     token_type: str,
+    settings: Settings,
 ):
     """Try to decode tokens with correct and incorrect types"""
 
@@ -76,8 +83,17 @@ def test_decode_tokens(
     mock_get_identity.return_value = 1
 
     user_id = (
-        auth_service.decode_access_token("token")
+        auth_service.decode_access_token(
+            settings.secret_key,
+            settings.jwt_algorithm,
+            "token",
+        )
         if token_type == "access"
-        else auth_service.decode_refresh_token(MagicMock(), "token")
+        else auth_service.decode_refresh_token(
+            settings.secret_key,
+            settings.jwt_algorithm,
+            MagicMock(),
+            "token",
+        )
     )
     assert (user_id and success) or (not user_id and not success)

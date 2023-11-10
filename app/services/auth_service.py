@@ -10,7 +10,6 @@ from sqlalchemy import select
 from jose import jwt, JWTError
 
 from app.models.jti_blocklist import JTIBlocklist
-from app.schemas.config import get_settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -28,11 +27,18 @@ def hash_password(password: str) -> str:
 # region encode jwt
 
 
-def _encode_jwt_token(data: dict, expires_in_delta: timedelta):
+def _encode_jwt_token(
+    secret_key: str,
+    jwt_algorithm,
+    data: dict,
+    expires_in_delta: timedelta,
+):
     """
     Encode a jwt token with specified data.
     This function automatically sets exp, iat and nbf
 
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
     :param data: the data to encode
     :param expires_in_delta: time until the token expires
     """
@@ -46,46 +52,57 @@ def _encode_jwt_token(data: dict, expires_in_delta: timedelta):
     }
     to_encode.update(data)
 
-    settings = get_settings()
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.secret_key,
-        algorithm=settings.jwt_algorithm,
+        secret_key,
+        algorithm=jwt_algorithm,
     )
     return encoded_jwt
 
 
 def create_access_token(
+    secret_key: str,
+    jwt_algorithm: str,
     user_id: int,
     expires_in_minutes: int = 30,
 ) -> str:
     """
     Generate a JWT access token
 
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
     :param user_id: the user id to incode in the token
     :param expires_in_minutes: when should this token expires
     :return: the encoded jwt access token
     """
 
     return _encode_jwt_token(
+        secret_key,
+        jwt_algorithm,
         {"sub": str(user_id), "type": "access"},
         timedelta(minutes=expires_in_minutes),
     )
 
 
 def create_refresh_token(
+    secret_key: str,
+    jwt_algorithm: str,
     user_id: int,
     expires_in_days: int = 30,
 ) -> str:
     """
     Generate a JWT refresh token
 
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
     :param user_id: the user id to incode in the token
     :param expires_in_days: when should this token expires
     :return: the encoded jwt refresh token
     """
 
     return _encode_jwt_token(
+        secret_key,
+        jwt_algorithm,
         {
             "sub": str(user_id),
             "type": "refresh",
@@ -101,10 +118,17 @@ def create_refresh_token(
 # region decode jwt
 
 
-def _decode_jwt_token(token: str, options: dict[str, bool] = {}) -> dict[str, Any]:
+def _decode_jwt_token(
+    secret_key: str,
+    jwt_algorithm: str,
+    token: str,
+    options: dict[str, bool] = {},
+) -> dict[str, Any]:
     """
     Decode a jwt token
 
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
     :param options: options to update the default decode options
     :return: a dictionary containing the jwt payload
     """
@@ -115,12 +139,11 @@ def _decode_jwt_token(token: str, options: dict[str, bool] = {}) -> dict[str, An
         "require_nbf": True,
     } | options
 
-    settings = get_settings()
     try:
         payload = jwt.decode(
             token,
-            settings.secret_key,
-            algorithms=[settings.jwt_algorithm],
+            secret_key,
+            algorithms=[jwt_algorithm],
             options=options,
         )
         return payload
@@ -140,8 +163,17 @@ def _get_jwt_indentity(payload: dict[str, Any]) -> int | None:
     return int(user_id) if user_id and user_id.isnumeric() else None
 
 
-def decode_access_token(token: str):
-    payload = _decode_jwt_token(token)
+def decode_access_token(secret_key: str, jwt_algorithm: str, token: str) -> int | None:
+    """
+    Try to decode an access token into a user id
+
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
+    :param token: the jwt token
+    :return: the user id if decoding was successful, otherwise None
+    """
+
+    payload = _decode_jwt_token(secret_key, jwt_algorithm, token)
     if payload.get("type") != "access":
         return
 
@@ -160,8 +192,23 @@ def _check_token_revocation(db: Session, payload: dict[str, Any]) -> bool:
     return db.execute(select(JTIBlocklist).filter_by(jti=payload.get("jti"))).scalar()
 
 
-def decode_refresh_token(db: Session, token: str) -> int | None:
-    payload = _decode_jwt_token(token, {"require_jti": True})
+def decode_refresh_token(
+    secret_key: str,
+    jwt_algorithm: str,
+    db: Session,
+    token: str,
+) -> int | None:
+    """
+    Try to decode a refresh token into a user id
+
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
+    :param db: a db session to search for expired jtis in
+    :param token: the jwt token
+    :return: the user id if decoding was successful, otherwise None
+    """
+
+    payload = _decode_jwt_token(secret_key, jwt_algorithm, token, {"require_jti": True})
     if payload.get("type") != "refresh" or _check_token_revocation(db, payload):
         return
 

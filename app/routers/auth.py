@@ -53,7 +53,11 @@ def signup(
 
     db_user = user_crud.create_user(db, user)
     if settings.send_verification_email:
-        background_tasks.add_task(send_verification_email, user=db_user)
+        background_tasks.add_task(
+            send_verification_email,
+            email=db_user.email,
+            verification_url=settings.verification_url,
+        )
 
     setup_user(db, db_user)
 
@@ -77,10 +81,14 @@ def login(
         )
 
     access_token = create_access_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
         user.user_id,
         expires_in_minutes=settings.access_token_expires_minutes,
     )
     refresh_token = create_refresh_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
         user.user_id,
         expires_in_days=settings.refresh_token_expires_days,
     )
@@ -92,6 +100,8 @@ def refresh_access_token(user: AuthedUserRefreshDep, settings: SettingsDep):
     """Generate a new access token using a refresh token"""
 
     access_token = create_access_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
         user.user_id,
         expires_in_minutes=settings.access_token_expires_minutes,
     )

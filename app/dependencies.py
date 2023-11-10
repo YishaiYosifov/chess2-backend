@@ -35,6 +35,7 @@ class AuthedUser:
     def __call__(
         self,
         db: DBDep,
+        settings: SettingsDep,
         token: Annotated[str, Depends(oauth2_scheme)],
     ) -> User | None:
         """Dependency to fetch the authorized user"""
@@ -47,9 +48,18 @@ class AuthedUser:
         )
 
         user_id = (
-            decode_refresh_token(db, token)
+            decode_refresh_token(
+                settings.secret_key,
+                settings.jwt_algorithm,
+                db,
+                token,
+            )
             if self.refresh
-            else decode_access_token(token)
+            else decode_access_token(
+                settings.secret_key,
+                settings.jwt_algorithm,
+                token,
+            )
         )
         if not user_id:
             raise credentials_exception

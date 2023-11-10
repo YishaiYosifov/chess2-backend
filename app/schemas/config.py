@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     db_password: str = ""
 
     frontend_urls: list[str] = ["http://192.168.1.159:3000", "http://127.0.0.1:3000"]
+    verification_url = "http://127.0.0.1:3000/verify"
     send_verification_email: bool = True
 
     model_config = SettingsConfigDict(env_file=os.getenv("ENV"))

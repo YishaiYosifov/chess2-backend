@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 import pytest
 
 from tests.utils.common import mock_hash
+from app.schemas.config import get_settings
 from app.dependencies import get_db
 from app.main import app
 from app.db import engine
@@ -43,3 +44,8 @@ def db():
 def fix_mock_hash():
     with mock_hash():
         yield
+
+
+@pytest.fixture(scope="session")
+def settings():
+    return get_settings()

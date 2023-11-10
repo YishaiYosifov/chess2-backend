@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 from datetime import timedelta, datetime
 
+from app.schemas.config import Settings
 from app.services import auth_service
 
 
@@ -11,6 +12,7 @@ def test_encode_jwt_token(
     mock_time: MagicMock,
     mock_datetime: MagicMock,
     mock_jwt_encode: MagicMock,
+    settings: Settings,
 ):
     """Test the encoding of a jwt token"""
 
@@ -23,6 +25,8 @@ def test_encode_jwt_token(
 
     expires_in_delta = timedelta(minutes=30)
     auth_service._encode_jwt_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
         {"sub": 1},
         expires_in_delta,
     )
@@ -36,20 +40,27 @@ def test_encode_jwt_token(
     }
     mock_jwt_encode.assert_called_once_with(
         expected_payload,
-        "test-secret-key",
-        algorithm="HS256",
+        settings.secret_key,
+        algorithm=settings.jwt_algorithm,
     )
 
 
 @patch.object(auth_service, "_encode_jwt_token")
-def test_create_access_token(mock_encode: MagicMock):
+def test_create_access_token(mock_encode: MagicMock, settings: Settings):
     """Test creating an access token"""
 
     user_id = 123
     expires_in_minutes = 69
 
-    auth_service.create_access_token(user_id, expires_in_minutes)
+    auth_service.create_access_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
+        user_id,
+        expires_in_minutes,
+    )
     mock_encode.assert_called_once_with(
+        settings.secret_key,
+        settings.jwt_algorithm,
         {"sub": str(user_id), "type": "access"},
         timedelta(minutes=expires_in_minutes),
     )
@@ -57,7 +68,11 @@ def test_create_access_token(mock_encode: MagicMock):
 
 @patch.object(auth_service, "_encode_jwt_token")
 @patch.object(auth_service, "uuid")
-def test_create_refresh_token(mock_uuid: MagicMock, mock_encode: MagicMock):
+def test_create_refresh_token(
+    mock_uuid: MagicMock,
+    mock_encode: MagicMock,
+    settings: Settings,
+):
     """Test creating a jwt token"""
 
     user_id = 123
@@ -65,9 +80,16 @@ def test_create_refresh_token(mock_uuid: MagicMock, mock_encode: MagicMock):
     jti = "some random string"
 
     mock_uuid.uuid4 = MagicMock(return_value=jti)
-    auth_service.create_refresh_token(user_id, expires_in_days)
+    auth_service.create_refresh_token(
+        settings.secret_key,
+        settings.jwt_algorithm,
+        user_id,
+        expires_in_days,
+    )
 
     mock_encode.assert_called_once_with(
+        settings.secret_key,
+        settings.jwt_algorithm,
         {"sub": str(user_id), "type": "refresh", "jti": jti},
         timedelta(days=expires_in_days),
     )
