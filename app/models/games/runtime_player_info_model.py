@@ -44,7 +44,7 @@ class RuntimePlayerInfo(Base, kw_only=True):
         return self.game_white or self.game_black
 
     sid: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
-    color: Mapped[enums.Colors]
+    color: Mapped[enums.Color]
 
     player_last_moved: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(),

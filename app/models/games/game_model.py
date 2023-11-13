@@ -55,13 +55,13 @@ class Game(Base, kw_only=True):
         init=False,
     )
 
-    variant: Mapped[enums.Variants]
+    variant: Mapped[enums.Variant]
     time_control: Mapped[int]
     increment: Mapped[int]
 
     __mapper_args__ = {
         "polymorphic_on": "variant",
-        "polymorphic_identity": enums.Variants.ANARCHY,
+        "polymorphic_identity": enums.Variant.ANARCHY,
     }
 
     __table_args__ = (

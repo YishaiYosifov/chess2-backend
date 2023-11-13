@@ -11,8 +11,8 @@ import pytest
 
 from app.schemas.config_schema import get_settings
 from tests.utils.common import mock_hash
-from app.dependencies import get_db
 from app.main import app
+from app.deps import get_db
 from app.db import engine
 
 ScopedSession = scoped_session(sessionmaker())

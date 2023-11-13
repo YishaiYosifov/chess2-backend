@@ -6,7 +6,7 @@ from app.constants import enums
 
 
 def create_default_ratings(db: Session, user: User):
-    for variant in enums.Variants:
+    for variant in enums.Variant:
         db.add(Rating(user=user, variant=variant))
     db.commit()
 

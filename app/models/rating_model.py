@@ -27,7 +27,7 @@ class Rating(Base, kw_only=True):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), init=False)
     user: Mapped[User] = relationship(back_populates="ratings")
 
-    variant: Mapped[enums.Variants] = mapped_column()
+    variant: Mapped[enums.Variant] = mapped_column()
     elo: Mapped[int] = mapped_column(default=800)
 
     achieved_at: Mapped[datetime] = mapped_column(

@@ -13,7 +13,7 @@ from app.models.jti_blocklist_model import JTIBlocklist
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -164,7 +164,9 @@ def _get_jwt_indentity(payload: dict[str, Any]) -> int | None:
     return int(user_id) if user_id and user_id.isnumeric() else None
 
 
-def decode_access_token(secret_key: str, jwt_algorithm: str, token: str) -> int | None:
+def decode_access_token(
+    secret_key: str, jwt_algorithm: str, token: str, fresh: bool = False
+) -> int | None:
     """
     Try to decode an access token into a user id
 
@@ -175,7 +177,7 @@ def decode_access_token(secret_key: str, jwt_algorithm: str, token: str) -> int 
     """
 
     payload = _decode_jwt_token(secret_key, jwt_algorithm, token)
-    if payload.get("type") != "access":
+    if payload.get("type") != "access" or (not payload.get("fresh") and fresh):
         return
 
     return _get_jwt_indentity(payload)

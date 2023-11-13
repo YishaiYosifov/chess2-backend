@@ -28,7 +28,7 @@ class GameResult(Base, kw_only=True):
     user_black_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
     user_black: Mapped[User] = relationship(foreign_keys=user_black_id)
 
-    variant: Mapped[enums.Variants]
+    variant: Mapped[enums.Variant]
     time_control: Mapped[int]
     increment: Mapped[int]
 

@@ -60,5 +60,5 @@ class UserOut(BaseUserProfile, BaseUserAccountInfo):
     pfp_last_changed: Annotated[datetime, Field(default_factory=datetime.now)]
 
 
-class UserOutSensitive(UserAccountInfoSensitive):
+class UserOutSensitive(UserOut, UserAccountInfoSensitive):
     pass

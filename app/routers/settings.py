@@ -3,21 +3,22 @@ from typing import Annotated
 from http import HTTPStatus
 
 from pydantic import EmailStr
-from fastapi import HTTPException, UploadFile, APIRouter, Body
+from fastapi import HTTPException, UploadFile, APIRouter, Depends, Body
 
 from app.schemas.response_schema import ErrorResponse
+from app.models.user_model import User
 from app.services import settings_service
 from app.schemas import user_schema
 from app.utils import img_utils
-from app import dependencies
+from app import deps
 
-router = APIRouter(tags=["settings"], prefix="/settings")
+router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 @router.patch("/profile", response_model=user_schema.UserOut)
 def update_profile(
-    db: dependencies.DBDep,
-    user: dependencies.AuthedUserDep,
+    db: deps.DBDep,
+    user: deps.AuthedUserDep,
     profile: user_schema.BaseUserProfile,
 ):
     return settings_service.update_settings_many(
@@ -38,9 +39,9 @@ def update_profile(
     },
 )
 def change_email(
-    db: dependencies.DBDep,
-    user: dependencies.FreshAuthedUserDep,
-    settings: dependencies.SettingsDep,
+    db: deps.DBDep,
+    user: Annotated[User, Depends(deps.AuthedUser(fresh=True))],
+    config: deps.ConfigDep,
     new_email: Annotated[EmailStr, Body()],
 ):
     """
@@ -52,15 +53,15 @@ def change_email(
 
     return settings_service.update_setting_single(
         db,
-        settings_service.EmailSetting(db, user, settings.verification_url),
+        settings_service.EmailSetting(db, user, config.verification_url),
         new_email,
     )
 
 
 @router.put("/password", response_model=user_schema.UserOut)
 def change_password(
-    db: dependencies.DBDep,
-    user: dependencies.FreshAuthedUserDep,
+    db: deps.DBDep,
+    user: Annotated[User, Depends(deps.AuthedUser(fresh=True))],
     new_password: Annotated[str, Body()],
 ):
     """Hash the password and update it. Requires a fresh JWT token."""
@@ -87,9 +88,9 @@ def change_password(
     },
 )
 def change_username(
-    db: dependencies.DBDep,
-    user: dependencies.AuthedUserDep,
-    settings: dependencies.SettingsDep,
+    db: deps.DBDep,
+    user: deps.AuthedUserDep,
+    config: deps.ConfigDep,
     new_username: Annotated[str, Body()],
 ):
     """Update the username"""
@@ -97,7 +98,7 @@ def change_username(
     return settings_service.update_setting_single(
         db,
         settings_service.UsernameSetting(
-            db, user, timedelta(settings.edit_username_every_days)
+            db, user, timedelta(config.edit_username_every_days)
         ),
         new_username,
     )
@@ -117,8 +118,8 @@ def change_username(
     },
 )
 async def upload_profile_picture(
-    db: dependencies.DBDep,
-    user: dependencies.AuthedUserDep,
+    db: deps.DBDep,
+    user: deps.AuthedUserDep,
     pfp: UploadFile,
 ):
     """

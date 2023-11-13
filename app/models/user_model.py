@@ -34,7 +34,7 @@ class User(Base, kw_only=True):
 
     is_email_verified: Mapped[bool] = mapped_column(default=False)
 
-    last_color: Mapped[enums.Colors] = mapped_column(default=enums.Colors.BLACK)
+    last_color: Mapped[enums.Color] = mapped_column(default=enums.Color.BLACK)
 
     username_last_changed: Mapped[datetime | None] = mapped_column(
         nullable=True,

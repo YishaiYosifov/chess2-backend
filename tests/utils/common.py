@@ -4,8 +4,8 @@ from fastapi import FastAPI
 
 from app.models.games.game_model import Game
 from app.models.user_model import User
-from app.dependencies import authed_user_refresh, authed_user
 from app.constants import enums
+from app.deps import AuthedUser
 from app.crud import user_crud
 
 from .dep_overrider import DependencyOverrider
@@ -19,7 +19,9 @@ def mock_hash() -> _patch:
     )
 
 
-def mock_login(app: FastAPI, user: User) -> DependencyOverrider:
+def mock_login(
+    app: FastAPI, user: User, *class_args, **class_kwargs
+) -> DependencyOverrider:
     """
     Creates a context where the user is logged in.
     This is faster than sending a request to /auth/login because it doesn't actually generate a hash.
@@ -30,10 +32,7 @@ def mock_login(app: FastAPI, user: User) -> DependencyOverrider:
     override = lambda: user
     override_authed_user = DependencyOverrider(
         app,
-        overrides={
-            authed_user: override,
-            authed_user_refresh: override,
-        },
+        overrides={AuthedUser(*class_args, **class_kwargs): override},
     )
     return override_authed_user
 
@@ -41,6 +40,6 @@ def mock_login(app: FastAPI, user: User) -> DependencyOverrider:
 def is_user_in_game(user: User, game: Game) -> bool:
     return (
         user.user_id == game.player_white.user_id
-        if user.last_color == enums.Colors.WHITE
+        if user.last_color == enums.Color.WHITE
         else user.user_id == game.player_black.user_id
     )

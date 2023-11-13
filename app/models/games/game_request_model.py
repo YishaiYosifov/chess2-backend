@@ -39,7 +39,7 @@ class GameRequest(Base, kw_only=True):
         default=None,
     )
 
-    variant: Mapped[enums.Variants]
+    variant: Mapped[enums.Variant]
     time_control: Mapped[int]
     increment: Mapped[int]
 

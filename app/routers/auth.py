@@ -7,12 +7,13 @@ from fastapi import BackgroundTasks, HTTPException, APIRouter, Depends
 from app.utils.email_verification import send_verification_email
 from app.schemas.response_schema import ErrorResponse, AccessToken, AuthTokens
 from app.services.auth_service import create_refresh_token, create_access_token
+from app.models.user_model import User
 from app.utils.user_setup import setup_user
 from app.schemas import user_schema
 from app.crud import user_crud
-from app import dependencies
+from app import deps
 
-router = APIRouter(tags=["auth"], prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post(
@@ -28,9 +29,9 @@ router = APIRouter(tags=["auth"], prefix="/auth")
 )
 def signup(
     user: user_schema.UserIn,
-    db: dependencies.DBDep,
+    db: deps.DBDep,
     background_tasks: BackgroundTasks,
-    settings: dependencies.SettingsDep,
+    config: deps.ConfigDep,
 ):
     """
     Takes a username, email and password and creates registers a new user.
@@ -44,11 +45,11 @@ def signup(
     user_crud.original_email_or_raise(db, user.email)
 
     db_user = user_crud.create_user(db, user)
-    if settings.send_verification_email:
+    if config.send_verification_email:
         background_tasks.add_task(
             send_verification_email,
             email=db_user.email,
-            verification_url=settings.verification_url,
+            verification_url=config.verification_url,
         )
 
     setup_user(db, db_user)
@@ -58,8 +59,8 @@ def signup(
 
 @router.post("/login", response_model=AuthTokens)
 def login(
-    db: dependencies.DBDep,
-    settings: dependencies.SettingsDep,
+    db: deps.DBDep,
+    config: deps.ConfigDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
     """Authenticates a user by generating a jwt access and refresh token if the credentials match."""
@@ -73,32 +74,32 @@ def login(
         )
 
     access_token = create_access_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         user.user_id,
-        expires_in_minutes=settings.access_token_expires_minutes,
+        expires_in_minutes=config.access_token_expires_minutes,
         fresh=True,
     )
     refresh_token = create_refresh_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         user.user_id,
-        expires_in_days=settings.refresh_token_expires_days,
+        expires_in_days=config.refresh_token_expires_days,
     )
     return AuthTokens(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.get("/refresh-access-token", response_model=AccessToken)
 def refresh_access_token(
-    user: dependencies.AuthedUserRefreshDep,
-    settings: dependencies.SettingsDep,
+    user: Annotated[User, Depends(deps.AuthedUser(refresh=True))],
+    config: deps.ConfigDep,
 ):
     """Generate a new access token using a refresh token"""
 
     access_token = create_access_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         user.user_id,
-        expires_in_minutes=settings.access_token_expires_minutes,
+        expires_in_minutes=config.access_token_expires_minutes,
     )
     return AccessToken(access_token=access_token)

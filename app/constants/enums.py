@@ -3,27 +3,21 @@ from __future__ import annotations
 from enum import Enum
 
 
-class AuthMethods(Enum):
-    CREDENTIALS = "credentials"
-    EMAIL = "gmail"
-    GUEST = "guest"
-
-
-class Variants(Enum):
+class Variant(Enum):
     FOG_OF_WAR = "fog of war"
     ANARCHY = "anarchy"
     CHSS = "chss"
 
 
-class Colors(Enum):
+class Color(Enum):
     WHITE = "white"
     BLACK = "black"
 
-    def invert(self) -> Colors:
-        return self.BLACK if self == Colors.WHITE else Colors.WHITE
+    def invert(self) -> Color:
+        return self.BLACK if self == Color.WHITE else Color.WHITE
 
 
-class Pieces(Enum):
+class Piece(Enum):
     KING = "king"
     QUEEN = "queen"
     ROOK = "rook"

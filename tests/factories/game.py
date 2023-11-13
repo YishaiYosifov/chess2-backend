@@ -15,7 +15,7 @@ class GameFactory(SQLAlchemyModelFactory):
 
     token = Faker("pystr", max_chars=8)
 
-    variant = enums.Variants.ANARCHY
+    variant = enums.Variant.ANARCHY
     time_control = 600
     increment = 0
 
@@ -28,8 +28,8 @@ class GameRequestFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = ScopedSession
         model = GameRequest
 
-    inviter = SubFactory(UserFactory, rating_variants=[enums.Variants.ANARCHY])
+    inviter = SubFactory(UserFactory, rating_variants=[enums.Variant.ANARCHY])
 
-    variant = enums.Variants.ANARCHY
+    variant = enums.Variant.ANARCHY
     time_control = 600
     increment = 0

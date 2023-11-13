@@ -18,8 +18,8 @@ class PiecePosition(Base, kw_only=True):
     __tablename__ = "piece_positions"
 
     piece_position_id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    piece: Mapped[enums.Pieces]
-    color: Mapped[enums.Colors]
+    piece: Mapped[enums.Piece]
+    color: Mapped[enums.Color]
 
     index: Mapped[int] = mapped_column()
 

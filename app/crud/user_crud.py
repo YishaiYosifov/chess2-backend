@@ -6,6 +6,7 @@ from fastapi import HTTPException
 
 from app.services.auth_service import verify_password, hash_password
 from app.models.user_model import User as UserModel
+from app.services import auth_service
 
 from ..schemas import user_schema
 
@@ -30,6 +31,48 @@ def original_username_or_raise(db: Session, username: str) -> None:
             status_code=HTTPStatus.CONFLICT,
             detail="Username taken",
         )
+
+
+def fetch_by_token(
+    db: Session,
+    secret_key: str,
+    jwt_algorithm: str,
+    token: str,
+    refresh: bool = False,
+    fresh: bool = False,
+) -> UserModel | None:
+    """
+    Try to decode a jwt token into a user model
+
+    :param db: the db session to fetch the user with
+    :param secret_key: the secret key to sign the token with
+    :param jwt_algorithm: which algorithm to use to generate the key
+    :param token: the jwt token
+    :param refresh: whether to require a refresh token
+    :param fresh: whether to require a fresh token
+    :return: the user model if decoding was successful, otherwise None
+    """
+
+    user_id = (
+        auth_service.decode_refresh_token(
+            secret_key,
+            jwt_algorithm,
+            db,
+            token,
+        )
+        if refresh
+        else auth_service.decode_access_token(
+            secret_key,
+            jwt_algorithm,
+            token,
+            fresh,
+        )
+    )
+    if not user_id:
+        return
+
+    user = generic_fetch(db, user_id)
+    return user
 
 
 def generic_fetch(db: Session, selector: int | str) -> UserModel | None:

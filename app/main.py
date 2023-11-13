@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.schemas.response_schema import ErrorResponse
 from app.db import engine, Base
 
-from .routers import settings, auth
+from .routers import settings, profile, auth
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,4 +19,5 @@ app = FastAPI(
     },
 )
 app.include_router(auth.router)
+app.include_router(profile.router)
 app.include_router(settings.router)

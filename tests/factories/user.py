@@ -22,7 +22,7 @@ class UserFactory(SQLAlchemyModelFactory):
     hashed_password = "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"
 
     @post_generation
-    def rating_variants(obj: User, create: bool, extracted: list[enums.Variants], **kwargs):  # type: ignore
+    def rating_variants(obj: User, create: bool, extracted: list[enums.Variant], **kwargs):  # type: ignore
         """
         Generate the required rating for the user based on the provided variants.
         This function will convert the variants into a set, so providing duplicates isn't a problem.
@@ -36,7 +36,7 @@ class UserFactory(SQLAlchemyModelFactory):
             session.add(Rating(user=obj, variant=variant))
 
     @post_generation
-    def setup(obj: User, create: bool, extracted: list[enums.Variants], **kwargs):  # type: ignore
+    def setup(obj: User, create: bool, extracted: list[enums.Variant], **kwargs):  # type: ignore
         session = object_session(obj)
         if not create or not extracted or not session:
             return
@@ -56,6 +56,6 @@ class RuntimePlayerInfoFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = ScopedSession
         model = RuntimePlayerInfo
 
-    color = enums.Colors.WHITE
+    color = enums.Color.WHITE
     user = SubFactory(UserFactory)
     time_remaining = 600
