@@ -6,14 +6,16 @@ from glob import glob
 import shutil
 
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import scoped_session, sessionmaker
 import pytest
 
+from app.schemas.config_schema import get_settings
 from tests.utils.common import mock_hash
-from app.schemas.config import get_settings
 from app.dependencies import get_db
 from app.main import app
 from app.db import engine
+
+ScopedSession = scoped_session(sessionmaker())
 
 
 @pytest.fixture(scope="session")
@@ -26,11 +28,11 @@ def client():
 
 @pytest.fixture
 def db():
+    # bind an individual Session to the connection
     connection = engine.connect()
     transaction = connection.begin()
 
-    # bind an individual Session to the connection
-    session = Session(bind=connection)
+    session = ScopedSession(bind=connection)
     app.dependency_overrides[get_db] = lambda: session
 
     yield session
@@ -38,6 +40,7 @@ def db():
     session.close()
     transaction.rollback()
     connection.close()
+    ScopedSession.remove()
 
 
 @pytest.fixture(name="mock_hash")

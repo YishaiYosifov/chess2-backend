@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, ForeignKey, Text
 
-from app.constants.enums import Colors
+from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.games.game import Game
-    from app.models.user import User
+    from app.models.games.game_model import Game
+    from app.models.user_model import User
 
 
 class RuntimePlayerInfo(Base, kw_only=True):
@@ -40,11 +40,11 @@ class RuntimePlayerInfo(Base, kw_only=True):
     )
 
     @property
-    def game(self):
+    def game(self) -> Game:
         return self.game_white or self.game_black
 
     sid: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
-    color: Mapped[Colors]
+    color: Mapped[enums.Colors]
 
     player_last_moved: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(),

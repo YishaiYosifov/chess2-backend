@@ -6,10 +6,12 @@ from abc import abstractmethod, ABC
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
+from app.services import auth_service
 from app.utils import email_verification
 from app.crud import user_crud
+from app.db import Base
 
-from ..models.user import User
+from ..models.user_model import User
 
 
 class Setting(ABC):
@@ -21,8 +23,14 @@ class Setting(ABC):
         pass
 
 
+class PasswordSetting(Setting):
+    def update(self, new_password: str) -> None:
+        hashed_password = auth_service.hash_password(new_password)
+        self.user.hashed_password = hashed_password
+
+
 class ValidationSetting(Setting, ABC):
-    def __init__(self, user: User, db: Session) -> None:
+    def __init__(self, db: Session, user: User) -> None:
         self.user = user
         self.db = db
 
@@ -34,14 +42,12 @@ class ValidationSetting(Setting, ABC):
 class EmailSetting(ValidationSetting):
     def __init__(
         self,
-        user: User,
         db: Session,
-        edit_timedelta: timedelta,
+        user: User,
         verification_url: str,
     ):
         self.verification_url = verification_url
-        self.edit_timedelta = edit_timedelta
-        super().__init__(user, db)
+        super().__init__(db, user)
 
     def update(self, new_email: str):
         """
@@ -54,7 +60,6 @@ class EmailSetting(ValidationSetting):
         self.validate(new_email)
 
         self.user.is_email_verified = False
-        self.user.email_last_changed = datetime.now()
         self.user.email = new_email
 
         email_verification.send_verification_email(
@@ -66,26 +71,15 @@ class EmailSetting(ValidationSetting):
         """
         Validate that the email can be updated:
             - check if the email is taken
-            - check if the email was changed too recently
         """
 
         user_crud.original_email_or_raise(self.db, new_email)
 
-        now = datetime.utcnow()
-        if (
-            self.user.email_last_changed
-            and self.user.email_last_changed + self.edit_timedelta > now
-        ):
-            raise HTTPException(
-                status_code=HTTPStatus.TOO_MANY_REQUESTS,
-                detail={"email": "Email changed too recently"},
-            )
-
 
 class UsernameSetting(ValidationSetting):
-    def __init__(self, user: User, db: Session, edit_timedelta: timedelta):
+    def __init__(self, db: Session, user: User, edit_timedelta: timedelta):
         self.edit_timedelta = edit_timedelta
-        super().__init__(user, db)
+        super().__init__(db, user)
 
     def update(self, new_username: str):
         """
@@ -116,5 +110,27 @@ class UsernameSetting(ValidationSetting):
         ):
             raise HTTPException(
                 status_code=HTTPStatus.TOO_MANY_REQUESTS,
-                detail={"username": "Username changed too recently"},
+                detail="Username changed too recently",
             )
+
+
+def update_setting_single(db: Session, setting: Setting, new_value: Any) -> User:
+    """
+    Update a setting and commit to the database.
+
+    :param db: the db session to use
+    :param setting: the setting object
+    :param new_value: which value to pass to the update function
+    :return: the updated user
+    """
+
+    setting.update(new_value)
+    db.commit()
+    return setting.user
+
+
+def update_settings_many(db: Session, target: Base, to_edit: dict[str, Any]) -> Base:
+    for setting, value in to_edit.items():
+        setattr(target, setting, value)
+    db.commit()
+    return target

@@ -2,15 +2,18 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic_extra_types.country import CountryAlpha3
-from pydantic import field_validator, ConfigDict, BaseModel, EmailStr, Field
+from pydantic import field_validator, BaseModel, EmailStr, Field
 
-from app.constants.constants import STRONG_PASSWORD_REGEX
-from app.utils.common import PartialModel
+from app.constants import constants
 
 
-class BaseUser(BaseModel):
-    username: Annotated[str, Field(max_length=30)]
+class BaseUserProfile(BaseModel):
     country: CountryAlpha3 | None = None
+    about: Annotated[str, Field(max_length=300)] = ""
+
+
+class BaseUserAccountInfo(BaseModel):
+    username: Annotated[str, Field(max_length=30)]
 
     @field_validator("username")
     @classmethod
@@ -34,28 +37,28 @@ class BaseUser(BaseModel):
         return value
 
 
-class UserIn(BaseUser):
+class UserAccountInfoSensitive(BaseUserAccountInfo):
+    email: EmailStr
+
+
+class UserIn(UserAccountInfoSensitive):
     # password: str = Field(pattern=STRONG_PASSWORD_REGEX) - this will only work from pydantic 2.5
     password: str
-    email: EmailStr
 
     @field_validator("password")
     @classmethod
     def check_strong_password(cls, value: str) -> str:
-        if not STRONG_PASSWORD_REGEX.match(value):
+        if not constants.STRONG_PASSWORD_REGEX.match(value):
             raise ValueError(
                 "Must be at least 8 characters long, have at least 1 upper and lower case letters and have a number"
             )
         return value
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class UserSettings(UserIn, metaclass=PartialModel):
-    pass
-
-
-class UserOut(BaseUser):
-    about: str = ""
+class UserOut(BaseUserProfile, BaseUserAccountInfo):
     user_id: int
     pfp_last_changed: Annotated[datetime, Field(default_factory=datetime.now)]
+
+
+class UserOutSensitive(UserAccountInfoSensitive):
+    pass

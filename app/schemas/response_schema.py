@@ -5,7 +5,7 @@ from pydantic import BaseModel
 E = TypeVar("E", dict, str, list)
 
 
-class ResponseError(BaseModel, Generic[E]):
+class ErrorResponse(BaseModel, Generic[E]):
     details: E
 
 

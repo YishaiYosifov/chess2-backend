@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 import pytest
 
+from app.models.user_model import User
 from tests.factories.user import UserFactory
-from app.models.user import User
 
 
 @pytest.mark.parametrize(
@@ -107,9 +107,10 @@ def test_signup_success(client: TestClient, db: Session):
     ],
     ids=["email conflict", "username conflict"],
 )
-def test_signup_conflict(client: TestClient, db: Session, data: dict):
+@pytest.mark.usefixtures("db")
+def test_signup_conflict(client: TestClient, data: dict):
     """Test how `/auth/signup` handles username / email conflicts"""
 
-    UserFactory.create(session=db, username="test-user", email="test@example.com")
+    UserFactory.create(username="test-user", email="test@example.com")
     response = client.post("/auth/signup", json=data)
     assert response.status_code == HTTPStatus.CONFLICT, response.json()

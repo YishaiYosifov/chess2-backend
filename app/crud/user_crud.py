@@ -1,4 +1,3 @@
-from typing import NoReturn
 from http import HTTPStatus
 
 from sqlalchemy.orm import Session
@@ -6,32 +5,34 @@ from sqlalchemy import select, ColumnExpressionArgument
 from fastapi import HTTPException
 
 from app.services.auth_service import verify_password, hash_password
-from app.models.user import User as UserModel
+from app.models.user_model import User as UserModel
 
-from ..schemas import user as user_schema
+from ..schemas import user_schema
 
 
-def fetch_by(db: Session, *criteria: ColumnExpressionArgument[bool]):
+def fetch_by(
+    db: Session, *criteria: ColumnExpressionArgument[bool]
+) -> UserModel | None:
     return db.execute(select(UserModel).filter(*criteria)).scalar()
 
 
-def original_email_or_raise(db: Session, email: str) -> NoReturn | None:
+def original_email_or_raise(db: Session, email: str) -> None:
     if fetch_by(db, UserModel.email == email):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail={"email": "Email taken"},
+            detail="Email taken",
         )
 
 
-def original_username_or_raise(db: Session, username: str) -> NoReturn | None:
+def original_username_or_raise(db: Session, username: str) -> None:
     if fetch_by(db, UserModel.username == username):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail={"email": "Username taken"},
+            detail="Username taken",
         )
 
 
-def generic_fetch(db: Session, selector: int | str):
+def generic_fetch(db: Session, selector: int | str) -> UserModel | None:
     """Fetch user by their username / id"""
 
     return (
@@ -62,7 +63,6 @@ def create_user(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
-        country=str(user.country).lower() if user.country else None,
     )
 
     db.add(db_user)

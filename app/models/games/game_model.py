@@ -5,9 +5,9 @@ from datetime import datetime
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, CheckConstraint, ForeignKey, CHAR
 
-from app.models.games.runtime_player_info import RuntimePlayerInfo
-from app.models.games.piece_positions import PiecePosition
-from app.constants.enums import Variants
+from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.piece_positions_model import PiecePosition
+from app.constants import enums
 from app.db import Base
 
 
@@ -55,13 +55,13 @@ class Game(Base, kw_only=True):
         init=False,
     )
 
-    variant: Mapped[Variants]
+    variant: Mapped[enums.Variants]
     time_control: Mapped[int]
     increment: Mapped[int]
 
     __mapper_args__ = {
         "polymorphic_on": "variant",
-        "polymorphic_identity": Variants.ANARCHY,
+        "polymorphic_identity": enums.Variants.ANARCHY,
     }
 
     __table_args__ = (

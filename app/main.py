@@ -2,10 +2,10 @@ from http import HTTPStatus
 
 from fastapi import FastAPI
 
-from app.schemas.responses import ResponseError
+from app.schemas.response_schema import ErrorResponse
 from app.db import engine, Base
 
-from .routers import profile_me, auth
+from .routers import settings, auth
 
 Base.metadata.create_all(bind=engine)
 
@@ -14,9 +14,9 @@ app = FastAPI(
     responses={
         HTTPStatus.UNAUTHORIZED: {
             "description": "Could not verify credentials",
-            "model": ResponseError[str],
+            "model": ErrorResponse[str],
         },
     },
 )
 app.include_router(auth.router)
-app.include_router(profile_me.router)
+app.include_router(settings.router)

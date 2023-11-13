@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from app.schemas.config import Settings
+from app.schemas.config_schema import Settings
 from app.services import auth_service
 
 

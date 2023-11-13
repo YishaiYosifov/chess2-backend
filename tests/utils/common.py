@@ -2,10 +2,10 @@ from unittest.mock import _patch, patch
 
 from fastapi import FastAPI
 
-from app.models.games.game import Game
-from app.constants.enums import Colors
+from app.models.games.game_model import Game
+from app.models.user_model import User
 from app.dependencies import authed_user_refresh, authed_user
-from app.models.user import User
+from app.constants import enums
 from app.crud import user_crud
 
 from .dep_overrider import DependencyOverrider
@@ -41,6 +41,6 @@ def mock_login(app: FastAPI, user: User) -> DependencyOverrider:
 def is_user_in_game(user: User, game: Game) -> bool:
     return (
         user.user_id == game.player_white.user_id
-        if user.last_color == Colors.WHITE
+        if user.last_color == enums.Colors.WHITE
         else user.user_id == game.player_black.user_id
     )

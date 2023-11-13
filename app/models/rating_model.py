@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import event, func, ForeignKey, Index, DDL
 
-from app.constants.enums import Variants
+from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.user_model import User
 
 
 class Rating(Base, kw_only=True):
@@ -27,7 +27,7 @@ class Rating(Base, kw_only=True):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), init=False)
     user: Mapped[User] = relationship(back_populates="ratings")
 
-    variant: Mapped[Variants] = mapped_column()
+    variant: Mapped[enums.Variants] = mapped_column()
     elo: Mapped[int] = mapped_column(default=800)
 
     achieved_at: Mapped[datetime] = mapped_column(

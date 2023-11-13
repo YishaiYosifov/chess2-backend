@@ -5,11 +5,11 @@ from datetime import datetime
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, String, Text
 
-from app.models.games.runtime_player_info import RuntimePlayerInfo
-from app.models.games.game_request import GameRequest
-from app.models.games.game import Game
-from app.constants.enums import Colors
-from app.models.rating import Rating
+from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.game_request_model import GameRequest
+from app.models.games.game_model import Game
+from app.models.rating_model import Rating
+from app.constants import enums
 from app.db import Base
 
 
@@ -34,12 +34,7 @@ class User(Base, kw_only=True):
 
     is_email_verified: Mapped[bool] = mapped_column(default=False)
 
-    last_color: Mapped[Colors] = mapped_column(default=Colors.BLACK)
-
-    email_last_changed: Mapped[datetime | None] = mapped_column(
-        nullable=True,
-        default=None,
-    )
+    last_color: Mapped[enums.Colors] = mapped_column(default=enums.Colors.BLACK)
 
     username_last_changed: Mapped[datetime | None] = mapped_column(
         nullable=True,
@@ -79,7 +74,7 @@ class User(Base, kw_only=True):
     )
 
     def __eq__(self, to) -> bool:
-        from .games.runtime_player_info import RuntimePlayerInfo
+        from .games.runtime_player_info_model import RuntimePlayerInfo
 
         if not isinstance(to, User) and not isinstance(to, RuntimePlayerInfo):
             return False

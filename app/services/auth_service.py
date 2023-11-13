@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from jose import jwt, JWTError
 
-from app.models.jti_blocklist import JTIBlocklist
+from app.models.jti_blocklist_model import JTIBlocklist
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -29,8 +29,8 @@ def hash_password(password: str) -> str:
 
 def _encode_jwt_token(
     secret_key: str,
-    jwt_algorithm,
-    data: dict,
+    jwt_algorithm: str,
+    data: dict[str, Any],
     expires_in_delta: timedelta,
 ):
     """
@@ -65,6 +65,7 @@ def create_access_token(
     jwt_algorithm: str,
     user_id: int,
     expires_in_minutes: int = 30,
+    fresh: bool = False,
 ) -> str:
     """
     Generate a JWT access token
@@ -79,7 +80,7 @@ def create_access_token(
     return _encode_jwt_token(
         secret_key,
         jwt_algorithm,
-        {"sub": str(user_id), "type": "access"},
+        {"sub": str(user_id), "type": "access", "fresh": fresh},
         timedelta(minutes=expires_in_minutes),
     )
 

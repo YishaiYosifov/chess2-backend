@@ -1,17 +1,20 @@
+from factory.alchemy import SQLAlchemyModelFactory
 from sqlalchemy.orm import object_session
 from factory import post_generation, SubFactory, Faker
 
-from app.models.games.runtime_player_info import RuntimePlayerInfo
+from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.services.auth_service import hash_password
+from app.models.rating_model import Rating
+from app.models.user_model import User
 from app.utils.user_setup import setup_user
-from app.constants.enums import Variants, Colors
-from app.models.rating import Rating
-from tests.factories import BaseSQLAlchemyModelFactory
-from app.models.user import User
+from tests.conftest import ScopedSession
+from app.constants import enums
 
 
-class UserFactory(BaseSQLAlchemyModelFactory[User]):
+class UserFactory(SQLAlchemyModelFactory):
     class Meta:
+        sqlalchemy_session_persistence = "commit"
+        sqlalchemy_session = ScopedSession
         model = User
 
     username = Faker("name")
@@ -19,7 +22,7 @@ class UserFactory(BaseSQLAlchemyModelFactory[User]):
     hashed_password = "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"
 
     @post_generation
-    def rating_variants(obj: User, create: bool, extracted: list[Variants], **kwargs):  # type: ignore
+    def rating_variants(obj: User, create: bool, extracted: list[enums.Variants], **kwargs):  # type: ignore
         """
         Generate the required rating for the user based on the provided variants.
         This function will convert the variants into a set, so providing duplicates isn't a problem.
@@ -33,7 +36,7 @@ class UserFactory(BaseSQLAlchemyModelFactory[User]):
             session.add(Rating(user=obj, variant=variant))
 
     @post_generation
-    def setup(obj: User, create: bool, extracted: list[Variants], **kwargs):  # type: ignore
+    def setup(obj: User, create: bool, extracted: list[enums.Variants], **kwargs):  # type: ignore
         session = object_session(obj)
         if not create or not extracted or not session:
             return
@@ -48,10 +51,11 @@ class UserFactory(BaseSQLAlchemyModelFactory[User]):
         obj.hashed_password = hash_password(extracted)
 
 
-class RuntimePlayerInfoFactory(BaseSQLAlchemyModelFactory[RuntimePlayerInfo]):
+class RuntimePlayerInfoFactory(SQLAlchemyModelFactory):
     class Meta:
+        sqlalchemy_session = ScopedSession
         model = RuntimePlayerInfo
 
-    color = Colors.WHITE
+    color = enums.Colors.WHITE
     user = SubFactory(UserFactory)
     time_remaining = 600

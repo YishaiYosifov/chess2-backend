@@ -3,14 +3,14 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import mapped_column, relationship, MappedAsDataclass, Mapped
+from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, ForeignKey, CHAR
 
-from app.constants.enums import Variants
+from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.user_model import User
 
 
 class GameResult(Base, kw_only=True):
@@ -28,7 +28,7 @@ class GameResult(Base, kw_only=True):
     user_black_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
     user_black: Mapped[User] = relationship(foreign_keys=user_black_id)
 
-    variant: Mapped[Variants]
+    variant: Mapped[enums.Variants]
     time_control: Mapped[int]
     increment: Mapped[int]
 

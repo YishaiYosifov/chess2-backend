@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Generator, Annotated
 from http import HTTPStatus
 
 from sqlalchemy.orm import Session
@@ -9,14 +9,14 @@ from app.services.auth_service import (
     decode_access_token,
     oauth2_scheme,
 )
-from app.models.user import User
+from app.models.user_model import User
 from app.crud import user_crud
 
-from .schemas.config import get_settings, Settings
+from .schemas.config_schema import get_settings, Settings
 from .db import SessionLocal
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
@@ -29,8 +29,9 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
 class AuthedUser:
-    def __init__(self, refresh: bool = False) -> None:
+    def __init__(self, refresh: bool = False, fresh: bool = False) -> None:
         self.refresh = refresh
+        self.fresh = fresh
 
     def __call__(
         self,
@@ -67,11 +68,15 @@ class AuthedUser:
         user = user_crud.generic_fetch(db, user_id)
         if user is None:
             raise credentials_exception
+        user.is_fresh = True
+
         return user
 
 
 authed_user_refresh = AuthedUser(refresh=True)
+authed_user_fresh = AuthedUser(fresh=True)
 authed_user = AuthedUser()
 
 AuthedUserRefreshDep = Annotated[User, Security(authed_user_refresh)]
+FreshAuthedUserDep = Annotated[User, Security(authed_user_fresh)]
 AuthedUserDep = Annotated[User, Security(authed_user)]

@@ -1,8 +1,9 @@
 from unittest.mock import patch, MagicMock
-from datetime import timedelta, datetime
+from datetime import timedelta
 
-from app.schemas.config import Settings
+from app.schemas.config_schema import Settings
 from app.services import auth_service
+from tests import constants
 
 
 @patch.object(auth_service.jwt, "encode")
@@ -16,11 +17,10 @@ def test_encode_jwt_token(
 ):
     """Test the encoding of a jwt token"""
 
-    fixed_datetime = datetime(2023, 1, 1)
     fixed_timestamp = 69
 
     # Mock anything related to time
-    mock_datetime.utcnow = MagicMock(return_value=fixed_datetime)
+    mock_datetime.utcnow = MagicMock(return_value=constants.FIXED_DATETIME)
     mock_time.time = MagicMock(return_value=fixed_timestamp)
 
     expires_in_delta = timedelta(minutes=30)
@@ -33,7 +33,7 @@ def test_encode_jwt_token(
 
     # Check if the payload was correct
     expected_payload = {
-        "exp": fixed_datetime + expires_in_delta,
+        "exp": constants.FIXED_DATETIME + expires_in_delta,
         "iat": fixed_timestamp,
         "nbf": fixed_timestamp,
         "sub": 1,
@@ -61,7 +61,7 @@ def test_create_access_token(mock_encode: MagicMock, settings: Settings):
     mock_encode.assert_called_once_with(
         settings.secret_key,
         settings.jwt_algorithm,
-        {"sub": str(user_id), "type": "access"},
+        {"sub": str(user_id), "type": "access", "fresh": False},
         timedelta(minutes=expires_in_minutes),
     )
 

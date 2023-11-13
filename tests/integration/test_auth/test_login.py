@@ -3,9 +3,9 @@ from http import HTTPStatus
 
 from fastapi.testclient import TestClient
 from _pytest.fixtures import SubRequest
-from sqlalchemy.orm import Session
 import pytest
 
+from app.models.user_model import User
 from tests.factories.user import UserFactory
 
 
@@ -26,11 +26,11 @@ def mock_verify_password(request: SubRequest):
     ],
     indirect=["mock_verify_password"],
 )
-@pytest.mark.usefixtures("mock_verify_password")
-def test_login_fail(db: Session, client: TestClient, data):
+@pytest.mark.usefixtures("mock_verify_password", "db")
+def test_login_fail(client: TestClient, data):
     """Test how `/auth/login` handles non existing credentials"""
 
-    UserFactory.create(session=db, username="test-user")
+    UserFactory.create(username="test-user")
     response = client.post(
         "/auth/login",
         data=data,
@@ -40,11 +40,11 @@ def test_login_fail(db: Session, client: TestClient, data):
 
 
 @pytest.mark.parametrize("mock_verify_password", [True], indirect=True)
-@pytest.mark.usefixtures("mock_verify_password")
-def test_login_success(db: Session, client: TestClient):
+@pytest.mark.usefixtures("mock_verify_password", "db")
+def test_login_success(client: TestClient):
     "Test how `/auth/login` handles valid credentials"
 
-    user = UserFactory.create(session=db)
+    user: User = UserFactory.create()
     response = client.post(
         "/auth/login",
         data={

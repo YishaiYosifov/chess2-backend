@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
 
-from app.constants.enums import Variants
-from app.models.rating import Rating
-from app.models.user import User
+from app.models.rating_model import Rating
+from app.models.user_model import User
+from app.constants import enums
 
 
 def create_default_ratings(db: Session, user: User):
-    for variant in Variants:
+    for variant in enums.Variants:
         db.add(Rating(user=user, variant=variant))
     db.commit()
 

@@ -18,7 +18,6 @@ class Settings(BaseSettings):
 
     frontend_urls: list[str] = ["http://192.168.1.159:3000", "http://127.0.0.1:3000"]
 
-    edit_email_every_days: int = 1
     verification_url: str = "http://127.0.0.1:3000/verify"
     send_verification_email: bool = True
 

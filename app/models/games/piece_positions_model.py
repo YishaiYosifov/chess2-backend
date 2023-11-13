@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import UniqueConstraint, ForeignKey
 
-from app.constants.enums import Pieces, Colors
+from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.games.game import Game
+    from app.models.games.game_model import Game
 
 
 class PiecePosition(Base, kw_only=True):
@@ -18,8 +18,8 @@ class PiecePosition(Base, kw_only=True):
     __tablename__ = "piece_positions"
 
     piece_position_id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    piece: Mapped[Pieces]
-    color: Mapped[Colors]
+    piece: Mapped[enums.Pieces]
+    color: Mapped[enums.Colors]
 
     index: Mapped[int] = mapped_column()
 

@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, ForeignKey
 
-from app.constants.enums import Variants
+from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.user_model import User
 
 
 class GameRequest(Base, kw_only=True):
@@ -39,7 +39,7 @@ class GameRequest(Base, kw_only=True):
         default=None,
     )
 
-    variant: Mapped[Variants]
+    variant: Mapped[enums.Variants]
     time_control: Mapped[int]
     increment: Mapped[int]
 
