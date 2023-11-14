@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import timedelta, datetime, date
 from typing import Annotated
 from http import HTTPStatus
+import os
 
-from fastapi import APIRouter, Query
+from fastapi.responses import FileResponse
+from fastapi import HTTPException, APIRouter, Query
 
 from app.schemas.response_schema import ErrorResponse
 from app.constants import enums
@@ -26,11 +28,13 @@ user_not_found_response = {
     responses={**user_not_found_response},
 )
 def get_info(target: deps.TargetOrMeDep):
+    """Fetch a user's profile"""
     return target
 
 
 @router.get("/me/info-sensitive", response_model=user_schema.UserOutSensitive)
 def get_info_sensitive(user: deps.AuthedUserDep):
+    """Fetch the sensitive profile of user"""
     return user
 
 
@@ -39,16 +43,33 @@ def get_info_sensitive(user: deps.AuthedUserDep):
     response_model=list[game_schema.GameResults],
     responses={**user_not_found_response},
 )
-def get_games(
+def paginate_games(
     db: deps.DBDep,
     target: deps.TargetOrMeDep,
-    limit: Annotated[int, Query(le=100, gt=0)],
+    page: int = 0,
+    per_page: Annotated[int, Query(le=10, gt=0, alias="per-page")] = 10,
 ):
-    return game_crud.fetch_history(
-        db,
-        target,
-        limit,
-    )
+    """
+    Paginate through game history for a specified target.
+    Retrieve a paginated list of game results.
+    """
+
+    return game_crud.paginate_history(db, target, page, per_page)
+
+
+@router.get(
+    "/{target}/count-game-pages",
+    response_model=int,
+    responses={**user_not_found_response},
+)
+def count_game_pages(
+    db: deps.DBDep,
+    target: deps.TargetOrMeDep,
+    per_page: Annotated[int, Query(le=10, gt=0, alias="per-page")] = 10,
+):
+    """Count how many pages are required to show a user's game"""
+
+    return game_crud.page_count(db, target, per_page)
 
 
 @router.get(
@@ -59,17 +80,86 @@ def get_games(
 def get_ratings(
     db: deps.DBDep,
     target: deps.TargetOrMeDep,
-    variants: Annotated[list[enums.Variant], Query()],
+    variants: Annotated[list[enums.Variant], Query()] = list(enums.Variant),
 ):
+    """
+    Get the current ratings of a user.
+    If a user is unrated in a certain variant, that variant will not be returned.
+    """
+
     return ratings_crud.fetch_many(db, target, variants)
 
 
-@router.get("/{target}/rating_history", responses={**user_not_found_response})
+@router.get(
+    "/{target}/rating_history",
+    response_model=dict[enums.Variant, game_schema.RatingOverview | None],
+    responses={
+        **user_not_found_response,
+        HTTPStatus.BAD_REQUEST: {
+            "description": "Bad 'since' value",
+            "model": ErrorResponse[dict[str, str]],
+        },
+    },
+)
 def get_ratings_history(
     db: deps.DBDep,
     target: deps.TargetOrMeDep,
-    variants: Annotated[list[enums.Variant], Query()],
-    since: datetime,
+    since: date,
+    variants: Annotated[list[enums.Variant], Query()] = list(enums.Variant),
 ):
-    # TODO
-    pass
+    """
+    Get the rating history of a user.
+    If a user is unrated in a certain variant, that variant will not be returned.
+    """
+
+    # Make sure the `since` date is valid
+    now = datetime.now().date()
+    if since < now - timedelta(days=60):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail={"since": "cannot be more than 2 months in the past"},
+        )
+    elif since > now:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail={"since": "cannot be in the future"},
+        )
+
+    history = ratings_crud.fetch_history(db, target, since, variants)
+    minmax = ratings_crud.fetch_min_max(db, target, variants)
+
+    # Merge the history and min max values together
+    results = {
+        variant: {
+            "min": minmax[variant][0],
+            "max": minmax[variant][1],
+            "history": history[variant],
+        }
+        for variant in variants
+        if history.get(variant) and minmax.get(variant)
+    }
+    return results
+
+
+@router.get(
+    "/{target}/profile-picture",
+    response_class=FileResponse,
+    responses={HTTPStatus.OK: {"content": {"image/webp": {}}}},
+)
+async def profile_picture(target: deps.TargetOrMeDep):
+    """
+    Get a user's profile picture.
+    If the user hasn't uploaded a picture yet, the default one will be returned.
+    """
+
+    uploads_path = f"uploads/{target.user_id}/profile-picture.webp"
+    if os.path.exists(uploads_path):
+        return FileResponse(
+            f"uploads/{target.user_id}/profile-picture.webp",
+            media_type="image/webp",
+        )
+
+    return FileResponse(
+        "assets/default-profile-picture.webp",
+        media_type="image/webp",
+    )

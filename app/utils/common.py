@@ -1,31 +1,7 @@
-from typing import Any
+from collections import defaultdict
+from typing import Callable, TypeVar
 import shutil
 import os
-
-from pydantic.main import _model_construction
-from pydantic import BaseModel
-
-
-class PartialModel(_model_construction.ModelMetaclass):
-    """Make every field in a pydantic model optional"""
-
-    def __new__(
-        cls,
-        name: str,
-        bases: tuple[Any, ...],
-        namespaces: dict[str, Any],
-        **kwargs: Any,
-    ):
-        for base in bases:
-            if not issubclass(base, BaseModel):
-                continue
-
-            # If the base is a pydantic model, loop over its fields and set the default value to None
-            # thus making it optional
-            for field in base.model_fields.values():
-                field.default = None
-
-        return super().__new__(cls, name, bases, namespaces, **kwargs)
 
 
 def create_or_replace_folder(path: str):
@@ -41,3 +17,14 @@ def get_or_create_uploads_folder(user_id: int):
         create_or_replace_folder(uploads_path)
 
     return os.path.join("uploads", str(user_id))
+
+
+_K = TypeVar("_K")
+_V = TypeVar("_V")
+
+
+def defaultdict_fromkeys(
+    value_type: Callable[[], _V],
+    default_keys: list[_K],
+) -> defaultdict[_K, _V]:
+    return defaultdict(value_type, {key: value_type() for key in default_keys})

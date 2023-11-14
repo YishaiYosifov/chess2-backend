@@ -1,8 +1,8 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import date
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, true
+from sqlalchemy import select, true, func
 
 from app.models.rating_model import Rating
 from app.models.user_model import User
@@ -13,12 +13,12 @@ def fetch_many(
     db: Session,
     user: User,
     variants: list[enums.Variant],
-) -> dict[str, Rating]:
+) -> dict[enums.Variant, Rating | None]:
     """
-    Get the latest ratings for a user in a dictionary. If a rating doesn't exist, it will be inserted automatically
+    Get the latest ratings for a user in a dictionary.
 
     :param db: the db session
-    :param user: the user to get the ratings for
+    :param user: the user for whom to fetch for
     :param variants: a list of variants
     :return: a dictionary containing all the ratings
     """
@@ -31,35 +31,20 @@ def fetch_many(
         )
     ).scalars()
 
-    ratings_formatted: dict[str, Rating] = {
-        rating.variant.value: rating for rating in ratings
-    }
-
-    # Check if a rating is missing. If it is, insert it into the db
-    for variant in variants:
-        if variant.value in ratings_formatted:
-            continue
-
-        rating = Rating(user=user, variant=variant)
-        db.add(rating)
-        db.flush()
-        ratings_formatted[rating.variant.value] = rating
-    db.commit()
-
-    return ratings_formatted
+    return {rating.variant: rating for rating in ratings}
 
 
-def get_history(
+def fetch_history(
     db: Session,
     user: User,
-    since: datetime,
+    since: date,
     variants: list[enums.Variant],
-) -> dict[str, list[dict]]:
+) -> dict[enums.Variant, list[Rating]]:
     """
     Fetch the history of a user's rating.
 
     :param db: the db session
-    :param user: the user to fetch for
+    :param user: the user for whom to fetch for
     :param since: the date to fetch since
     :param variants: a list of variants
     """
@@ -78,8 +63,54 @@ def get_history(
         .all()
     )
 
-    history_formatted = defaultdict(list)
+    history_formatted = defaultdict(list[Rating])
     for rating in rating_history:
-        history_formatted[rating.variant.value].append(rating)
-
+        history_formatted[rating.variant].append(rating)
     return history_formatted
+
+
+def fetch_min_max(
+    db: Session,
+    user: User,
+    variants: list[enums.Variant],
+) -> dict[enums.Variant, tuple[int, int]]:
+    """
+    Find the highest and lowest elo for a user
+
+    :param db: the db session
+    :param user: the user for whom to fetch for
+    :param variants: a list of the variants to search
+    :return: a dictionary containing the variants as a key and min, max as a tuple value
+    """
+
+    minmax = db.execute(
+        select(Rating.variant, func.min(Rating.elo), func.max(Rating.elo))
+        .filter((Rating.user_id == user.user_id) & Rating.variant.in_(variants))
+        .group_by(Rating.variant)
+    ).all()
+
+    return {
+        variant: (
+            min_rating,
+            max_rating,
+        )
+        for variant, min_rating, max_rating in minmax
+    }
+
+
+def create_rating(db: Session, variant: enums.Variant, user: User, flush: bool = False):
+    """
+    Creates a new rating entry for a user
+
+    :param db: the db session
+    :param variant: the variant of the rating
+    :param user: the user for whom to rating is created
+    :param flush: if true, flush the changes to the database
+    """
+
+    rating = Rating(user=user, variant=variant)
+    db.add(rating)
+    if flush:
+        db.flush()
+
+    return rating

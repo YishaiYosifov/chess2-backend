@@ -19,3 +19,10 @@ class GameResults(BaseModel):
 class Rating(BaseModel):
     elo: int
     achieved_at: datetime
+
+
+class RatingOverview(BaseModel):
+    min: int
+    max: int
+
+    history: list[Rating]

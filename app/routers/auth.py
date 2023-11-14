@@ -8,7 +8,6 @@ from app.utils.email_verification import send_verification_email
 from app.schemas.response_schema import ErrorResponse, AccessToken, AuthTokens
 from app.services.auth_service import create_refresh_token, create_access_token
 from app.models.user_model import User
-from app.utils.user_setup import setup_user
 from app.schemas import user_schema
 from app.crud import user_crud
 from app import deps
@@ -51,8 +50,6 @@ def signup(
             email=db_user.email,
             verification_url=config.verification_url,
         )
-
-    setup_user(db, db_user)
 
     return db_user
 

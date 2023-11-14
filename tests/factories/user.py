@@ -6,7 +6,6 @@ from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.services.auth_service import hash_password
 from app.models.rating_model import Rating
 from app.models.user_model import User
-from app.utils.user_setup import setup_user
 from tests.conftest import ScopedSession
 from app.constants import enums
 
@@ -34,14 +33,6 @@ class UserFactory(SQLAlchemyModelFactory):
 
         for variant in set(extracted):
             session.add(Rating(user=obj, variant=variant))
-
-    @post_generation
-    def setup(obj: User, create: bool, extracted: list[enums.Variant], **kwargs):  # type: ignore
-        session = object_session(obj)
-        if not create or not extracted or not session:
-            return
-
-        setup_user(session, obj)
 
     @post_generation
     def password(obj: User, create: bool, extracted: str, **kwargs):  # type: ignore
