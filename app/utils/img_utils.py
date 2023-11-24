@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from PIL import Image
 import aiofiles
 
-from app.utils.common import get_or_create_uploads_folder
+from app.utils import common
 
 
 def load_and_validate_image(img_bytes: bytes) -> Image.Image:
@@ -71,7 +71,7 @@ async def save_pfp(user_id: int, img: Image.Image) -> None:
     img.close()
 
     profile_picture_path = os.path.join(
-        get_or_create_uploads_folder(user_id),
+        common.get_or_create_uploads_folder(user_id),
         "profile-picture.webp",
     )
     async with aiofiles.open(profile_picture_path, "wb") as out_file:

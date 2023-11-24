@@ -58,18 +58,17 @@ def paginate_games(
 
 
 @router.get(
-    "/{target}/count-game-pages",
+    "/{target}/total-game-count",
     response_model=int,
     responses={**user_not_found_response},
 )
-def count_game_pages(
+def total_game_count(
     db: deps.DBDep,
     target: deps.TargetOrMeDep,
-    per_page: Annotated[int, Query(le=10, gt=0, alias="per-page")] = 10,
 ):
-    """Count how many pages are required to show a user's game"""
+    """Count how many games a user has"""
 
-    return game_crud.page_count(db, target, per_page)
+    return game_crud.total(db, target)
 
 
 @router.get(
@@ -91,7 +90,7 @@ def get_ratings(
 
 
 @router.get(
-    "/{target}/rating_history",
+    "/{target}/rating-history",
     response_model=dict[enums.Variant, game_schema.RatingOverview | None],
     responses={
         **user_not_found_response,
@@ -113,7 +112,7 @@ def get_ratings_history(
     """
 
     # Make sure the `since` date is valid
-    now = datetime.now().date()
+    now = datetime.utcnow().date()
     if since < now - timedelta(days=60):
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -133,6 +132,7 @@ def get_ratings_history(
         variant: {
             "min": minmax[variant][0],
             "max": minmax[variant][1],
+            "current": history[variant][-1].elo,
             "history": history[variant],
         }
         for variant in variants

@@ -2,12 +2,13 @@ from typing import Annotated
 from http import HTTPStatus
 
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import BackgroundTasks, HTTPException, APIRouter, Depends
+from fastapi import BackgroundTasks, HTTPException, APIRouter, Response, Depends
 
 from app.utils.email_verification import send_verification_email
-from app.schemas.response_schema import ErrorResponse, AccessToken, AuthTokens
+from app.schemas.response_schema import ErrorResponse
 from app.services.auth_service import create_refresh_token, create_access_token
 from app.models.user_model import User
+from app.services import auth_service
 from app.schemas import user_schema
 from app.crud import user_crud
 from app import deps
@@ -54,11 +55,12 @@ def signup(
     return db_user
 
 
-@router.post("/login", response_model=AuthTokens)
+@router.post("/login", response_model=user_schema.AuthTokens)
 def login(
     db: deps.DBDep,
     config: deps.ConfigDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    response: Response,
 ):
     """Authenticates a user by generating a jwt access and refresh token if the credentials match."""
 
@@ -83,13 +85,31 @@ def login(
         user.user_id,
         expires_in_days=config.refresh_token_expires_days,
     )
-    return AuthTokens(access_token=access_token, refresh_token=refresh_token)
+
+    auth_service.set_auth_cookies(
+        response,
+        access_token,
+        refresh_token,
+        access_token_max_age=config.access_token_expires_minutes * 60,
+        refresh_token_max_age=config.refresh_token_expires_days * 60 * 60 * 24,
+    )
+
+    return user_schema.AuthTokens(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
 
 
-@router.get("/refresh-access-token", response_model=AccessToken)
+@router.post("/logout")
+def logout(response: Response):
+    auth_service.remove_auth_cookies(response)
+
+
+@router.get("/refresh-access-token", response_model=user_schema.AccessToken)
 def refresh_access_token(
     user: Annotated[User, Depends(deps.AuthedUser(refresh=True))],
     config: deps.ConfigDep,
+    response: Response,
 ):
     """Generate a new access token using a refresh token"""
 
@@ -99,4 +119,10 @@ def refresh_access_token(
         user.user_id,
         expires_in_minutes=config.access_token_expires_minutes,
     )
-    return AccessToken(access_token=access_token)
+    auth_service.set_auth_cookies(
+        response,
+        access_token=access_token,
+        access_token_max_age=config.access_token_expires_minutes * 60,
+    )
+
+    return user_schema.AccessToken(access_token=access_token)

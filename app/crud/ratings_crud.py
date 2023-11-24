@@ -13,14 +13,14 @@ def fetch_many(
     db: Session,
     user: User,
     variants: list[enums.Variant],
-) -> dict[enums.Variant, Rating | None]:
+) -> dict[enums.Variant, Rating]:
     """
     Get the latest ratings for a user in a dictionary.
 
     :param db: the db session
     :param user: the user for whom to fetch for
     :param variants: a list of variants
-    :return: a dictionary containing all the ratings
+    :return: a dictionary containing all the current ratings
     """
 
     ratings = db.execute(
@@ -47,6 +47,7 @@ def fetch_history(
     :param user: the user for whom to fetch for
     :param since: the date to fetch since
     :param variants: a list of variants
+    :return: a dictionary containing the variants their list of ratings
     """
 
     rating_history = (
@@ -85,7 +86,7 @@ def fetch_min_max(
 
     minmax = db.execute(
         select(Rating.variant, func.min(Rating.elo), func.max(Rating.elo))
-        .filter((Rating.user_id == user.user_id) & Rating.variant.in_(variants))
+        .filter((Rating.user == user) & Rating.variant.in_(variants))
         .group_by(Rating.variant)
     ).all()
 
@@ -96,21 +97,3 @@ def fetch_min_max(
         )
         for variant, min_rating, max_rating in minmax
     }
-
-
-def create_rating(db: Session, variant: enums.Variant, user: User, flush: bool = False):
-    """
-    Creates a new rating entry for a user
-
-    :param db: the db session
-    :param variant: the variant of the rating
-    :param user: the user for whom to rating is created
-    :param flush: if true, flush the changes to the database
-    """
-
-    rating = Rating(user=user, variant=variant)
-    db.add(rating)
-    if flush:
-        db.flush()
-
-    return rating

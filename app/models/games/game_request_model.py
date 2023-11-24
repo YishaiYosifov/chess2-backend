@@ -22,16 +22,23 @@ class GameRequest(Base, kw_only=True):
 
     __tablename__ = "game_requests"
 
-    game_request_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    game_request_id: Mapped[int] = mapped_column(primary_key=True, default=None)
 
-    inviter_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), init=False)
+    inviter_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id"),
+        init=False,
+        index=True,
+    )
     inviter: Mapped[User] = relationship(
         foreign_keys=inviter_id,
         back_populates="game_request",
     )
 
     recipient_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), nullable=True, init=False
+        ForeignKey("users.user_id"),
+        nullable=True,
+        init=False,
+        index=True,
     )
     recipient: Mapped[User] = relationship(
         foreign_keys=recipient_id,

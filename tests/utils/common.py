@@ -1,40 +1,18 @@
-from unittest.mock import _patch, patch
+from collections import Counter
+from typing import Any
+import math
 
-from fastapi import FastAPI
 
 from app.models.games.game_model import Game
 from app.models.user_model import User
 from app.constants import enums
-from app.deps import AuthedUser
-from app.crud import user_crud
-
-from .dep_overrider import DependencyOverrider
 
 
-def mock_hash() -> _patch:
-    return patch.object(
-        user_crud,
-        "hash_password",
-        return_value="$2b$12$kXC0QfbIfmjauYXOp9Hoj.ehDU1mWXgvTCvxlTVfEKyf35lR71Fam",
-    )
+def get_duplicates(list: list[Any]):
+    """Only get the duplicate items from a list"""
 
-
-def mock_login(
-    app: FastAPI, user: User, *class_args, **class_kwargs
-) -> DependencyOverrider:
-    """
-    Creates a context where the user is logged in.
-    This is faster than sending a request to /auth/login because it doesn't actually generate a hash.
-
-    :param user: a user object to mock login into
-    """
-
-    override = lambda: user
-    override_authed_user = DependencyOverrider(
-        app,
-        overrides={AuthedUser(*class_args, **class_kwargs): override},
-    )
-    return override_authed_user
+    counter = Counter(list)
+    return [item for item, occurrences in counter.items() if occurrences >= 2]
 
 
 def is_user_in_game(user: User, game: Game) -> bool:
@@ -43,3 +21,7 @@ def is_user_in_game(user: User, game: Game) -> bool:
         if user.last_color == enums.Color.WHITE
         else user.user_id == game.player_black.user_id
     )
+
+
+def page_count(total: int, per_page: int) -> int:
+    return math.ceil((total or 0) / per_page)

@@ -8,6 +8,7 @@ from fastapi import HTTPException, Depends, Path
 from app.services.auth_service import oauth2_scheme
 from app.models.user_model import User
 from app.services import auth_service
+from app.schemas import user_schema
 from app.crud import user_crud
 
 from .schemas.config_schema import get_settings, Settings
@@ -36,7 +37,7 @@ class AuthedUser:
         self,
         db: DBDep,
         config: ConfigDep,
-        token: Annotated[str, Depends(oauth2_scheme)],
+        tokens: Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)],
     ) -> User | None:
         """Dependency to fetch the authorized user"""
 
@@ -46,11 +47,14 @@ class AuthedUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+        token = tokens.refresh_token if self.refresh else tokens.access_token
+
         if not token and self.required:
             raise credentials_exception
         elif not token:
             return
 
+        # Try to fetch the user with the token
         user = user_crud.fetch_by_token(
             db,
             config.secret_key,
@@ -72,7 +76,7 @@ def target_or_me(
     db: DBDep,
     target: Annotated[str, Path()],
     config: ConfigDep,
-    token: Annotated[str, Depends(auth_service.oauth2_scheme)],
+    tokens: Annotated[user_schema.AuthTokens, Depends(auth_service.oauth2_scheme)],
 ) -> User:
     """
     Dependency to fetch a target user.
@@ -88,9 +92,9 @@ def target_or_me(
                 db,
                 config.secret_key,
                 config.jwt_algorithm,
-                token,
+                tokens.access_token,
             )
-            if token
+            if tokens.access_token
             else None
         )
     else:

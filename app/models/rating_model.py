@@ -21,10 +21,14 @@ class Rating(Base, kw_only=True):
 
     __tablename__ = "ratings"
 
-    rating_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    rating_id: Mapped[int] = mapped_column(primary_key=True, default=None)
     is_active: Mapped[bool] = mapped_column(default=True, index=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), init=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id"),
+        init=False,
+        index=True,
+    )
     user: Mapped[User] = relationship(back_populates="ratings")
 
     variant: Mapped[enums.Variant] = mapped_column()

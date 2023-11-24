@@ -18,22 +18,31 @@ class GameResult(Base, kw_only=True):
 
     __tablename__ = "game_results"
 
-    game_results_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    game_results_id: Mapped[int] = mapped_column(primary_key=True, default=None)
 
     token: Mapped[str] = mapped_column(CHAR(8))
 
-    user_white_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    user_white_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        init=False,
+        index=True,
+    )
     user_white: Mapped[User] = relationship(foreign_keys=user_white_id)
 
-    user_black_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    user_black_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        init=False,
+        index=True,
+    )
     user_black: Mapped[User] = relationship(foreign_keys=user_black_id)
 
     variant: Mapped[enums.Variant]
     time_control: Mapped[int]
     increment: Mapped[int]
 
-    winner_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
-    winner: Mapped[User] = relationship(foreign_keys=winner_id)
+    results: Mapped[enums.GameResult]
 
     created_at: Mapped[datetime]
     ended_at: Mapped[datetime] = mapped_column(

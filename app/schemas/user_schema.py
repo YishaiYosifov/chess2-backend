@@ -62,3 +62,17 @@ class UserOut(BaseUserProfile, BaseUserAccountInfo):
 
 class UserOutSensitive(UserOut, UserAccountInfoSensitive):
     pass
+
+
+class SimpleUserOut(BaseModel):
+    user_id: int
+    username: str
+
+
+class AccessToken(BaseModel):
+    token_type: str = "bearer"
+    access_token: str | None = None
+
+
+class AuthTokens(AccessToken):
+    refresh_token: str | None = None

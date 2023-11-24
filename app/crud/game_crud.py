@@ -1,5 +1,4 @@
 from typing import Sequence
-import math
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
@@ -38,19 +37,17 @@ def paginate_history(
     return games
 
 
-def page_count(db: Session, user: User, per_page: int) -> int:
+def total(db: Session, user: User) -> int:
     """
-    Count how many pages are required to show all the games
+    Count the total number of games the user has played
 
     :param db: the db session
     :param user: the user to check for
-    :param per_page: how many games to show per page
-    :return: the page count
     """
 
     total = db.execute(
-        select(func.count()).filter(
+        select(func.count(GameResult.game_results_id)).filter(
             (GameResult.user_white == user) | (GameResult.user_black == user)
         )
     ).scalar()
-    return math.ceil((total or 0) / per_page)
+    return total or 0

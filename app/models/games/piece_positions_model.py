@@ -17,13 +17,17 @@ class PiecePosition(Base, kw_only=True):
 
     __tablename__ = "piece_positions"
 
-    piece_position_id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    piece_position_id: Mapped[int] = mapped_column(primary_key=True, default=None)
     piece: Mapped[enums.Piece]
     color: Mapped[enums.Color]
 
     index: Mapped[int] = mapped_column()
 
-    game_id: Mapped[int] = mapped_column(ForeignKey("games.game_id"), init=False)
+    game_id: Mapped[int] = mapped_column(
+        ForeignKey("games.game_id"),
+        init=False,
+        index=True,
+    )
     game: Mapped[Game] = relationship(back_populates="pieces")
 
     __table_args__ = (UniqueConstraint(index, game_id, name="unique_piece_index"),)

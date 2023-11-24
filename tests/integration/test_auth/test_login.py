@@ -7,14 +7,13 @@ import pytest
 
 from app.models.user_model import User
 from tests.factories.user import UserFactory
+from app.crud import user_crud
 
 
 @pytest.fixture
 def mock_verify_password(request: SubRequest):
-    with patch(
-        "app.crud.user_crud.verify_password",
-        lambda *args, **kwargs: request.param,
-    ):
+    with patch.object(user_crud, "auth_service") as a:
+        a.verify_password.return_value = request.param
         yield
 
 

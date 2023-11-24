@@ -10,17 +10,18 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import pytest
 
 from app.schemas.config_schema import get_settings
-from tests.utils.common import mock_hash
+from tests.utils import mocks
 from app.main import app
 from app.deps import get_db
 from app.db import engine
 
-ScopedSession = scoped_session(sessionmaker())
+TestScopedSession = scoped_session(sessionmaker())
 
 
 @pytest.fixture(scope="session")
 def client():
-    yield TestClient(app)
+    client = TestClient(app)
+    yield client
 
     for file in glob("uploads/*"):
         shutil.rmtree(file)
@@ -32,7 +33,7 @@ def db():
     connection = engine.connect()
     transaction = connection.begin()
 
-    session = ScopedSession(bind=connection)
+    session = TestScopedSession(bind=connection)
     app.dependency_overrides[get_db] = lambda: session
 
     yield session
@@ -40,12 +41,12 @@ def db():
     session.close()
     transaction.rollback()
     connection.close()
-    ScopedSession.remove()
+    TestScopedSession.remove()
 
 
 @pytest.fixture(name="mock_hash")
 def fix_mock_hash():
-    with mock_hash():
+    with mocks.mock_hash():
         yield
 
 

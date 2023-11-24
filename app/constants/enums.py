@@ -17,6 +17,12 @@ class Color(Enum):
         return self.BLACK if self == Color.WHITE else Color.WHITE
 
 
+class GameResult(Enum):
+    WHITE = "white"
+    BLACK = "black"
+    DRAW = "draw"
+
+
 class Piece(Enum):
     KING = "king"
     QUEEN = "queen"

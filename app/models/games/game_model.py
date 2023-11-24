@@ -14,7 +14,7 @@ from app.db import Base
 class Game(Base, kw_only=True):
     __tablename__ = "games"
 
-    game_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    game_id: Mapped[int] = mapped_column(primary_key=True, default=None)
     token: Mapped[str] = mapped_column(CHAR(8))
 
     created_at: Mapped[datetime] = mapped_column(
@@ -26,6 +26,7 @@ class Game(Base, kw_only=True):
     player_white_id: Mapped[int] = mapped_column(
         ForeignKey("runtime_players_info.player_id"),
         init=False,
+        index=True,
     )
     player_white: Mapped[RuntimePlayerInfo] = relationship(
         back_populates="game_white",
@@ -36,6 +37,7 @@ class Game(Base, kw_only=True):
     player_black_id: Mapped[int] = mapped_column(
         ForeignKey("runtime_players_info.player_id"),
         init=False,
+        index=True,
     )
     player_black: Mapped[RuntimePlayerInfo] = relationship(
         back_populates="game_black",
@@ -48,6 +50,7 @@ class Game(Base, kw_only=True):
             "player_white_id"
         ],
         init=False,
+        index=True,
     )
 
     pieces: Mapped[list[PiecePosition]] = relationship(

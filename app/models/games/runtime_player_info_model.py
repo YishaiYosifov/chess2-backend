@@ -19,7 +19,7 @@ class RuntimePlayerInfo(Base, kw_only=True):
 
     __tablename__ = "runtime_players_info"
 
-    player_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    player_id: Mapped[int] = mapped_column(primary_key=True, default=None)
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.user_id"),

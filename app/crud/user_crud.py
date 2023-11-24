@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, ColumnExpressionArgument
 from fastapi import HTTPException
 
-from app.services.auth_service import verify_password, hash_password
 from app.models.user_model import User as UserModel
 from app.services import auth_service
 
@@ -21,7 +20,7 @@ def original_email_or_raise(db: Session, email: str) -> None:
     if fetch_by(db, UserModel.email == email):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail="Email taken",
+            detail={"email": "Email taken"},
         )
 
 
@@ -29,7 +28,7 @@ def original_username_or_raise(db: Session, username: str) -> None:
     if fetch_by(db, UserModel.username == username):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
-            detail="Username taken",
+            detail={"username": "Username taken"},
         )
 
 
@@ -92,7 +91,7 @@ def authenticate(db: Session, username: str, password: str) -> UserModel | None:
     user = fetch_by(db, UserModel.username == username)
     if not user:
         return
-    if not verify_password(password, user.hashed_password):
+    if not auth_service.verify_password(password, user.hashed_password):
         return
     return user
 
@@ -101,7 +100,8 @@ def create_user(
     db: Session,
     user: user_schema.UserIn,
 ) -> UserModel:
-    hashed_password = hash_password(user.password)
+    hashed_password = auth_service.hash_password(user.password)
+
     db_user = UserModel(
         username=user.username,
         email=user.email,
@@ -110,6 +110,5 @@ def create_user(
 
     db.add(db_user)
     db.commit()
-    db.refresh(db_user)
 
     return db_user

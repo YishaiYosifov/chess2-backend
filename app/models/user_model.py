@@ -16,7 +16,7 @@ from app.db import Base
 class User(Base, kw_only=True):
     __tablename__ = "users"
 
-    user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    user_id: Mapped[int] = mapped_column(primary_key=True, default=None)
 
     sid: Mapped[str | None] = mapped_column(
         Text,
@@ -27,8 +27,8 @@ class User(Base, kw_only=True):
     )
     hashed_password: Mapped[str]
 
-    username: Mapped[str] = mapped_column(String(30), unique=True)
-    email: Mapped[str] = mapped_column(String(256), unique=True)
+    username: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(256), unique=True, index=True)
     about: Mapped[str] = mapped_column(String(300), default="")
     country: Mapped[str | None] = mapped_column(String(100), default=None)
 
