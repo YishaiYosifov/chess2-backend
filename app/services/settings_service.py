@@ -114,11 +114,13 @@ class UsernameSetting(ValidationSetting):
             )
 
 
-def update_setting_single(db: Session, setting: Setting, new_value: Any) -> User:
+def update_setting_single(
+    db: Session, setting: Setting, new_value: Any
+) -> User:
     """
     Update a setting and commit to the database.
 
-    :param db: the db session to use
+    :param db: the database session to use
     :param setting: the setting object
     :param new_value: which value to pass to the update function
     :return: the updated user
@@ -129,7 +131,9 @@ def update_setting_single(db: Session, setting: Setting, new_value: Any) -> User
     return setting.user
 
 
-def update_settings_many(db: Session, target: Base, to_edit: dict[str, Any]) -> Base:
+def update_settings_many(
+    db: Session, target: Base, to_edit: dict[str, Any]
+) -> Base:
     for setting, value in to_edit.items():
         setattr(target, setting, value)
     db.commit()

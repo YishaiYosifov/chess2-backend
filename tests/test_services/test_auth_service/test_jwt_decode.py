@@ -1,17 +1,21 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
+from pytest_mock import MockerFixture
 import pytest
 
 from app.schemas.config_schema import Settings
 from app.services import auth_service
 
 
-@patch.object(auth_service.jwt, "decode")
-def test_decode_jwt_token(mock_jwt_decode: MagicMock, settings: Settings):
+@pytest.mark.unit
+def test_decode_jwt_token(mocker: MockerFixture, settings: Settings):
     """
     Test the helper decode jwt token function.
     Check if it handles options correctly.
     """
+
+    mock_jwt_decode = mocker.patch.object(auth_service.jwt, "decode")
+
     auth_service._decode_jwt_token(
         settings.secret_key,
         settings.jwt_algorithm,
@@ -33,30 +37,31 @@ def test_decode_jwt_token(mock_jwt_decode: MagicMock, settings: Settings):
     )
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "payload, success, token_type",
-    [
-        (
+    (
+        [
             {"type": "access", "sub": "1"},
             True,
             "access",
-        ),
-        (
+        ],
+        [
             {"type": "refresh", "sub": "1", "jti": "random string"},
             True,
             "refresh",
-        ),
-        (
+        ],
+        [
             {"type": "refresh", "sub": "1", "jti": "random string"},
             False,
             "access",
-        ),
-        (
+        ],
+        [
             {"type": "access", "sub": "1", "jti": "random string"},
             False,
             "refresh",
-        ),
-    ],
+        ],
+    ),
     ids=[
         "token type: access, correct payload",
         "token type: access, incorrect payload",
@@ -64,13 +69,8 @@ def test_decode_jwt_token(mock_jwt_decode: MagicMock, settings: Settings):
         "token type: refresh, incorrect payload",
     ],
 )
-@patch.object(auth_service, "_decode_jwt_token")
-@patch.object(auth_service, "_get_jwt_indentity")
-@patch.object(auth_service, "_check_token_revocation")
 def test_decode_tokens(
-    mock_check_revocation: MagicMock,
-    mock_get_identity: MagicMock,
-    mock_jwt_decode: MagicMock,
+    mocker: MockerFixture,
     payload: dict[str, str],
     success: bool,
     token_type: str,
@@ -78,9 +78,11 @@ def test_decode_tokens(
 ):
     """Try to decode tokens with correct and incorrect types"""
 
-    mock_check_revocation.return_value = False
-    mock_jwt_decode.return_value = payload
-    mock_get_identity.return_value = 1
+    mocker.patch.object(auth_service, "_decode_jwt_token", return_value=payload)
+    mocker.patch.object(auth_service, "_get_jwt_indentity", return_value=1)
+    mocker.patch.object(
+        auth_service, "_check_token_revocation", return_value=False
+    )
 
     user_id = (
         auth_service.decode_access_token(

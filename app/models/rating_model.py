@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import event, func, ForeignKey, Index, DDL
 
-from app.constants import enums
+from app.constants import constants, enums
 from app.db import Base
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ class Rating(Base, kw_only=True):
 
     __tablename__ = "ratings"
 
-    rating_id: Mapped[int] = mapped_column(primary_key=True, default=None)
+    rating_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     is_active: Mapped[bool] = mapped_column(default=True, index=True)
 
     user_id: Mapped[int] = mapped_column(
@@ -32,7 +32,7 @@ class Rating(Base, kw_only=True):
     user: Mapped[User] = relationship(back_populates="ratings")
 
     variant: Mapped[enums.Variant] = mapped_column()
-    elo: Mapped[int] = mapped_column(default=800)
+    elo: Mapped[int] = mapped_column(default=constants.DEFAULT_RATING)
 
     achieved_at: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(),

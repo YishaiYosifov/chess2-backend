@@ -9,6 +9,27 @@ from app.models.user_model import User
 from app.constants import enums
 
 
+def fetch_single(
+    db: Session, user: User, variant: enums.Variant
+) -> Rating | None:
+    """
+    Get a user's latest rating.
+
+    :param user: the user the get the rating for
+    :param variant: the variant to get
+    :return: the rating object, or None if it was not found
+    """
+
+    rating = db.execute(
+        select(Rating).filter_by(
+            user=user,
+            is_active=True,
+            variant=variant,
+        )
+    ).scalar()
+    return rating
+
+
 def fetch_many(
     db: Session,
     user: User,
@@ -17,7 +38,7 @@ def fetch_many(
     """
     Get the latest ratings for a user in a dictionary.
 
-    :param db: the db session
+    :param db: the database session
     :param user: the user for whom to fetch for
     :param variants: a list of variants
     :return: a dictionary containing all the current ratings
@@ -43,7 +64,7 @@ def fetch_history(
     """
     Fetch the history of a user's rating.
 
-    :param db: the db session
+    :param db: the database session
     :param user: the user for whom to fetch for
     :param since: the date to fetch since
     :param variants: a list of variants
@@ -78,7 +99,7 @@ def fetch_min_max(
     """
     Find the highest and lowest elo for a user
 
-    :param db: the db session
+    :param db: the database session
     :param user: the user for whom to fetch for
     :param variants: a list of the variants to search
     :return: a dictionary containing the variants as a key and min, max as a tuple value

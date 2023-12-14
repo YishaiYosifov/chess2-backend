@@ -9,9 +9,10 @@ from app.models.user_model import User
 from tests.factories.user import UserFactory
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "data",
-    [
+    (
         {
             "username": "123",
             "email": "test@example.com",
@@ -52,7 +53,7 @@ from tests.factories.user import UserFactory
             "email": "test@example.com",
             "password": "123",
         },
-    ],
+    ),
     ids=[
         "username is just numbers",
         "usename is 'me'",
@@ -69,9 +70,12 @@ def test_signup_params(client: TestClient, data: dict):
     """Test how `/auth/signup` handles bad arguments"""
 
     response = client.post("/auth/signup", json=data)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+    assert (
+        response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    ), response.json()
 
 
+@pytest.mark.integration
 @pytest.mark.usefixtures("mock_hash")
 def test_signup_success(client: TestClient, db: Session):
     """Test if `/auth/signup` works in creating the user when valid arugments are provided"""
@@ -91,9 +95,10 @@ def test_signup_success(client: TestClient, db: Session):
     assert user.email == "test@example.com"
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "data",
-    [
+    (
         {
             "username": "different-test-user",
             "email": "test@example.com",
@@ -104,7 +109,7 @@ def test_signup_success(client: TestClient, db: Session):
             "email": "different-test@example.com",
             "password": "securePassword123",
         },
-    ],
+    ),
     ids=["email conflict", "username conflict"],
 )
 @pytest.mark.usefixtures("db")

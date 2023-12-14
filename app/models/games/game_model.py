@@ -6,7 +6,7 @@ from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, CheckConstraint, ForeignKey, CHAR
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
-from app.models.games.piece_positions_model import PiecePosition
+from app.models.games.piece_model import Piece
 from app.constants import enums
 from app.db import Base
 
@@ -14,7 +14,7 @@ from app.db import Base
 class Game(Base, kw_only=True):
     __tablename__ = "games"
 
-    game_id: Mapped[int] = mapped_column(primary_key=True, default=None)
+    game_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     token: Mapped[str] = mapped_column(CHAR(8))
 
     created_at: Mapped[datetime] = mapped_column(
@@ -53,7 +53,7 @@ class Game(Base, kw_only=True):
         index=True,
     )
 
-    pieces: Mapped[list[PiecePosition]] = relationship(
+    pieces: Mapped[list[Piece]] = relationship(
         back_populates="game",
         init=False,
     )

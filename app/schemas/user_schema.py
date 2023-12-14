@@ -50,7 +50,8 @@ class UserIn(UserAccountInfoSensitive):
     def check_strong_password(cls, value: str) -> str:
         if not constants.STRONG_PASSWORD_REGEX.match(value):
             raise ValueError(
-                "Must be at least 8 characters long, have at least 1 upper and lower case letters and have a number"
+                "Must be at least 8 characters long, have at least 1 upper"
+                "and lower case letters and have a number"
             )
         return value
 

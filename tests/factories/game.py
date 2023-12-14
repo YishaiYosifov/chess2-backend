@@ -2,15 +2,16 @@ from datetime import timedelta, datetime
 from typing import Any
 
 from factory.alchemy import SQLAlchemyModelFactory
-from factory import SubFactory, Sequence, Faker
+from factory import SubFactory, Factory, Faker
 
 from app.models.games.game_results_model import GameResult
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
 from app.models.user_model import User
-from tests.factories.user import RuntimePlayerInfoFactory, UserFactory
+from tests.factories.user import PlayerFactory, UserFactory
 from tests.conftest import TestScopedSession
 from app.constants import enums
+from app.schemas import game_schema
 
 
 class GameFactory(SQLAlchemyModelFactory):
@@ -18,15 +19,14 @@ class GameFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = Game
 
-    game_id = Sequence(lambda n: n)
     token = Faker("pystr", max_chars=8)
 
     variant = enums.Variant.ANARCHY
     time_control = 600
     increment = 0
 
-    player_white = SubFactory(RuntimePlayerInfoFactory)
-    player_black = SubFactory(RuntimePlayerInfoFactory)
+    player_white = SubFactory(PlayerFactory)
+    player_black = SubFactory(PlayerFactory)
 
 
 class GameRequestFactory(SQLAlchemyModelFactory):
@@ -34,12 +34,20 @@ class GameRequestFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = GameRequest
 
-    game_request_id = Sequence(lambda n: n)
     inviter = SubFactory(UserFactory)
 
     variant = enums.Variant.ANARCHY
     time_control = 600
     increment = 0
+
+    @classmethod
+    def create(
+        cls, game_settings: game_schema.GameSettings | None = None, **kwargs
+    ):
+        if game_settings:
+            kwargs.update(game_settings.model_dump())
+
+        return super().create(**kwargs)
 
 
 class GameResultFactory(SQLAlchemyModelFactory):
@@ -47,7 +55,6 @@ class GameResultFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = GameResult
 
-    game_results_id = Sequence(lambda n: n)
     token = Faker("pystr", max_chars=8)
 
     user_white = SubFactory(UserFactory)
@@ -100,3 +107,12 @@ class GameResultFactory(SQLAlchemyModelFactory):
             users = users[::-1]
 
         return games
+
+
+class GameSettingsFactory(Factory):
+    class Meta:
+        model = game_schema.GameSettings
+
+    variant = enums.Variant.ANARCHY
+    time_control = 60
+    increment = 0

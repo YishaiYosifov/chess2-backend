@@ -5,11 +5,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import BackgroundTasks, HTTPException, APIRouter, Response, Depends
 
 from app.utils.email_verification import send_verification_email
-from app.schemas.response_schema import ErrorResponse
 from app.services.auth_service import create_refresh_token, create_access_token
 from app.models.user_model import User
 from app.services import auth_service
-from app.schemas import user_schema
+from app.schemas import response_schema, user_schema
 from app.crud import user_crud
 from app import deps
 
@@ -23,7 +22,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Username / email already taken",
-            "model": ErrorResponse[dict[str, str]],
+            "model": response_schema.ErrorResponse[dict[str, str]],
         }
     },
 )
@@ -45,6 +44,8 @@ def signup(
     user_crud.original_email_or_raise(db, user.email)
 
     db_user = user_crud.create_user(db, user)
+    db.commit()
+
     if config.send_verification_email:
         background_tasks.add_task(
             send_verification_email,

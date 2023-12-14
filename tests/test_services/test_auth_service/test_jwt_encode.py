@@ -1,27 +1,26 @@
-from unittest.mock import patch, MagicMock
-from datetime import timedelta
+from datetime import timedelta, datetime
+
+from pytest_mock import MockerFixture
+import pytest
 
 from app.schemas.config_schema import Settings
 from app.services import auth_service
-from tests import constants
+from tests.utils import mocks
 
 
-@patch.object(auth_service.jwt, "encode")
-@patch.object(auth_service, "datetime")
-@patch.object(auth_service, "time")
+@pytest.mark.unit
 def test_encode_jwt_token(
-    mock_time: MagicMock,
-    mock_datetime: MagicMock,
-    mock_jwt_encode: MagicMock,
+    mocker: MockerFixture,
     settings: Settings,
 ):
     """Test the encoding of a jwt token"""
 
+    fixed_datetime = datetime(2023, 6, 9)
     fixed_timestamp = 69
 
-    # Mock anything related to time
-    mock_datetime.utcnow = MagicMock(return_value=constants.FIXED_DATETIME)
-    mock_time.time = MagicMock(return_value=fixed_timestamp)
+    # Setup mocks
+    mock_jwt_encode = mocker.patch.object(auth_service.jwt, "encode")
+    fixed_datetime, fixed_timestamp = mocks.fix_time(auth_service, mocker)
 
     expires_in_delta = timedelta(minutes=30)
     auth_service._encode_jwt_token(
@@ -33,7 +32,7 @@ def test_encode_jwt_token(
 
     # Check if the payload was correct
     expected_payload = {
-        "exp": constants.FIXED_DATETIME + expires_in_delta,
+        "exp": fixed_datetime + expires_in_delta,
         "iat": fixed_timestamp,
         "nbf": fixed_timestamp,
         "sub": 1,
@@ -45,12 +44,13 @@ def test_encode_jwt_token(
     )
 
 
-@patch.object(auth_service, "_encode_jwt_token")
-def test_create_access_token(mock_encode: MagicMock, settings: Settings):
+@pytest.mark.unit
+def test_create_access_token(mocker: MockerFixture, settings: Settings):
     """Test creating an access token"""
 
     user_id = 123
     expires_in_minutes = 69
+    mock_encode = mocker.patch.object(auth_service, "_encode_jwt_token")
 
     auth_service.create_access_token(
         settings.secret_key,
@@ -66,11 +66,9 @@ def test_create_access_token(mock_encode: MagicMock, settings: Settings):
     )
 
 
-@patch.object(auth_service, "_encode_jwt_token")
-@patch.object(auth_service, "uuid")
+@pytest.mark.unit
 def test_create_refresh_token(
-    mock_uuid: MagicMock,
-    mock_encode: MagicMock,
+    mocker: MockerFixture,
     settings: Settings,
 ):
     """Test creating a jwt token"""
@@ -79,7 +77,9 @@ def test_create_refresh_token(
     expires_in_days = 69
     jti = "some random string"
 
-    mock_uuid.uuid4 = MagicMock(return_value=jti)
+    mocker.patch.object(auth_service.uuid, "uuid4", return_value=jti)
+    mock_encode = mocker.patch.object(auth_service, "_encode_jwt_token")
+
     auth_service.create_refresh_token(
         settings.secret_key,
         settings.jwt_algorithm,

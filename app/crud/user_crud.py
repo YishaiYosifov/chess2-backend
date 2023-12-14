@@ -43,7 +43,7 @@ def fetch_by_token(
     """
     Try to decode a jwt token into a user model
 
-    :param db: the db session to fetch the user with
+    :param db: the database session to fetch the user with
     :param secret_key: the secret key to sign the token with
     :param jwt_algorithm: which algorithm to use to generate the key
     :param token: the jwt token
@@ -101,14 +101,11 @@ def create_user(
     user: user_schema.UserIn,
 ) -> UserModel:
     hashed_password = auth_service.hash_password(user.password)
-
     db_user = UserModel(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
     )
-
     db.add(db_user)
-    db.commit()
 
     return db_user

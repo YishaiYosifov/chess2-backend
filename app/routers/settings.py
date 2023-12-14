@@ -5,10 +5,9 @@ from http import HTTPStatus
 from pydantic import EmailStr
 from fastapi import HTTPException, UploadFile, APIRouter, Depends, Body
 
-from app.schemas.response_schema import ErrorResponse
 from app.models.user_model import User
 from app.services import settings_service
-from app.schemas import user_schema
+from app.schemas import response_schema, user_schema
 from app.utils import img_utils
 from app import deps
 
@@ -34,7 +33,7 @@ def update_profile(
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Email taken",
-            "model": ErrorResponse[str],
+            "model": response_schema.ErrorResponse[str],
         },
     },
 )
@@ -79,11 +78,11 @@ def change_password(
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Username taken",
-            "model": ErrorResponse[str],
+            "model": response_schema.ErrorResponse[str],
         },
         HTTPStatus.TOO_MANY_REQUESTS: {
             "description": "Username changed too recently",
-            "model": ErrorResponse[str],
+            "model": response_schema.ErrorResponse[str],
         },
     },
 )
@@ -109,11 +108,11 @@ def change_username(
     responses={
         HTTPStatus.REQUEST_ENTITY_TOO_LARGE: {
             "description": "Profile picture too large",
-            "model": ErrorResponse[str],
+            "model": response_schema.ErrorResponse[str],
         },
         HTTPStatus.BAD_REQUEST: {
             "description": "Bad image",
-            "model": ErrorResponse[str],
+            "model": response_schema.ErrorResponse[str],
         },
     },
 )

@@ -31,3 +31,20 @@ class RatingOverview(BaseModel):
     current: int
 
     history: list[Rating]
+
+
+class GameSettings(BaseModel):
+    variant: enums.Variant
+    time_control: int
+    increment: int
+
+
+class GameRequest(GameSettings):
+    test: int
+
+
+class Piece(BaseModel):
+    piece: enums.Piece
+    color: enums.Color
+
+    index: int

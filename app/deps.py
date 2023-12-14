@@ -76,7 +76,9 @@ def target_or_me(
     db: DBDep,
     target: Annotated[str, Path()],
     config: ConfigDep,
-    tokens: Annotated[user_schema.AuthTokens, Depends(auth_service.oauth2_scheme)],
+    tokens: Annotated[
+        user_schema.AuthTokens, Depends(auth_service.oauth2_scheme)
+    ],
 ) -> User:
     """
     Dependency to fetch a target user.

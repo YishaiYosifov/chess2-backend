@@ -53,7 +53,11 @@ class OAuth2PasswordBearerCookie(OAuth2PasswordBearer):
 
         header_tokens = self._get_from_header(request)
         cookie_tokens = self._get_from_cookie(request)
-        tokens = cookie_tokens if self._is_auth_empty(header_tokens) else header_tokens
+        tokens = (
+            cookie_tokens
+            if self._is_auth_empty(header_tokens)
+            else header_tokens
+        )
 
         if self._is_auth_empty(tokens) and self.auto_error:
             raise HTTPException(
@@ -65,7 +69,9 @@ class OAuth2PasswordBearerCookie(OAuth2PasswordBearer):
         return tokens
 
 
-oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl="auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearerCookie(
+    tokenUrl="auth/login", auto_error=False
+)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -246,7 +252,12 @@ def _check_token_revocation(db: Session, payload: dict[str, Any]) -> bool:
     :return: whether the token is revoked
     """
 
-    return db.execute(select(JTIBlocklist).filter_by(jti=payload.get("jti"))).scalar()
+    return (
+        db.execute(
+            select(JTIBlocklist).filter_by(jti=payload.get("jti"))
+        ).scalar()
+        is not None
+    )
 
 
 def decode_refresh_token(
@@ -265,7 +276,9 @@ def decode_refresh_token(
     :return: the user id if decoding was successful, otherwise None
     """
 
-    payload = _decode_jwt_token(secret_key, jwt_algorithm, token, {"require_jti": True})
+    payload = _decode_jwt_token(
+        secret_key, jwt_algorithm, token, {"require_jti": True}
+    )
     if payload.get("type") != "refresh" or _check_token_revocation(db, payload):
         return
 

@@ -22,7 +22,7 @@ class GameRequest(Base, kw_only=True):
 
     __tablename__ = "game_requests"
 
-    game_request_id: Mapped[int] = mapped_column(primary_key=True, default=None)
+    game_request_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 
     inviter_id: Mapped[int] = mapped_column(
         ForeignKey("users.user_id"),
@@ -52,5 +52,5 @@ class GameRequest(Base, kw_only=True):
 
     created_at: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(),
-        init=False,
+        default=None,
     )

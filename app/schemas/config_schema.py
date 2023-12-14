@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     db_username: str = ""
     db_password: str = ""
 
-    frontend_urls: list[str] = ["http://192.168.1.159:3000", "http://127.0.0.1:3000"]
+    frontend_url: str = ""
 
-    verification_url: str = "http://127.0.0.1:3000/verify"
+    verification_url: str = ""
     send_verification_email: bool = True
 
     edit_username_every_days: int = 30

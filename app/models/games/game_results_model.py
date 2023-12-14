@@ -18,8 +18,7 @@ class GameResult(Base, kw_only=True):
 
     __tablename__ = "game_results"
 
-    game_results_id: Mapped[int] = mapped_column(primary_key=True, default=None)
-
+    game_results_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     token: Mapped[str] = mapped_column(CHAR(8))
 
     user_white_id: Mapped[int] = mapped_column(

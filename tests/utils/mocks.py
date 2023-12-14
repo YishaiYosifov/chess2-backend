@@ -1,5 +1,8 @@
 from unittest.mock import _patch, patch
+from datetime import datetime
+from types import ModuleType
 
+from pytest_mock import MockerFixture
 from fastapi import FastAPI
 
 from app.models.user_model import User
@@ -47,3 +50,21 @@ def me_login(app: FastAPI, user: User) -> DependencyOverrider:
         overrides={deps.TargetOrMeDep: lambda: user},
     )
     return override_me_user
+
+
+def fix_time(
+    module: ModuleType,
+    mocker: MockerFixture,
+    to: datetime | None = None,
+) -> tuple[datetime, int]:
+    fixed_datetime = to or datetime(2023, 6, 9)
+    fixed_timestamp = int(fixed_datetime.timestamp())
+
+    if hasattr(module, "time"):
+        mocker.patch.object(module.time, "time", return_value=fixed_timestamp)
+
+    if hasattr(module, "datetime"):
+        mock_datetime = mocker.patch.object(module, "datetime")
+        mock_datetime.utcnow = mocker.Mock(return_value=fixed_datetime)
+
+    return fixed_datetime, fixed_timestamp

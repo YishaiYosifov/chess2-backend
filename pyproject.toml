@@ -1,0 +1,11 @@
+[tool.pytest-watcher]
+runner_args = "."
+ignore_patterns = [".\\env\\*"]
+
+[tool.pytest.ini_options]
+addopts = "-p no:anyio -p no:faker -s"
+testpaths = ["tests"]
+markers = ["unit", "integration"]
+
+[tool.black]
+line-length=80

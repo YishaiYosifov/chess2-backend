@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from app.models.games.game_model import Game
 
 
-class PiecePosition(Base, kw_only=True):
+class Piece(Base, kw_only=True):
     """Represents a piece in a game. This class holds its index (position), name and color."""
 
     __tablename__ = "piece_positions"
 
-    piece_position_id: Mapped[int] = mapped_column(primary_key=True, default=None)
+    piece_position_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     piece: Mapped[enums.Piece]
     color: Mapped[enums.Color]
 
@@ -30,4 +30,6 @@ class PiecePosition(Base, kw_only=True):
     )
     game: Mapped[Game] = relationship(back_populates="pieces")
 
-    __table_args__ = (UniqueConstraint(index, game_id, name="unique_piece_index"),)
+    __table_args__ = (
+        UniqueConstraint(index, game_id, name="unique_piece_index"),
+    )

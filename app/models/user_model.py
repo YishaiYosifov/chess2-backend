@@ -16,7 +16,7 @@ from app.db import Base
 class User(Base, kw_only=True):
     __tablename__ = "users"
 
-    user_id: Mapped[int] = mapped_column(primary_key=True, default=None)
+    user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 
     sid: Mapped[str | None] = mapped_column(
         Text,

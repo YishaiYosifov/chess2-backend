@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 
 from factory.alchemy import SQLAlchemyModelFactory
-from factory import SubFactory, Sequence
+from factory import SubFactory
 
 from app.models.rating_model import Rating
 from app.models.user_model import User
@@ -16,7 +16,6 @@ class RatingFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = Rating
 
-    rating_id = Sequence(lambda n: n)
     user = SubFactory(UserFactory)
     variant = enums.Variant.ANARCHY
 

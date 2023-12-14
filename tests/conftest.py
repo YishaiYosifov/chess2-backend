@@ -10,6 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import pytest
 
 from app.schemas.config_schema import get_settings
+from tests.utils.db_mock import DbMock
 from tests.utils import mocks
 from app.main import app
 from app.deps import get_db
@@ -53,3 +54,8 @@ def fix_mock_hash():
 @pytest.fixture(scope="session")
 def settings():
     return get_settings()
+
+
+@pytest.fixture
+def db_mock():
+    return DbMock()

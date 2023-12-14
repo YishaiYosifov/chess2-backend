@@ -6,10 +6,9 @@ import os
 from fastapi.responses import FileResponse
 from fastapi import HTTPException, APIRouter, Query
 
-from app.schemas.response_schema import ErrorResponse
 from app.constants import enums
-from app.schemas import user_schema, game_schema
-from app.crud import ratings_crud, game_crud
+from app.schemas import response_schema, user_schema, game_schema
+from app.crud import rating_crud, game_crud
 from app import deps
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 user_not_found_response = {
     HTTPStatus.NOT_FOUND: {
         "description": "Target user not found",
-        "model": ErrorResponse[str],
+        "model": response_schema.ErrorResponse[str],
     }
 }
 
@@ -86,7 +85,7 @@ def get_ratings(
     If a user is unrated in a certain variant, that variant will not be returned.
     """
 
-    return ratings_crud.fetch_many(db, target, variants)
+    return rating_crud.fetch_many(db, target, variants)
 
 
 @router.get(
@@ -96,7 +95,7 @@ def get_ratings(
         **user_not_found_response,
         HTTPStatus.BAD_REQUEST: {
             "description": "Bad 'since' value",
-            "model": ErrorResponse[dict[str, str]],
+            "model": response_schema.ErrorResponse[dict[str, str]],
         },
     },
 )
@@ -124,8 +123,8 @@ def get_ratings_history(
             detail={"since": "cannot be in the future"},
         )
 
-    history = ratings_crud.fetch_history(db, target, since, variants)
-    minmax = ratings_crud.fetch_min_max(db, target, variants)
+    history = rating_crud.fetch_history(db, target, since, variants)
+    minmax = rating_crud.fetch_min_max(db, target, variants)
 
     # Merge the history and min max values together
     results = {

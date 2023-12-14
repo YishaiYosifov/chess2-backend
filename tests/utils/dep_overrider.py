@@ -6,7 +6,9 @@ from fastapi import FastAPI
 class DependencyOverrider:
     """Temporarily override fastapi dependencies inside a context"""
 
-    def __init__(self, app: FastAPI, overrides: Mapping[Callable, Callable]) -> None:
+    def __init__(
+        self, app: FastAPI, overrides: Mapping[Callable, Callable]
+    ) -> None:
         self.overrides = overrides
         self._app = app
         self._old_overrides = {}
@@ -24,7 +26,9 @@ class DependencyOverrider:
         for dep in self.overrides.keys():
             if dep in self._old_overrides:
                 # Restore previous overrides
-                self._app.dependency_overrides[dep] = self._old_overrides.pop(dep)
+                self._app.dependency_overrides[dep] = self._old_overrides.pop(
+                    dep
+                )
             else:
                 # Just delete the entry
                 del self._app.dependency_overrides[dep]
