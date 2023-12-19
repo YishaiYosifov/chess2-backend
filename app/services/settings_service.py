@@ -11,11 +11,11 @@ from app.utils import email_verification
 from app.crud import user_crud
 from app.db import Base
 
-from ..models.user_model import User
+from ..models.user_model import AuthedUser
 
 
 class Setting(ABC):
-    def __init__(self, user: User) -> None:
+    def __init__(self, user: AuthedUser) -> None:
         self.user = user
 
     @abstractmethod
@@ -30,7 +30,7 @@ class PasswordSetting(Setting):
 
 
 class ValidationSetting(Setting, ABC):
-    def __init__(self, db: Session, user: User) -> None:
+    def __init__(self, db: Session, user: AuthedUser) -> None:
         self.user = user
         self.db = db
 
@@ -43,7 +43,7 @@ class EmailSetting(ValidationSetting):
     def __init__(
         self,
         db: Session,
-        user: User,
+        user: AuthedUser,
         verification_url: str,
     ):
         self.verification_url = verification_url
@@ -77,7 +77,9 @@ class EmailSetting(ValidationSetting):
 
 
 class UsernameSetting(ValidationSetting):
-    def __init__(self, db: Session, user: User, edit_timedelta: timedelta):
+    def __init__(
+        self, db: Session, user: AuthedUser, edit_timedelta: timedelta
+    ):
         self.edit_timedelta = edit_timedelta
         super().__init__(db, user)
 
@@ -116,7 +118,7 @@ class UsernameSetting(ValidationSetting):
 
 def update_setting_single(
     db: Session, setting: Setting, new_value: Any
-) -> User:
+) -> AuthedUser:
     """
     Update a setting and commit to the database.
 

@@ -7,8 +7,8 @@ from factory import SubFactory, Factory, Faker
 from app.models.games.game_results_model import GameResult
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.models.user_model import User
-from tests.factories.user import PlayerFactory, UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.conftest import TestScopedSession
 from app.constants import enums
 from app.schemas import game_schema
@@ -34,7 +34,7 @@ class GameRequestFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = GameRequest
 
-    inviter = SubFactory(UserFactory)
+    inviter = SubFactory(AuthedUserFactory)
 
     variant = enums.Variant.ANARCHY
     time_control = 600
@@ -57,8 +57,8 @@ class GameResultFactory(SQLAlchemyModelFactory):
 
     token = Faker("pystr", max_chars=8)
 
-    user_white = SubFactory(UserFactory)
-    user_black = SubFactory(UserFactory)
+    user_white = SubFactory(AuthedUserFactory)
+    user_black = SubFactory(AuthedUserFactory)
 
     variant = enums.Variant.ANARCHY
     time_control = 600
@@ -72,8 +72,8 @@ class GameResultFactory(SQLAlchemyModelFactory):
     def create_history_batch(
         cls,
         size: int,
-        user1: User,
-        user2: User,
+        user1: AuthedUser,
+        user2: AuthedUser,
         created_at: datetime | None = None,
         **kwargs: Any
     ) -> list[GameResult]:

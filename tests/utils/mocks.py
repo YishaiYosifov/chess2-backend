@@ -5,7 +5,7 @@ from types import ModuleType
 from pytest_mock import MockerFixture
 from fastapi import FastAPI
 
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.crud import user_crud
 from app import deps
 
@@ -21,7 +21,7 @@ def mock_hash() -> _patch:
 
 
 def mock_login(
-    app: FastAPI, user: User, *class_args, **class_kwargs
+    app: FastAPI, user: AuthedUser, *class_args, **class_kwargs
 ) -> DependencyOverrider:
     """
     Creates a context where the user is logged in.
@@ -32,12 +32,14 @@ def mock_login(
 
     override_authed_user = DependencyOverrider(
         app,
-        overrides={deps.AuthedUser(*class_args, **class_kwargs): lambda: user},
+        overrides={
+            deps.GetAuthedUser(*class_args, **class_kwargs): lambda: user
+        },
     )
     return override_authed_user
 
 
-def me_login(app: FastAPI, user: User) -> DependencyOverrider:
+def me_login(app: FastAPI, user: AuthedUser) -> DependencyOverrider:
     """
     Creates a context where `/me` routes recognize the user as logged in
     This is faster than sending a request to /auth/login because it doesn't actually generate a hash.

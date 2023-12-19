@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.constants import constants
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud, game_crud
@@ -11,7 +11,7 @@ from app.crud import game_request_crud, rating_crud, game_crud
 def start_game_request(
     db: Session,
     game_request: GameRequest,
-    recipient: User | None = None,
+    recipient: AuthedUser | None = None,
 ) -> Game:
     """
     Create the game from the game request.
@@ -50,7 +50,7 @@ def start_game_request(
 
 def create_or_start_pool_game(
     db: Session,
-    user: User,
+    user: AuthedUser,
     game_settings: game_schema.GameSettings,
 ) -> str | None:
     """

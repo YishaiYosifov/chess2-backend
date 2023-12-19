@@ -3,15 +3,23 @@ from factory import post_generation, SubFactory, Faker
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.services.auth_service import hash_password
-from app.models.user_model import User
+from app.models.user_model import AuthedUser, GuestUser
 from tests.conftest import TestScopedSession
 from app.constants import enums
 
 
-class UserFactory(SQLAlchemyModelFactory):
+class GuestUserFactory(SQLAlchemyModelFactory):
     class Meta:
         sqlalchemy_session = TestScopedSession
-        model = User
+        model = GuestUser
+
+    username = Faker("name")
+
+
+class AuthedUserFactory(SQLAlchemyModelFactory):
+    class Meta:
+        sqlalchemy_session = TestScopedSession
+        model = AuthedUser
 
     username = Faker("name")
     email = Faker("email")
@@ -20,7 +28,7 @@ class UserFactory(SQLAlchemyModelFactory):
     )
 
     @post_generation
-    def password(obj: User, create: bool, extracted: str, **kwargs):  # type: ignore
+    def password(obj: AuthedUser, create: bool, extracted: str, **kwargs):  # type: ignore
         if not create or not extracted:
             return
 
@@ -33,5 +41,5 @@ class PlayerFactory(SQLAlchemyModelFactory):
         model = RuntimePlayerInfo
 
     color = enums.Color.WHITE
-    user = SubFactory(UserFactory)
+    user = SubFactory(AuthedUserFactory)
     time_remaining = 600

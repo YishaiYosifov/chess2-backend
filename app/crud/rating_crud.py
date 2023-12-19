@@ -5,12 +5,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, true, func
 
 from app.models.rating_model import Rating
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.constants import enums
 
 
 def fetch_single(
-    db: Session, user: User, variant: enums.Variant
+    db: Session, user: AuthedUser, variant: enums.Variant
 ) -> Rating | None:
     """
     Get a user's latest rating.
@@ -32,7 +32,7 @@ def fetch_single(
 
 def fetch_many(
     db: Session,
-    user: User,
+    user: AuthedUser,
     variants: list[enums.Variant],
 ) -> dict[enums.Variant, Rating]:
     """
@@ -57,7 +57,7 @@ def fetch_many(
 
 def fetch_history(
     db: Session,
-    user: User,
+    user: AuthedUser,
     since: date,
     variants: list[enums.Variant],
 ) -> dict[enums.Variant, list[Rating]]:
@@ -93,7 +93,7 @@ def fetch_history(
 
 def fetch_min_max(
     db: Session,
-    user: User,
+    user: AuthedUser,
     variants: list[enums.Variant],
 ) -> dict[enums.Variant, tuple[int, int]]:
     """

@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 import pytest
 
 from tests.factories.rating import RatingFactory
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 from app.constants import enums
 from tests.utils import common as common_utils
 from app.crud import rating_crud
@@ -95,7 +95,7 @@ class TestFetchMany:
     def test_inactive(self, db: Session):
         """Test the `fetch_many` crud function to ensure it handles inactive ratings correctly"""
 
-        user: User = UserFactory.create()
+        user: AuthedUser = AuthedUserFactory.create()
         RatingFactory.create(user=user, variant=enums.Variant.ANARCHY)
 
         user.ratings[0].elo = 700
@@ -141,7 +141,7 @@ class TestFetchMinMax:
     def test_one_elo(self, db: Session):
         """Test what `user_crud.fetch_min_max` does when there is only 1 rating entry"""
 
-        user: User = UserFactory.create()
+        user: AuthedUser = AuthedUserFactory.create()
         RatingFactory.create_history(user, {enums.Variant.ANARCHY: [800]})
 
         ratings_min_max = rating_crud.fetch_min_max(

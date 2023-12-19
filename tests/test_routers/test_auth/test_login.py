@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 from _pytest.fixtures import SubRequest
 import pytest
 
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 from app.crud import user_crud
 
 
@@ -30,7 +30,7 @@ def mock_verify_password(request: SubRequest):
 def test_login_fail(client: TestClient, data):
     """Test how `/auth/login` handles non existing credentials"""
 
-    UserFactory.create(username="test-user")
+    AuthedUserFactory.create(username="test-user")
     response = client.post(
         "/auth/login",
         data=data,
@@ -45,7 +45,7 @@ def test_login_fail(client: TestClient, data):
 def test_login_success(client: TestClient):
     "Test how `/auth/login` handles valid credentials"
 
-    user: User = UserFactory.create()
+    user: AuthedUser = AuthedUserFactory.create()
     response = client.post(
         "/auth/login",
         data={

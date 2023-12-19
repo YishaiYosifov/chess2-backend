@@ -10,7 +10,7 @@ from app.constants import constants, enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user_model import User
+    from app.models.user_model import AuthedUser
 
 
 class Rating(Base, kw_only=True):
@@ -25,11 +25,11 @@ class Rating(Base, kw_only=True):
     is_active: Mapped[bool] = mapped_column(default=True, index=True)
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"),
+        ForeignKey("authed_users.user_id"),
         init=False,
         index=True,
     )
-    user: Mapped[User] = relationship(back_populates="ratings")
+    user: Mapped[AuthedUser] = relationship(back_populates="ratings")
 
     variant: Mapped[enums.Variant] = mapped_column()
     elo: Mapped[int] = mapped_column(default=constants.DEFAULT_RATING)

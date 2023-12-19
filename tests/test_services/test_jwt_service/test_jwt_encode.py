@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 import pytest
 
 from app.schemas.config_schema import Settings
-from app.services import auth_service
+from app.services import jwt_service
 from tests.utils import mocks
 
 
@@ -19,11 +19,11 @@ def test_encode_jwt_token(
     fixed_timestamp = 69
 
     # Setup mocks
-    mock_jwt_encode = mocker.patch.object(auth_service.jwt, "encode")
-    fixed_datetime, fixed_timestamp = mocks.fix_time(auth_service, mocker)
+    mock_jwt_encode = mocker.patch.object(jwt_service.jwt, "encode")
+    fixed_datetime, fixed_timestamp = mocks.fix_time(jwt_service, mocker)
 
     expires_in_delta = timedelta(minutes=30)
-    auth_service._encode_jwt_token(
+    jwt_service._encode_jwt_token(
         settings.secret_key,
         settings.jwt_algorithm,
         {"sub": 1},
@@ -50,9 +50,9 @@ def test_create_access_token(mocker: MockerFixture, settings: Settings):
 
     user_id = 123
     expires_in_minutes = 69
-    mock_encode = mocker.patch.object(auth_service, "_encode_jwt_token")
+    mock_encode = mocker.patch.object(jwt_service, "_encode_jwt_token")
 
-    auth_service.create_access_token(
+    jwt_service.create_access_token(
         settings.secret_key,
         settings.jwt_algorithm,
         user_id,
@@ -77,10 +77,10 @@ def test_create_refresh_token(
     expires_in_days = 69
     jti = "some random string"
 
-    mocker.patch.object(auth_service.uuid, "uuid4", return_value=jti)
-    mock_encode = mocker.patch.object(auth_service, "_encode_jwt_token")
+    mocker.patch.object(jwt_service.uuid, "uuid4", return_value=jti)
+    mock_encode = mocker.patch.object(jwt_service, "_encode_jwt_token")
 
-    auth_service.create_refresh_token(
+    jwt_service.create_refresh_token(
         settings.secret_key,
         settings.jwt_algorithm,
         user_id,

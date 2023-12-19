@@ -10,7 +10,7 @@ from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user_model import User
+    from app.models.user_model import AuthedUser
 
 
 class GameRequest(Base, kw_only=True):
@@ -25,22 +25,22 @@ class GameRequest(Base, kw_only=True):
     game_request_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 
     inviter_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"),
+        ForeignKey("guest_users.user_id"),
         init=False,
         index=True,
     )
-    inviter: Mapped[User] = relationship(
+    inviter: Mapped[AuthedUser] = relationship(
         foreign_keys=inviter_id,
         back_populates="game_request",
     )
 
     recipient_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"),
+        ForeignKey("guest_users.user_id"),
         nullable=True,
         init=False,
         index=True,
     )
-    recipient: Mapped[User] = relationship(
+    recipient: Mapped[AuthedUser] = relationship(
         foreign_keys=recipient_id,
         back_populates="incoming_games",
         default=None,

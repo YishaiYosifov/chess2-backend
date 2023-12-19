@@ -9,7 +9,7 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from tests.factories.user import UserFactory
+from tests.factories.user import AuthedUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
 from app.constants import constants, enums
 from app.services import game_request_service
@@ -115,14 +115,14 @@ class TestStartGameRequest:
     def test_with_recipient(self, db: Session, last_color: enums.Color):
         """Test that `start_game_request` correctly creates the necessary entries and deletes the request"""
 
-        inviter = UserFactory.create(last_color=last_color)
+        inviter = AuthedUserFactory.create(last_color=last_color)
         game_request: GameRequest = GameRequestFactory.create(
             recipient=None, inviter=inviter
         )
         db.flush()
 
         inviter = game_request.inviter
-        recipient = UserFactory.create()
+        recipient = AuthedUserFactory.create()
 
         game = game_request_service.start_game_request(
             db, game_request, recipient

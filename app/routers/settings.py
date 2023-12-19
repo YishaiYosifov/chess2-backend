@@ -5,7 +5,7 @@ from http import HTTPStatus
 from pydantic import EmailStr
 from fastapi import HTTPException, UploadFile, APIRouter, Depends, Body
 
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.services import settings_service
 from app.schemas import response_schema, user_schema
 from app.utils import img_utils
@@ -39,7 +39,7 @@ def update_profile(
 )
 def change_email(
     db: deps.DBDep,
-    user: Annotated[User, Depends(deps.AuthedUser(fresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(fresh=True))],
     config: deps.ConfigDep,
     new_email: Annotated[EmailStr, Body()],
 ):
@@ -60,7 +60,7 @@ def change_email(
 @router.put("/password", response_model=user_schema.UserOut)
 def change_password(
     db: deps.DBDep,
-    user: Annotated[User, Depends(deps.AuthedUser(fresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(fresh=True))],
     new_password: Annotated[str, Body()],
 ):
     """Hash the password and update it. Requires a fresh JWT token."""

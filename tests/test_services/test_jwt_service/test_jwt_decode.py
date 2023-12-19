@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 import pytest
 
 from app.schemas.config_schema import Settings
-from app.services import auth_service
+from app.services import jwt_service
 
 
 @pytest.mark.unit
@@ -14,9 +14,9 @@ def test_decode_jwt_token(mocker: MockerFixture, settings: Settings):
     Check if it handles options correctly.
     """
 
-    mock_jwt_decode = mocker.patch.object(auth_service.jwt, "decode")
+    mock_jwt_decode = mocker.patch.object(jwt_service.jwt, "decode")
 
-    auth_service._decode_jwt_token(
+    jwt_service._decode_jwt_token(
         settings.secret_key,
         settings.jwt_algorithm,
         "token",
@@ -78,20 +78,20 @@ def test_decode_tokens(
 ):
     """Try to decode tokens with correct and incorrect types"""
 
-    mocker.patch.object(auth_service, "_decode_jwt_token", return_value=payload)
-    mocker.patch.object(auth_service, "_get_jwt_indentity", return_value=1)
+    mocker.patch.object(jwt_service, "_decode_jwt_token", return_value=payload)
+    mocker.patch.object(jwt_service, "_get_jwt_indentity", return_value=1)
     mocker.patch.object(
-        auth_service, "_check_token_revocation", return_value=False
+        jwt_service, "_check_token_revocation", return_value=False
     )
 
     user_id = (
-        auth_service.decode_access_token(
+        jwt_service.decode_access_token(
             settings.secret_key,
             settings.jwt_algorithm,
             "token",
         )
         if token_type == "access"
-        else auth_service.decode_refresh_token(
+        else jwt_service.decode_refresh_token(
             settings.secret_key,
             settings.jwt_algorithm,
             MagicMock(),

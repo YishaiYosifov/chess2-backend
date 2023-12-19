@@ -4,14 +4,14 @@ from _pytest.fixtures import SubRequest
 import pytest
 
 from tests.factories.rating import RatingFactory
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 from app.constants import enums
 
 
 @dataclass(frozen=True)
 class RatingBatch:
-    user: User
+    user: AuthedUser
     variants: list[enums.Variant]
 
 
@@ -24,7 +24,7 @@ class RatingHistory(RatingBatch):
 def rating_batch(db, request: SubRequest) -> RatingBatch:
     variants: list[enums.Variant] = request.param
 
-    user: User = UserFactory.create()
+    user: AuthedUser = AuthedUserFactory.create()
     RatingFactory.create_variant_batch(user, variants)
 
     return RatingBatch(user=user, variants=variants)
@@ -35,7 +35,7 @@ def rating_history(db, request: SubRequest) -> RatingHistory:
     variants: list[enums.Variant] = request.param
 
     elos = [500, 57, 1]
-    user: User = UserFactory.create()
+    user: AuthedUser = AuthedUserFactory.create()
     RatingFactory.create_history(user, {variant: elos for variant in variants})
 
     return RatingHistory(user=user, elos=elos, variants=variants)

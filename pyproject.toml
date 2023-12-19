@@ -8,4 +8,4 @@ testpaths = ["tests"]
 markers = ["unit", "integration"]
 
 [tool.black]
-line-length=80
+line-length = 80

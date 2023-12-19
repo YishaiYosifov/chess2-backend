@@ -10,7 +10,7 @@ from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user_model import User
+    from app.models.user_model import AuthedUser
 
 
 class GameResult(Base, kw_only=True):
@@ -22,20 +22,20 @@ class GameResult(Base, kw_only=True):
     token: Mapped[str] = mapped_column(CHAR(8))
 
     user_white_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id", ondelete="SET NULL"),
+        ForeignKey("authed_users.user_id", ondelete="SET NULL"),
         nullable=True,
         init=False,
         index=True,
     )
-    user_white: Mapped[User] = relationship(foreign_keys=user_white_id)
+    user_white: Mapped[AuthedUser] = relationship(foreign_keys=user_white_id)
 
     user_black_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id", ondelete="SET NULL"),
+        ForeignKey("authed_users.user_id", ondelete="SET NULL"),
         nullable=True,
         init=False,
         index=True,
     )
-    user_black: Mapped[User] = relationship(foreign_keys=user_black_id)
+    user_black: Mapped[AuthedUser] = relationship(foreign_keys=user_black_id)
 
     variant: Mapped[enums.Variant]
     time_control: Mapped[int]

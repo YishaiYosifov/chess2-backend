@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 import pytest
 
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 
 
 @pytest.mark.integration
@@ -90,7 +90,7 @@ def test_signup_success(client: TestClient, db: Session):
     )
     assert response.status_code == HTTPStatus.CREATED, response.json()
 
-    user = db.execute(select(User)).scalar_one()
+    user = db.execute(select(AuthedUser)).scalar_one()
     assert user.username == "test-username"
     assert user.email == "test@example.com"
 
@@ -116,6 +116,6 @@ def test_signup_success(client: TestClient, db: Session):
 def test_signup_conflict(client: TestClient, data: dict):
     """Test how `/auth/signup` handles username / email conflicts"""
 
-    UserFactory.create(username="test-user", email="test@example.com")
+    AuthedUserFactory.create(username="test-user", email="test@example.com")
     response = client.post("/auth/signup", json=data)
     assert response.status_code == HTTPStatus.CONFLICT, response.json()

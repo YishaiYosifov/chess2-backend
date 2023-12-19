@@ -7,8 +7,8 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from tests.factories.rating import RatingFactory
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
 from app.constants import constants, enums
 from app.schemas import game_schema
@@ -19,7 +19,7 @@ def assert_game_request(
     db: Session,
     game_request: GameRequest | None,
     game_settings: game_schema.GameSettings,
-    inviter: User,
+    inviter: AuthedUser,
     rating: int | None = None,
 ):
     """
@@ -210,7 +210,7 @@ class TestSearchGameRequest:
     ):
         """Test if `search_game_request` correctly ignores game requests with a recipient"""
 
-        recipient = UserFactory.create()
+        recipient = AuthedUserFactory.create()
         GameRequestFactory.create(
             game_settings=game_settings, recipient=recipient
         )

@@ -3,7 +3,7 @@ from sqlalchemy import select, func
 
 from app.models.games.game_request_model import GameRequest
 from app.models.rating_model import Rating
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.constants import constants
 from app.schemas import game_schema
 
@@ -11,7 +11,7 @@ from app.schemas import game_schema
 # TODO: write test auhhh
 def create_game_request(
     db: Session,
-    user: User,
+    user: AuthedUser,
     game_settings: game_schema.GameSettings,
 ) -> GameRequest:
     game_request = GameRequest(

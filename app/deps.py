@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends, Path
 
 from app.services.auth_service import oauth2_scheme
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.services import auth_service
 from app.schemas import user_schema
 from app.crud import user_crud
@@ -28,7 +28,7 @@ ConfigDep = Annotated[Settings, Depends(get_settings)]
 
 
 @dataclass(frozen=True, eq=True)
-class AuthedUser:
+class GetAuthedUser:
     required: bool = True
     refresh: bool = False
     fresh: bool = False
@@ -38,7 +38,7 @@ class AuthedUser:
         db: DBDep,
         config: ConfigDep,
         tokens: Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)],
-    ) -> User | None:
+    ) -> AuthedUser | None:
         """Dependency to fetch the authorized user"""
 
         credentials_exception = HTTPException(
@@ -55,7 +55,7 @@ class AuthedUser:
             return
 
         # Try to fetch the user with the token
-        user = user_crud.fetch_by_token(
+        user = user_crud.fetch_authed_by_token(
             db,
             config.secret_key,
             config.jwt_algorithm,
@@ -69,7 +69,7 @@ class AuthedUser:
         return user
 
 
-AuthedUserDep = Annotated[User, Depends(AuthedUser())]
+AuthedUserDep = Annotated[AuthedUser, Depends(GetAuthedUser())]
 
 
 def target_or_me(
@@ -79,7 +79,7 @@ def target_or_me(
     tokens: Annotated[
         user_schema.AuthTokens, Depends(auth_service.oauth2_scheme)
     ],
-) -> User:
+) -> AuthedUser:
     """
     Dependency to fetch a target user.
     If the target is `me`, it will fetch the currently logged in user.
@@ -90,7 +90,7 @@ def target_or_me(
 
     if target == "me":
         user = (
-            user_crud.fetch_by_token(
+            user_crud.fetch_authed_by_token(
                 db,
                 config.secret_key,
                 config.jwt_algorithm,
@@ -111,4 +111,4 @@ def target_or_me(
     return user
 
 
-TargetOrMeDep = Annotated[User, Depends(target_or_me)]
+TargetOrMeDep = Annotated[AuthedUser, Depends(target_or_me)]

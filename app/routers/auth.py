@@ -5,9 +5,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import BackgroundTasks, HTTPException, APIRouter, Response, Depends
 
 from app.utils.email_verification import send_verification_email
-from app.services.auth_service import create_refresh_token, create_access_token
-from app.models.user_model import User
-from app.services import auth_service
+from app.models.user_model import AuthedUser
+from app.services import auth_service, jwt_service
 from app.schemas import response_schema, user_schema
 from app.crud import user_crud
 from app import deps
@@ -73,14 +72,14 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(
+    access_token = jwt_service.create_access_token(
         config.secret_key,
         config.jwt_algorithm,
         user.user_id,
         expires_in_minutes=config.access_token_expires_minutes,
         fresh=True,
     )
-    refresh_token = create_refresh_token(
+    refresh_token = jwt_service.create_refresh_token(
         config.secret_key,
         config.jwt_algorithm,
         user.user_id,
@@ -108,13 +107,13 @@ def logout(response: Response):
 
 @router.get("/refresh-access-token", response_model=user_schema.AccessToken)
 def refresh_access_token(
-    user: Annotated[User, Depends(deps.AuthedUser(refresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(refresh=True))],
     config: deps.ConfigDep,
     response: Response,
 ):
     """Generate a new access token using a refresh token"""
 
-    access_token = create_access_token(
+    access_token = jwt_service.create_access_token(
         config.secret_key,
         config.jwt_algorithm,
         user.user_id,

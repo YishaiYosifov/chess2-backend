@@ -7,8 +7,8 @@ from fastapi import HTTPException
 import pytest
 
 from app.schemas.config_schema import Settings
-from app.models.user_model import User
-from tests.factories.user import UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory
 from app.services import settings_service
 from tests.utils import mocks
 
@@ -23,7 +23,7 @@ def test_password_setting(mocker: MockerFixture):
     )
     mock_hash_password.return_value = mocked_hash
 
-    user: User = UserFactory.build()
+    user: AuthedUser = AuthedUserFactory.build()
 
     settings_service.PasswordSetting(user).update("new password")
     assert user.hashed_password == mocked_hash
@@ -42,7 +42,7 @@ def test_email_setting(
         "send_verification_email",
     )
 
-    user: User = UserFactory.build()
+    user: AuthedUser = AuthedUserFactory.build()
     new_email = "test@example.com"
 
     mocked_db = MagicMock()
@@ -70,7 +70,7 @@ class TestUsernameSetting:
     def username_setting(self, settings: Settings):
         """Create an instance of the username setting service"""
 
-        user = UserFactory.build()
+        user = AuthedUserFactory.build()
         mocked_db = MagicMock()
         return settings_service.UsernameSetting(
             mocked_db, user, timedelta(days=settings.edit_username_every_days)

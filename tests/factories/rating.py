@@ -4,11 +4,11 @@ from factory.alchemy import SQLAlchemyModelFactory
 from factory import SubFactory
 
 from app.models.rating_model import Rating
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from tests.conftest import TestScopedSession
 from app.constants import enums
 
-from .user import UserFactory
+from .user import AuthedUserFactory
 
 
 class RatingFactory(SQLAlchemyModelFactory):
@@ -16,13 +16,13 @@ class RatingFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = Rating
 
-    user = SubFactory(UserFactory)
+    user = SubFactory(AuthedUserFactory)
     variant = enums.Variant.ANARCHY
 
     @classmethod
     def create_history(
         cls,
-        user: User,
+        user: AuthedUser,
         variants: dict[enums.Variant, list[int] | list[int | None] | int],
     ) -> list[Rating]:
         """
@@ -58,5 +58,7 @@ class RatingFactory(SQLAlchemyModelFactory):
         return ratings
 
     @classmethod
-    def create_variant_batch(cls, user: User, variants: list[enums.Variant]):
+    def create_variant_batch(
+        cls, user: AuthedUser, variants: list[enums.Variant]
+    ):
         return cls.create_history(user, {variant: 1 for variant in variants})

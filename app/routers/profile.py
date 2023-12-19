@@ -67,7 +67,7 @@ def total_game_count(
 ):
     """Count how many games a user has"""
 
-    return game_crud.total(db, target)
+    return game_crud.total_count(db, target)
 
 
 @router.get(

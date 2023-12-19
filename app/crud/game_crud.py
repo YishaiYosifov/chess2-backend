@@ -8,13 +8,13 @@ from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_results_model import GameResult
 from app.models.games.piece_model import Piece
 from app.models.games.game_model import Game
-from app.models.user_model import User
+from app.models.user_model import AuthedUser
 from app.constants import constants, enums
 
 
 def paginate_history(
     db: Session,
-    user: User,
+    user: AuthedUser,
     page: int = 0,
     per_page: int = 10,
 ) -> Sequence[GameResult]:
@@ -45,7 +45,7 @@ def paginate_history(
     return games
 
 
-def total_count(db: Session, user: User) -> int:
+def total_count(db: Session, user: AuthedUser) -> int:
     """
     Count the total number of games the user has played
 
@@ -62,7 +62,7 @@ def total_count(db: Session, user: User) -> int:
 
 
 def create_players(
-    db: Session, inviter: User, recipient: User, time_control: int
+    db: Session, inviter: AuthedUser, recipient: AuthedUser, time_control: int
 ) -> tuple[RuntimePlayerInfo, RuntimePlayerInfo]:
     """
     Create the players for a game.

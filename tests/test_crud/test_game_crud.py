@@ -9,8 +9,8 @@ import pytest
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_results_model import GameResult
 from app.models.games.piece_model import Piece
-from app.models.user_model import User
-from tests.factories.user import PlayerFactory, UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.factories.game import GameResultFactory, GameFactory
 from app.constants import enums
 from app.schemas import game_schema
@@ -18,8 +18,8 @@ from app.crud import game_crud
 
 
 class GameHistory(NamedTuple):
-    user1: User
-    user2: User
+    user1: AuthedUser
+    user2: AuthedUser
     games: list[GameResult]
 
 
@@ -27,8 +27,8 @@ class GameHistory(NamedTuple):
 def game_history(db, request: SubRequest) -> GameHistory:
     num_of_games: int = request.param
 
-    user1 = UserFactory.create()
-    user2 = UserFactory.create()
+    user1 = AuthedUserFactory.create()
+    user2 = AuthedUserFactory.create()
     games = GameResultFactory.create_history_batch(
         num_of_games,
         user1=user1,
@@ -110,8 +110,8 @@ def test_create_players(
     the to inviter and recipient, as well as how much time they have remaining.
     """
 
-    inviter = UserFactory.build(last_color=inviter_color)
-    recipient = UserFactory.build(last_color=recipient_color)
+    inviter = AuthedUserFactory.build(last_color=inviter_color)
+    recipient = AuthedUserFactory.build(last_color=recipient_color)
     time_control = 69
 
     inviter_player, recipient_player = game_crud.create_players(

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, ColumnExpressionArgument
 from fastapi import HTTPException
 
-from app.models.user_model import User as UserModel
-from app.services import auth_service
+from app.models.user_model import AuthedUser as UserModel
+from app.services import auth_service, jwt_service
 
 from ..schemas import user_schema
 
@@ -32,7 +32,7 @@ def original_username_or_raise(db: Session, username: str) -> None:
         )
 
 
-def fetch_by_token(
+def fetch_authed_by_token(
     db: Session,
     secret_key: str,
     jwt_algorithm: str,
@@ -53,14 +53,14 @@ def fetch_by_token(
     """
 
     user_id = (
-        auth_service.decode_refresh_token(
+        jwt_service.decode_refresh_token(
             secret_key,
             jwt_algorithm,
             db,
             token,
         )
         if refresh
-        else auth_service.decode_access_token(
+        else jwt_service.decode_access_token(
             secret_key,
             jwt_algorithm,
             token,

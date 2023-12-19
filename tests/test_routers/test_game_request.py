@@ -7,8 +7,8 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.models.user_model import User
-from tests.factories.user import PlayerFactory, UserFactory
+from app.models.user_model import AuthedUser
+from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.factories.game import GameRequestFactory, GameFactory
 from app.constants import enums
 from tests.utils import mocks
@@ -21,7 +21,7 @@ class TestStartPoolGame:
     def _send_request(
         self,
         client: TestClient,
-        user: User,
+        user: AuthedUser,
         variant: enums.Variant = enums.Variant.ANARCHY,
         time_control: int = 69,
         increment: int = 10,
@@ -39,7 +39,7 @@ class TestStartPoolGame:
     def test_fail_with_active_game(self, client: TestClient):
         """Test that you cannot start a game if you're already in a game"""
 
-        user = UserFactory.create()
+        user = AuthedUserFactory.create()
         GameFactory.create(
             player_white=PlayerFactory.create(user=user), player_black=None
         )
@@ -50,7 +50,7 @@ class TestStartPoolGame:
     def test_no_existing_request_found(self, client: TestClient, db: Session):
         """Test if a game request is created if there is no existing request"""
 
-        user = UserFactory.create()
+        user = AuthedUserFactory.create()
         response = self._send_request(client, user)
 
         assert response.status_code == HTTPStatus.CREATED
@@ -59,7 +59,7 @@ class TestStartPoolGame:
     def test_existing_request_found(self, client: TestClient, db: Session):
         """Test that a game is started if there is an existing request"""
 
-        user = UserFactory.create()
+        user = AuthedUserFactory.create()
 
         variant = enums.Variant.ANARCHY
         time_control = 69
@@ -79,7 +79,7 @@ class TestStartPoolGame:
     def test_user_has_request(self, client: TestClient, db: Session):
         """Test that if the user already has a game request it is deleted"""
 
-        user = UserFactory.create()
+        user = AuthedUserFactory.create()
         GameRequestFactory.create(inviter=user)
         db.flush()
 
