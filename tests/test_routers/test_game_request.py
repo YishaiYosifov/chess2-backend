@@ -12,7 +12,6 @@ from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.factories.game import GameRequestFactory, GameFactory
 from app.constants import enums
 from tests.utils import mocks
-from app.main import app
 
 
 @pytest.mark.integration
@@ -26,7 +25,7 @@ class TestStartPoolGame:
         time_control: int = 69,
         increment: int = 10,
     ):
-        with mocks.mock_login(app, user):
+        with mocks.mock_login(user):
             return client.post(
                 "/game-requests/pool/join",
                 json={

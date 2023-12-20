@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Generator, Annotated
 from http import HTTPStatus
 
@@ -6,8 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends, Path
 
 from app.services.auth_service import oauth2_scheme
-from app.models.user_model import AuthedUser
-from app.services import auth_service
+from app.models.user_model import AuthedUser, GuestUser
 from app.schemas import user_schema
 from app.crud import user_crud
 
@@ -25,22 +23,29 @@ def get_db() -> Generator[Session, None, None]:
 
 DBDep = Annotated[Session, Depends(get_db)]
 ConfigDep = Annotated[Settings, Depends(get_settings)]
+TokensDep = Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)]
 
 
-@dataclass(frozen=True, eq=True)
-class GetAuthedUser:
-    required: bool = True
-    refresh: bool = False
-    fresh: bool = False
-
-    def __call__(
+class GetCurrentUser:
+    def __init__(
         self,
-        db: DBDep,
-        config: ConfigDep,
-        tokens: Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)],
-    ) -> AuthedUser | None:
-        """Dependency to fetch the authorized user"""
+        authed: bool = True,
+        required: bool = True,
+        refresh: bool = False,
+        fresh: bool = False,
+    ) -> None:
+        self.authed = authed
+        self.required = required
+        self.refresh = refresh
+        self.fresh = fresh
 
+    def get_authed_user(
+        self,
+        db: Session,
+        tokens: user_schema.AuthTokens,
+        secret_key: str,
+        jwt_algorithm: str,
+    ) -> AuthedUser | None:
         credentials_exception = HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -57,8 +62,8 @@ class GetAuthedUser:
         # Try to fetch the user with the token
         user = user_crud.fetch_authed_by_token(
             db,
-            config.secret_key,
-            config.jwt_algorithm,
+            secret_key,
+            jwt_algorithm,
             token,
             self.refresh,
             self.fresh,
@@ -68,17 +73,42 @@ class GetAuthedUser:
 
         return user
 
+    def get_guest_user(
+        self,
+        db: Session,
+        tokens: user_schema.AuthTokens,
+        secret_key: str,
+        jwt_algorithm: str,
+    ) -> GuestUser | None:
+        pass
 
-AuthedUserDep = Annotated[AuthedUser, Depends(GetAuthedUser())]
+    def __call__(
+        self,
+        db: DBDep,
+        config: ConfigDep,
+        tokens: TokensDep,
+    ) -> GuestUser | None:
+        """Dependency to fetch the authorized user"""
+
+        return (
+            self.get_authed_user(
+                db, tokens, config.secret_key, config.jwt_algorithm
+            )
+            if self.authed
+            else self.get_guest_user(
+                db, tokens, config.secret_key, config.jwt_algorithm
+            )
+        )
+
+
+AuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser())]
 
 
 def target_or_me(
     db: DBDep,
     target: Annotated[str, Path()],
     config: ConfigDep,
-    tokens: Annotated[
-        user_schema.AuthTokens, Depends(auth_service.oauth2_scheme)
-    ],
+    tokens: TokensDep,
 ) -> AuthedUser:
     """
     Dependency to fetch a target user.

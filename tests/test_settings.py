@@ -6,7 +6,6 @@ import pytest
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 from tests.utils import mocks
-from app.main import app
 
 
 @pytest.mark.usefixtures("db")
@@ -17,7 +16,7 @@ def atest_upload_pfp(client: TestClient):
         b"\x01\x00\x01\x00\x01@&%\xa4\x00\x03p\x00\xfe\xfd6h\x00"
     )
 
-    with mocks.mock_login(app, user):
+    with mocks.mock_login(user):
         print(
             client.put(
                 "/settings/upload-profile-picture",

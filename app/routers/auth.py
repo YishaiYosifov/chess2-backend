@@ -107,7 +107,7 @@ def logout(response: Response):
 
 @router.get("/refresh-access-token", response_model=user_schema.AccessToken)
 def refresh_access_token(
-    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(refresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetCurrentUser(refresh=True))],
     config: deps.ConfigDep,
     response: Response,
 ):

@@ -41,12 +41,6 @@ class GuestUser(Base, kw_only=True):
         init=False,
     )
 
-    incoming_games: Mapped[list[GameRequest]] = relationship(
-        back_populates="recipient",
-        foreign_keys=GameRequest.recipient_id,
-        init=False,
-    )
-
     player: Mapped[RuntimePlayerInfo | None] = relationship(
         back_populates="user",
         default=None,
@@ -95,6 +89,12 @@ class AuthedUser(GuestUser):
     pfp_last_changed: Mapped[datetime] = mapped_column(
         insert_default=func.current_timestamp(),
         default=None,
+    )
+
+    incoming_games: Mapped[list[GameRequest]] = relationship(
+        back_populates="recipient",
+        foreign_keys=GameRequest.recipient_id,
+        init=False,
     )
 
     ratings: Mapped[list[Rating]] = relationship(

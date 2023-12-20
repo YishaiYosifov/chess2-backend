@@ -39,7 +39,7 @@ def update_profile(
 )
 def change_email(
     db: deps.DBDep,
-    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(fresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetCurrentUser(fresh=True))],
     config: deps.ConfigDep,
     new_email: Annotated[EmailStr, Body()],
 ):
@@ -60,7 +60,7 @@ def change_email(
 @router.put("/password", response_model=user_schema.UserOut)
 def change_password(
     db: deps.DBDep,
-    user: Annotated[AuthedUser, Depends(deps.GetAuthedUser(fresh=True))],
+    user: Annotated[AuthedUser, Depends(deps.GetCurrentUser(fresh=True))],
     new_password: Annotated[str, Body()],
 ):
     """Hash the password and update it. Requires a fresh JWT token."""

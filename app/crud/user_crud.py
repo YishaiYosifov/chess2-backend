@@ -4,20 +4,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, ColumnExpressionArgument
 from fastapi import HTTPException
 
-from app.models.user_model import AuthedUser as UserModel
 from app.services import auth_service, jwt_service
+from app.models import user_model
 
 from ..schemas import user_schema
 
 
 def fetch_by(
     db: Session, *criteria: ColumnExpressionArgument[bool]
-) -> UserModel | None:
-    return db.execute(select(UserModel).filter(*criteria)).scalar()
+) -> user_model.AuthedUser | None:
+    return db.execute(select(user_model.AuthedUser).filter(*criteria)).scalar()
 
 
 def original_email_or_raise(db: Session, email: str) -> None:
-    if fetch_by(db, UserModel.email == email):
+    if fetch_by(db, user_model.AuthedUser.email == email):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
             detail={"email": "Email taken"},
@@ -25,11 +25,28 @@ def original_email_or_raise(db: Session, email: str) -> None:
 
 
 def original_username_or_raise(db: Session, username: str) -> None:
-    if fetch_by(db, UserModel.username == username):
+    if fetch_by(db, user_model.AuthedUser.username == username):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
             detail={"username": "Username taken"},
         )
+
+
+def generic_fetch(
+    db: Session, selector: int | str
+) -> user_model.AuthedUser | None:
+    """Fetch user by their username / id"""
+
+    return (
+        db.get(
+            user_model.AuthedUser,
+            selector,
+        )
+        if isinstance(selector, int)
+        else db.execute(
+            select(user_model.AuthedUser).filter_by(username=selector)
+        ).scalar()
+    )
 
 
 def fetch_authed_by_token(
@@ -39,7 +56,7 @@ def fetch_authed_by_token(
     token: str,
     refresh: bool = False,
     fresh: bool = False,
-) -> UserModel | None:
+) -> user_model.AuthedUser | None:
     """
     Try to decode a jwt token into a user model
 
@@ -74,21 +91,10 @@ def fetch_authed_by_token(
     return user
 
 
-def generic_fetch(db: Session, selector: int | str) -> UserModel | None:
-    """Fetch user by their username / id"""
-
-    return (
-        db.get(
-            UserModel,
-            selector,
-        )
-        if isinstance(selector, int)
-        else db.execute(select(UserModel).filter_by(username=selector)).scalar()
-    )
-
-
-def authenticate(db: Session, username: str, password: str) -> UserModel | None:
-    user = fetch_by(db, UserModel.username == username)
+def authenticate(
+    db: Session, username: str, password: str
+) -> user_model.AuthedUser | None:
+    user = fetch_by(db, user_model.AuthedUser.username == username)
     if not user:
         return
     if not auth_service.verify_password(password, user.hashed_password):
@@ -99,9 +105,9 @@ def authenticate(db: Session, username: str, password: str) -> UserModel | None:
 def create_user(
     db: Session,
     user: user_schema.UserIn,
-) -> UserModel:
+) -> user_model.AuthedUser:
     hashed_password = auth_service.hash_password(user.password)
-    db_user = UserModel(
+    db_user = user_model.AuthedUser(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,

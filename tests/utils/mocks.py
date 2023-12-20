@@ -1,9 +1,12 @@
 from unittest.mock import _patch, patch
+from contextlib import contextmanager
 from datetime import datetime
+from typing import Generator
 from types import ModuleType
 
 from pytest_mock import MockerFixture
 from fastapi import FastAPI
+from pytest import MonkeyPatch
 
 from app.models.user_model import AuthedUser
 from app.crud import user_crud
@@ -20,23 +23,20 @@ def mock_hash() -> _patch:
     )
 
 
-def mock_login(
-    app: FastAPI, user: AuthedUser, *class_args, **class_kwargs
-) -> DependencyOverrider:
+@contextmanager
+def mock_login(user: AuthedUser) -> Generator:
     """
     Creates a context where the user is logged in.
     This is faster than sending a request to /auth/login because it doesn't actually generate a hash.
 
+    This overrides every parameter the GetCurrentUser dependency could get by monkeypatching the __call__ method.
+
     :param user: a user object to mock login into
     """
 
-    override_authed_user = DependencyOverrider(
-        app,
-        overrides={
-            deps.GetAuthedUser(*class_args, **class_kwargs): lambda: user
-        },
-    )
-    return override_authed_user
+    with MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(deps.GetCurrentUser, "__call__", lambda self: user)
+        yield
 
 
 def me_login(app: FastAPI, user: AuthedUser) -> DependencyOverrider:
