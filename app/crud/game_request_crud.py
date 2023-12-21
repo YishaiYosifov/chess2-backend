@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from app.models.games.game_request_model import GameRequest
+from app.schemas.config_schema import CONFIG
 from app.models.rating_model import Rating
 from app.models.user_model import AuthedUser
-from app.constants import constants
 from app.schemas import game_schema
 
 
@@ -48,9 +48,9 @@ def search_game_request(
         query = query.join(
             Rating, Rating.user_id == GameRequest.inviter_id, isouter=True
         ).filter(
-            func.coalesce(Rating.elo, constants.DEFAULT_RATING).between(
-                rating - constants.ACCEPTABLE_RATING_DIFFERENCE,
-                rating + constants.ACCEPTABLE_RATING_DIFFERENCE,
+            func.coalesce(Rating.elo, CONFIG.default_rating).between(
+                rating - CONFIG.acceptable_rating_difference,
+                rating + CONFIG.acceptable_rating_difference,
             )
         )
 

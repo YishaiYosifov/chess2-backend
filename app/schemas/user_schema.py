@@ -4,8 +4,6 @@ from typing import Annotated
 from pydantic_extra_types.country import CountryAlpha3
 from pydantic import field_validator, BaseModel, EmailStr, Field
 
-from app.constants import constants
-
 
 class BaseUserProfile(BaseModel):
     country: CountryAlpha3 | None = None
@@ -13,7 +11,7 @@ class BaseUserProfile(BaseModel):
 
 
 class BaseUserAccountInfo(BaseModel):
-    username: Annotated[str, Field(max_length=30)]
+    username: Annotated[str, Field(min_length=3, max_length=30)]
 
     @field_validator("username")
     @classmethod
@@ -29,31 +27,28 @@ class BaseUserAccountInfo(BaseModel):
             raise ValueError("Cannot be just numbers")
         return value
 
-    @field_validator("username")
-    @classmethod
-    def check_not_me(cls, value: str) -> str:
-        if value == "me":
-            raise ValueError("Cannot be 'me'")
-        return value
-
 
 class UserAccountInfoSensitive(BaseUserAccountInfo):
     email: EmailStr
 
 
 class UserIn(UserAccountInfoSensitive):
-    # password: str = Field(pattern=STRONG_PASSWORD_REGEX) - this will only work from pydantic 2.5
     password: str
 
     @field_validator("password")
     @classmethod
-    def check_strong_password(cls, value: str) -> str:
-        if not constants.STRONG_PASSWORD_REGEX.match(value):
+    def check_strong_password(cls, password: str) -> str:
+        if (
+            len(password) < 8
+            or not any(c.isupper() for c in password)
+            or not any(c.islower() for c in password)
+            or not any(c.isdigit() for c in password)
+        ):
             raise ValueError(
                 "Must be at least 8 characters long, have at least 1 upper"
                 "and lower case letters and have a number"
             )
-        return value
+        return password
 
 
 class UserOut(BaseUserProfile, BaseUserAccountInfo):

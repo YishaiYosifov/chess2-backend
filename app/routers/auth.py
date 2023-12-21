@@ -126,3 +126,10 @@ def refresh_access_token(
     )
 
     return user_schema.AccessToken(access_token=access_token)
+
+
+@router.get("/guest-account", response_model=user_schema.AccessToken)
+def create_guest_account(config: deps.ConfigDep):
+    access_token = jwt_service.create_access_token(
+        config.secret_key, config.jwt_algorithm
+    )

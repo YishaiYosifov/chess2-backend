@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
-from app.schemas.config_schema import get_settings
+from app.schemas.config_schema import get_config
 from app.schemas import response_schema
 from app.db import engine, Base
 
@@ -27,7 +27,7 @@ app.include_router(game_requests.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_settings().frontend_url,
+    allow_origins=get_config().frontend_url,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

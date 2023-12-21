@@ -1,5 +1,5 @@
 import shutil
-import math
+import uuid
 import os
 
 
@@ -16,3 +16,7 @@ def get_or_create_uploads_folder(user_id: int) -> str:
         create_or_replace_folder(uploads_path)
 
     return os.path.join("uploads", str(user_id))
+
+
+def truncated_uuid(truncate: int = 15):
+    return uuid.uuid4().hex[:truncate]

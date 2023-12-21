@@ -9,7 +9,7 @@ from app.models.user_model import AuthedUser, GuestUser
 from app.schemas import user_schema
 from app.crud import user_crud
 
-from .schemas.config_schema import get_settings, Settings
+from .schemas.config_schema import get_config, Config
 from .db import SessionLocal
 
 
@@ -22,7 +22,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 DBDep = Annotated[Session, Depends(get_db)]
-ConfigDep = Annotated[Settings, Depends(get_settings)]
+ConfigDep = Annotated[Config, Depends(get_config)]
 TokensDep = Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)]
 
 

@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
+from app.schemas.config_schema import CONFIG
 from app.models.user_model import AuthedUser
-from app.constants import constants
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud, game_crud
 
@@ -69,7 +69,7 @@ def create_or_start_pool_game(
     found_game_request = game_request_crud.search_game_request(
         db,
         game_settings,
-        rating.elo if rating else constants.DEFAULT_RATING,
+        rating.elo if rating else CONFIG.default_rating,
     )
     if found_game_request:
         game = start_game_request(db, found_game_request, user)

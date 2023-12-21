@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from pytest_mock import MockerFixture
 import pytest
 
-from app.schemas.config_schema import Settings
+from app.schemas.config_schema import Config
 from app.services import jwt_service
 from tests.utils import mocks
 
@@ -11,7 +11,7 @@ from tests.utils import mocks
 @pytest.mark.unit
 def test_encode_jwt_token(
     mocker: MockerFixture,
-    settings: Settings,
+    settings: Config,
 ):
     """Test the encoding of a jwt token"""
 
@@ -45,7 +45,7 @@ def test_encode_jwt_token(
 
 
 @pytest.mark.unit
-def test_create_access_token(mocker: MockerFixture, settings: Settings):
+def test_create_access_token(mocker: MockerFixture, settings: Config):
     """Test creating an access token"""
 
     user_id = 123
@@ -69,7 +69,7 @@ def test_create_access_token(mocker: MockerFixture, settings: Settings):
 @pytest.mark.unit
 def test_create_refresh_token(
     mocker: MockerFixture,
-    settings: Settings,
+    settings: Config,
 ):
     """Test creating a jwt token"""
 

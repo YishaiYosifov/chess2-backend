@@ -1,28 +1,6 @@
-import re
-
 from app.schemas import game_schema
 
 from . import enums
-
-STALL_TIMEOUTES = {
-    "1": 60,
-    "3": 90,
-    "5": 120,
-    "10": 200,
-    "15": 210,
-    "30": 470,
-    "180": 200,
-}
-FIRST_MOVES_STALL_TIMEOUT = 25
-DISCONNECTION_TIMEOUT = 60
-ELO_K_FACTOR = 15
-
-DEFAULT_RATING = 800
-ACCEPTABLE_RATING_DIFFERENCE = 300
-
-STRONG_PASSWORD_REGEX = re.compile(
-    r"^(?=.*[A-Z])(?=.*)(?=.*[0-9])(?=.*[a-z]).{8,}$"
-)
 
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 10
@@ -59,129 +37,52 @@ MAILBOX_INDICES = [
 ]
 # fmt: on
 
+# fmt: off
 STARTING_POSITION: list[game_schema.Piece] = [
     game_schema.Piece(piece=enums.Piece.ROOK, color=enums.Color.WHITE, index=0),
-    game_schema.Piece(
-        piece=enums.Piece.HORSE, color=enums.Color.WHITE, index=1
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.KNOOK, color=enums.Color.WHITE, index=2
-    ),
+    game_schema.Piece(piece=enums.Piece.HORSE, color=enums.Color.WHITE, index=1),
+    game_schema.Piece(piece=enums.Piece.KNOOK, color=enums.Color.WHITE, index=2),
     game_schema.Piece(piece=enums.Piece.XOOK, color=enums.Color.WHITE, index=3),
-    game_schema.Piece(
-        piece=enums.Piece.QUEEN, color=enums.Color.WHITE, index=4
-    ),
+    game_schema.Piece(piece=enums.Piece.QUEEN, color=enums.Color.WHITE, index=4),
     game_schema.Piece(piece=enums.Piece.KING, color=enums.Color.WHITE, index=5),
-    game_schema.Piece(
-        piece=enums.Piece.BISHOP, color=enums.Color.WHITE, index=6
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ANTIQUEEN, color=enums.Color.WHITE, index=7
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.HORSE, color=enums.Color.WHITE, index=8
-    ),
+    game_schema.Piece(piece=enums.Piece.BISHOP, color=enums.Color.WHITE, index=6),
+    game_schema.Piece(piece=enums.Piece.ANTIQUEEN, color=enums.Color.WHITE, index=7),
+    game_schema.Piece(piece=enums.Piece.HORSE, color=enums.Color.WHITE, index=8),
     game_schema.Piece(piece=enums.Piece.ROOK, color=enums.Color.WHITE, index=9),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=10
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=11
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=12
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=13
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=14
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=15
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=16
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=17
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=18
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=19
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ARCHBISHOP, color=enums.Color.WHITE, index=20
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ARCHBISHOP, color=enums.Color.WHITE, index=29
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ARCHBISHOP, color=enums.Color.BLACK, index=70
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ARCHBISHOP, color=enums.Color.BLACK, index=79
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=80
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=81
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=82
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=83
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=84
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=85
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=86
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=87
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=88
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=89
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ROOK, color=enums.Color.BLACK, index=90
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.HORSE, color=enums.Color.BLACK, index=91
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ANTIQUEEN, color=enums.Color.BLACK, index=92
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.BISHOP, color=enums.Color.BLACK, index=93
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.KING, color=enums.Color.BLACK, index=94
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.QUEEN, color=enums.Color.BLACK, index=95
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.XOOK, color=enums.Color.BLACK, index=96
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.KNOOK, color=enums.Color.BLACK, index=97
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.HORSE, color=enums.Color.BLACK, index=98
-    ),
-    game_schema.Piece(
-        piece=enums.Piece.ROOK, color=enums.Color.BLACK, index=99
-    ),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=10),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=11),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=12),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=13),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=14),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=15),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=16),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.WHITE, index=17),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=18),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.WHITE, index=19),
+    game_schema.Piece(piece=enums.Piece.ARCHBISHOP, color=enums.Color.WHITE, index=20),
+    game_schema.Piece(piece=enums.Piece.ARCHBISHOP, color=enums.Color.WHITE, index=29),
+    game_schema.Piece(piece=enums.Piece.ARCHBISHOP, color=enums.Color.BLACK, index=70),
+    game_schema.Piece(piece=enums.Piece.ARCHBISHOP, color=enums.Color.BLACK, index=79),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=80),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=81),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=82),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=83),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=84),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=85),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=86),
+    game_schema.Piece(piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=87),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=88),
+    game_schema.Piece(piece=enums.Piece.CHILD_PAWN, color=enums.Color.BLACK, index=89),
+    game_schema.Piece(piece=enums.Piece.ROOK, color=enums.Color.BLACK, index=90),
+    game_schema.Piece(piece=enums.Piece.HORSE, color=enums.Color.BLACK, index=91),
+    game_schema.Piece(piece=enums.Piece.ANTIQUEEN, color=enums.Color.BLACK, index=92),
+    game_schema.Piece(piece=enums.Piece.BISHOP, color=enums.Color.BLACK, index=93),
+    game_schema.Piece(piece=enums.Piece.KING, color=enums.Color.BLACK, index=94),
+    game_schema.Piece(piece=enums.Piece.QUEEN, color=enums.Color.BLACK, index=95),
+    game_schema.Piece(piece=enums.Piece.XOOK, color=enums.Color.BLACK, index=96),
+    game_schema.Piece(piece=enums.Piece.KNOOK, color=enums.Color.BLACK, index=97),
+    game_schema.Piece(piece=enums.Piece.HORSE, color=enums.Color.BLACK, index=98),
+    game_schema.Piece(piece=enums.Piece.ROOK, color=enums.Color.BLACK, index=99),
 ]
+
+# fmt: on

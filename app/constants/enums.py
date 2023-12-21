@@ -23,6 +23,12 @@ class GameResult(Enum):
     DRAW = "draw"
 
 
+class GuestLevels(Enum):
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+
+
 class Piece(Enum):
     KING = "king"
     QUEEN = "queen"

@@ -3,12 +3,12 @@ from unittest.mock import MagicMock
 from pytest_mock import MockerFixture
 import pytest
 
-from app.schemas.config_schema import Settings
+from app.schemas.config_schema import Config
 from app.services import jwt_service
 
 
 @pytest.mark.unit
-def test_decode_jwt_token(mocker: MockerFixture, settings: Settings):
+def test_decode_jwt_token(mocker: MockerFixture, settings: Config):
     """
     Test the helper decode jwt token function.
     Check if it handles options correctly.
@@ -74,7 +74,7 @@ def test_decode_tokens(
     payload: dict[str, str],
     success: bool,
     token_type: str,
-    settings: Settings,
+    settings: Config,
 ):
     """Try to decode tokens with correct and incorrect types"""
 

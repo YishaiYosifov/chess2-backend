@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import scoped_session, sessionmaker
 import pytest
 
-from app.schemas.config_schema import get_settings
+from app.schemas.config_schema import get_config
 from tests.utils.db_mock import DbMock
 from tests.utils import mocks
 from app.main import app
@@ -53,7 +53,7 @@ def fix_mock_hash():
 
 @pytest.fixture(scope="session")
 def settings():
-    return get_settings()
+    return get_config()
 
 
 @pytest.fixture

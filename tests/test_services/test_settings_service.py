@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from fastapi import HTTPException
 import pytest
 
-from app.schemas.config_schema import Settings
+from app.schemas.config_schema import Config
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 from app.services import settings_service
@@ -32,7 +32,7 @@ def test_password_setting(mocker: MockerFixture):
 @pytest.mark.unit
 def test_email_setting(
     mocker: MockerFixture,
-    settings: Settings,
+    settings: Config,
 ):
     """Test if the email setting updates the email correctly and sends the verification email"""
 
@@ -67,7 +67,7 @@ class TestUsernameSetting:
         mocks.fix_time(settings_service, mocker, to=self.fixed_datetime)
 
     @pytest.fixture
-    def username_setting(self, settings: Settings):
+    def username_setting(self, settings: Config):
         """Create an instance of the username setting service"""
 
         user = AuthedUserFactory.build()

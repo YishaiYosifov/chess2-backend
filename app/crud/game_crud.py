@@ -95,7 +95,7 @@ def create_players(
     return inviter_player, recipient_player
 
 
-def create_pieces(db: Session, game: Game):
+def create_pieces(db: Session, game: Game) -> None:
     """
     Create an entry for each piece in the starting position of game
 

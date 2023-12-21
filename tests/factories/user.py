@@ -8,7 +8,7 @@ from tests.conftest import TestScopedSession
 from app.constants import enums
 
 
-class GuestUserFactory(SQLAlchemyModelFactory):
+class GuestFactory(SQLAlchemyModelFactory):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = GuestUser

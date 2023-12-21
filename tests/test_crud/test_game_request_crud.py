@@ -6,11 +6,12 @@ from sqlalchemy.orm import Session
 import pytest
 
 from app.models.games.game_request_model import GameRequest
+from app.schemas.config_schema import CONFIG
 from tests.factories.rating import RatingFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
-from app.constants import constants, enums
+from app.constants import enums
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud
 
@@ -56,8 +57,8 @@ def assert_game_request(
     user_rating = rating_crud.fetch_single(db, inviter, game_settings.variant)
     if user_rating:
         assert user_rating.elo in range(
-            rating - constants.ACCEPTABLE_RATING_DIFFERENCE,
-            rating + constants.ACCEPTABLE_RATING_DIFFERENCE,
+            rating - CONFIG.acceptable_rating_difference,
+            rating + CONFIG.acceptable_rating_difference,
         ), f"Rating not in range: {user_rating.elo}"
 
 
@@ -163,11 +164,11 @@ class TestSearchGameRequest:
     @pytest.mark.parametrize(
         "fetch_elo, success",
         [
-            (constants.DEFAULT_RATING, True),
-            (constants.DEFAULT_RATING - 50, True),
-            (constants.DEFAULT_RATING + 50, True),
-            (constants.DEFAULT_RATING - 350, False),
-            (constants.DEFAULT_RATING + 350, False),
+            (CONFIG.default_rating, True),
+            (CONFIG.default_rating - 50, True),
+            (CONFIG.default_rating + 50, True),
+            (CONFIG.default_rating - 350, False),
+            (CONFIG.default_rating + 350, False),
         ],
     )
     def test_no_rating(

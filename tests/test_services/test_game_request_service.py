@@ -9,9 +9,10 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
+from app.schemas.config_schema import CONFIG
 from tests.factories.user import AuthedUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
-from app.constants import constants, enums
+from app.constants import enums
 from app.services import game_request_service
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud
@@ -22,7 +23,7 @@ def mock_fetch_rating(mocker: MockerFixture):
     return mocker.patch.object(
         rating_crud,
         "fetch_single",
-        return_value=mocker.Mock(elo=constants.DEFAULT_RATING),
+        return_value=mocker.Mock(elo=CONFIG.default_rating),
     )
 
 
