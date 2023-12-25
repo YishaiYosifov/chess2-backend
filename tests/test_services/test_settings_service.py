@@ -32,7 +32,7 @@ def test_password_setting(mocker: MockerFixture):
 @pytest.mark.unit
 def test_email_setting(
     mocker: MockerFixture,
-    settings: Config,
+    config: Config,
 ):
     """Test if the email setting updates the email correctly and sends the verification email"""
 
@@ -47,13 +47,13 @@ def test_email_setting(
 
     mocked_db = MagicMock()
     settings_service.EmailSetting(
-        mocked_db, user, settings.verification_url
+        mocked_db, user, config.verification_url
     ).update(new_email)
 
     assert user.email == new_email
     assert not user.is_email_verified
     mock_email_verification.assert_called_once_with(
-        new_email, settings.verification_url
+        new_email, config.verification_url
     )
 
 
@@ -67,13 +67,13 @@ class TestUsernameSetting:
         mocks.fix_time(settings_service, mocker, to=self.fixed_datetime)
 
     @pytest.fixture
-    def username_setting(self, settings: Config):
+    def username_setting(self, config: Config):
         """Create an instance of the username setting service"""
 
         user = AuthedUserFactory.build()
         mocked_db = MagicMock()
         return settings_service.UsernameSetting(
-            mocked_db, user, timedelta(days=settings.edit_username_every_days)
+            mocked_db, user, timedelta(days=config.edit_username_every_days)
         )
 
     @pytest.mark.parametrize(

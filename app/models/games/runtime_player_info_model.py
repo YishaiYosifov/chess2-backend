@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 class RuntimePlayerInfo(Base, kw_only=True):
     """Stores user specifc information for an active game"""
 
-    __tablename__ = "runtime_players_info"
+    __tablename__ = "runtime_player_info"
 
     player_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("guest_users.user_id"),
+        ForeignKey("user.user_id"),
         init=False,
     )
     user: Mapped[AuthedUser] = relationship(back_populates="player")

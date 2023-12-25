@@ -190,7 +190,7 @@ class TestSearchGameRequest:
     ):
         """Test if `search_game_request` correctly returns the oldest entry"""
 
-        now = datetime.now()
+        now = datetime.utcnow()
         old = GameRequestFactory.create(
             game_settings=game_settings,
             created_at=now - timedelta(days=1),

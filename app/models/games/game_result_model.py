@@ -16,13 +16,13 @@ if TYPE_CHECKING:
 class GameResult(Base, kw_only=True):
     """Stores the results of a game after it ends"""
 
-    __tablename__ = "game_results"
+    __tablename__ = "game_result"
 
-    game_results_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    game_result_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     token: Mapped[str] = mapped_column(CHAR(8))
 
     user_white_id: Mapped[int] = mapped_column(
-        ForeignKey("authed_users.user_id", ondelete="SET NULL"),
+        ForeignKey("authed_user.user_id", ondelete="SET NULL"),
         nullable=True,
         init=False,
         index=True,
@@ -30,7 +30,7 @@ class GameResult(Base, kw_only=True):
     user_white: Mapped[AuthedUser] = relationship(foreign_keys=user_white_id)
 
     user_black_id: Mapped[int] = mapped_column(
-        ForeignKey("authed_users.user_id", ondelete="SET NULL"),
+        ForeignKey("authed_user.user_id", ondelete="SET NULL"),
         nullable=True,
         init=False,
         index=True,

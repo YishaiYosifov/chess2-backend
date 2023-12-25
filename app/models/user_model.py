@@ -13,11 +13,11 @@ from app.constants import enums
 from app.db import Base
 
 
-class GuestUser(Base, kw_only=True):
-    __tablename__ = "guest_users"
+class User(Base, kw_only=True):
+    __tablename__ = "user"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    is_authed: Mapped[bool] = mapped_column(init=False)
+    test: Mapped[str] = mapped_column(init=False)
 
     sid: Mapped[str | None] = mapped_column(
         Text,
@@ -46,17 +46,14 @@ class GuestUser(Base, kw_only=True):
         default=None,
     )
 
-    __mapper_args__ = {
-        "polymorphic_identity": False,
-        "polymorphic_on": is_authed,
-    }
+    last_refreshed_token: Mapped[datetime] = mapped_column(
+        insert_default=func.current_timestamp(), default=None
+    )
 
     def __eq__(self, to) -> bool:
         from .games.runtime_player_info_model import RuntimePlayerInfo
 
-        if not isinstance(to, GuestUser) and not isinstance(
-            to, RuntimePlayerInfo
-        ):
+        if not isinstance(to, User) and not isinstance(to, RuntimePlayerInfo):
             return False
         return to.user_id == self.user_id
 
@@ -67,12 +64,27 @@ class GuestUser(Base, kw_only=True):
 
         return self.player.game
 
+    __mapper_args__ = {
+        "polymorphic_identity": "test",
+        "polymorphic_on": test,
+    }
 
-class AuthedUser(GuestUser):
-    __tablename__ = "authed_users"
+
+class GuestUser(User):
+    __tablename__ = "guest_user"
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("guest_users.user_id"), primary_key=True, init=False
+        ForeignKey("user.user_id"), primary_key=True, init=False
+    )
+
+    __mapper_args__ = {"polymorphic_identity": "guest"}
+
+
+class AuthedUser(User):
+    __tablename__ = "authed_user"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.user_id"), primary_key=True, init=False
     )
     hashed_password: Mapped[str]
 
@@ -103,6 +115,4 @@ class AuthedUser(GuestUser):
         init=False,
     )
 
-    __mapper_args__ = {
-        "polymorphic_identity": True,
-    }
+    __mapper_args__ = {"polymorphic_identity": "authed"}

@@ -20,13 +20,13 @@ class Rating(Base, kw_only=True):
     When this table is updated, it inserts a new row with the old values and is_active set to false.
     """
 
-    __tablename__ = "ratings"
+    __tablename__ = "rating"
 
     rating_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     is_active: Mapped[bool] = mapped_column(default=True, index=True)
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("authed_users.user_id"),
+        ForeignKey("authed_user.user_id"),
         init=False,
         index=True,
     )
@@ -55,12 +55,12 @@ class Rating(Base, kw_only=True):
 # Automatically mark old ratings as non active when new ones are inserted
 create_trigger = DDL(
     """
-    CREATE OR REPLACE FUNCTION archive_ratings()
+    CREATE OR REPLACE FUNCTION archive_rating()
     RETURNS TRIGGER AS
     $BODY$
     BEGIN
         IF NEW.elo <> OLD.elo THEN
-            INSERT INTO ratings (
+            INSERT INTO rating (
                 is_active,
                 user_id,
                 variant,
@@ -81,9 +81,9 @@ create_trigger = DDL(
 
     CREATE OR REPLACE TRIGGER rating_archiver
     BEFORE UPDATE
-    ON ratings
+    ON rating
     FOR EACH ROW
-        EXECUTE PROCEDURE archive_ratings();
+        EXECUTE PROCEDURE archive_rating();
     """
 )
 event.listen(

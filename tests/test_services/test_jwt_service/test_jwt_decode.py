@@ -8,7 +8,7 @@ from app.services import jwt_service
 
 
 @pytest.mark.unit
-def test_decode_jwt_token(mocker: MockerFixture, settings: Config):
+def test_decode_jwt_token(mocker: MockerFixture, config: Config):
     """
     Test the helper decode jwt token function.
     Check if it handles options correctly.
@@ -17,8 +17,8 @@ def test_decode_jwt_token(mocker: MockerFixture, settings: Config):
     mock_jwt_decode = mocker.patch.object(jwt_service.jwt, "decode")
 
     jwt_service._decode_jwt_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         "token",
         {"require_exp": False, "require_jti": True},
     )
@@ -74,7 +74,7 @@ def test_decode_tokens(
     payload: dict[str, str],
     success: bool,
     token_type: str,
-    settings: Config,
+    config: Config,
 ):
     """Try to decode tokens with correct and incorrect types"""
 
@@ -86,14 +86,14 @@ def test_decode_tokens(
 
     user_id = (
         jwt_service.decode_access_token(
-            settings.secret_key,
-            settings.jwt_algorithm,
+            config.secret_key,
+            config.jwt_algorithm,
             "token",
         )
         if token_type == "access"
         else jwt_service.decode_refresh_token(
-            settings.secret_key,
-            settings.jwt_algorithm,
+            config.secret_key,
+            config.jwt_algorithm,
             MagicMock(),
             "token",
         )

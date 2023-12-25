@@ -38,6 +38,7 @@ class UserIn(UserAccountInfoSensitive):
     @field_validator("password")
     @classmethod
     def check_strong_password(cls, password: str) -> str:
+        # Not the best but I don't care anymore
         if (
             len(password) < 8
             or not any(c.isupper() for c in password)
@@ -53,7 +54,9 @@ class UserIn(UserAccountInfoSensitive):
 
 class UserOut(BaseUserProfile, BaseUserAccountInfo):
     user_id: int
-    pfp_last_changed: Annotated[datetime, Field(default_factory=datetime.now)]
+    pfp_last_changed: Annotated[
+        datetime, Field(default_factory=datetime.utcnow)
+    ]
 
 
 class UserOutSensitive(UserOut, UserAccountInfoSensitive):

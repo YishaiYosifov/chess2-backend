@@ -7,7 +7,7 @@ from sqlalchemy import select
 import pytest
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
-from app.models.games.game_results_model import GameResult
+from app.models.games.game_result_model import GameResult
 from app.models.games.piece_model import Piece
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
@@ -75,7 +75,7 @@ def test_paginate_history(
 
     assert len(fetched_history) == len(expected_games)
     assert all(
-        existing_game.game_results_id == fetched_game.game_results_id
+        existing_game.game_result_id == fetched_game.game_result_id
         for existing_game, fetched_game in zip(
             expected_games,
             fetched_history,

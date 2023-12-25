@@ -11,7 +11,7 @@ from tests.utils import mocks
 @pytest.mark.unit
 def test_encode_jwt_token(
     mocker: MockerFixture,
-    settings: Config,
+    config: Config,
 ):
     """Test the encoding of a jwt token"""
 
@@ -24,8 +24,8 @@ def test_encode_jwt_token(
 
     expires_in_delta = timedelta(minutes=30)
     jwt_service._encode_jwt_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         {"sub": 1},
         expires_in_delta,
     )
@@ -39,13 +39,13 @@ def test_encode_jwt_token(
     }
     mock_jwt_encode.assert_called_once_with(
         expected_payload,
-        settings.secret_key,
-        algorithm=settings.jwt_algorithm,
+        config.secret_key,
+        algorithm=config.jwt_algorithm,
     )
 
 
 @pytest.mark.unit
-def test_create_access_token(mocker: MockerFixture, settings: Config):
+def test_create_access_token(mocker: MockerFixture, config: Config):
     """Test creating an access token"""
 
     user_id = 123
@@ -53,14 +53,14 @@ def test_create_access_token(mocker: MockerFixture, settings: Config):
     mock_encode = mocker.patch.object(jwt_service, "_encode_jwt_token")
 
     jwt_service.create_access_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         user_id,
         expires_in_minutes,
     )
     mock_encode.assert_called_once_with(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         {"sub": str(user_id), "type": "access", "fresh": False},
         timedelta(minutes=expires_in_minutes),
     )
@@ -69,7 +69,7 @@ def test_create_access_token(mocker: MockerFixture, settings: Config):
 @pytest.mark.unit
 def test_create_refresh_token(
     mocker: MockerFixture,
-    settings: Config,
+    config: Config,
 ):
     """Test creating a jwt token"""
 
@@ -81,15 +81,15 @@ def test_create_refresh_token(
     mock_encode = mocker.patch.object(jwt_service, "_encode_jwt_token")
 
     jwt_service.create_refresh_token(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         user_id,
         expires_in_days,
     )
 
     mock_encode.assert_called_once_with(
-        settings.secret_key,
-        settings.jwt_algorithm,
+        config.secret_key,
+        config.jwt_algorithm,
         {"sub": str(user_id), "type": "refresh", "jti": jti},
         timedelta(days=expires_in_days),
     )

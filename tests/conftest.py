@@ -52,7 +52,7 @@ def fix_mock_hash():
 
 
 @pytest.fixture(scope="session")
-def settings():
+def config():
     return get_config()
 
 

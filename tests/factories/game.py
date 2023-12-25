@@ -4,8 +4,8 @@ from typing import Any
 from factory.alchemy import SQLAlchemyModelFactory
 from factory import SubFactory, Factory, Faker
 
-from app.models.games.game_results_model import GameResult
 from app.models.games.game_request_model import GameRequest
+from app.models.games.game_result_model import GameResult
 from app.models.games.game_model import Game
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory

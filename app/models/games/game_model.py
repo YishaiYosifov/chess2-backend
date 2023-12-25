@@ -12,7 +12,7 @@ from app.db import Base
 
 
 class Game(Base, kw_only=True):
-    __tablename__ = "games"
+    __tablename__ = "game"
 
     game_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     token: Mapped[str] = mapped_column(CHAR(8))
@@ -24,7 +24,7 @@ class Game(Base, kw_only=True):
 
     # Relationship to the white player
     player_white_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_players_info.player_id"),
+        ForeignKey("runtime_player_info.player_id"),
         init=False,
         index=True,
     )
@@ -35,7 +35,7 @@ class Game(Base, kw_only=True):
 
     # Relationship to the black player
     player_black_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_players_info.player_id"),
+        ForeignKey("runtime_player_info.player_id"),
         init=False,
         index=True,
     )
@@ -45,7 +45,7 @@ class Game(Base, kw_only=True):
     )
 
     turn_player_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_players_info.player_id"),
+        ForeignKey("runtime_player_info.player_id"),
         insert_default=lambda context: context.get_current_parameters()[
             "player_white_id"
         ],

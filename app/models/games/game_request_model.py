@@ -20,12 +20,12 @@ class GameRequest(Base, kw_only=True):
     (when a recipient is specified)
     """
 
-    __tablename__ = "game_requests"
+    __tablename__ = "game_request"
 
     game_request_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 
     inviter_id: Mapped[int] = mapped_column(
-        ForeignKey("guest_users.user_id"),
+        ForeignKey("user.user_id"),
         init=False,
         index=True,
     )
@@ -35,7 +35,7 @@ class GameRequest(Base, kw_only=True):
     )
 
     recipient_id: Mapped[int] = mapped_column(
-        ForeignKey("guest_users.user_id"),
+        ForeignKey("user.user_id"),
         nullable=True,
         init=False,
         index=True,

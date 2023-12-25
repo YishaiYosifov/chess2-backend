@@ -1,3 +1,5 @@
+from datetime import timedelta, datetime
+
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -35,3 +37,26 @@ def fetch_or_create_guest_by_token(
     user_id = jwt_service.decode_access_token(secret_key, jwt_algorithm, token)
     if not user_id:
         return
+
+
+def delete_inactive_guests(db: Session, delete_minutes: int):
+    """
+    Delete all inactive guest accounts
+
+    :param db: the database session
+    :param delete_minutes: how long do the accounts need to be inactive in minutes to delete
+    """
+
+    delete_from = datetime.utcnow() - timedelta(minutes=delete_minutes)
+
+    guests = (
+        db.execute(
+            select(GuestUser).filter(
+                GuestUser.last_refreshed_token <= delete_from,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for guest in guests:
+        db.delete(guest)

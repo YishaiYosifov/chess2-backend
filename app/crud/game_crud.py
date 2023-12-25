@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
-from app.models.games.game_results_model import GameResult
+from app.models.games.game_result_model import GameResult
 from app.models.games.piece_model import Piece
 from app.models.games.game_model import Game
 from app.models.user_model import AuthedUser
@@ -54,7 +54,7 @@ def total_count(db: Session, user: AuthedUser) -> int:
     """
 
     total = db.execute(
-        select(func.count(GameResult.game_results_id)).filter(
+        select(func.count(GameResult.game_result_id)).filter(
             (GameResult.user_white == user) | (GameResult.user_black == user)
         )
     ).scalar()

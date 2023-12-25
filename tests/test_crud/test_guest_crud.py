@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Sequence
 
 from _pytest.fixtures import SubRequest
@@ -6,8 +7,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 import pytest
 
-from app.models.user_model import GuestUser
-from tests.factories.user import GuestFactory
+from app.models.user_model import AuthedUser, GuestUser
+from tests.factories.user import AuthedUserFactory, GuestFactory
+from tests.utils import mocks
 from app.crud import guest_crud
 
 
@@ -68,3 +70,34 @@ class TestCreateGuest:
 
         guest = guest_crud.create_guest(db)
         assert guest.username == f"Guest-{mock_token[1]}"
+
+
+@pytest.mark.integration
+class TestDeleteInactiveGuests:
+    def test_dont_delete_active(self, db: Session, mocker: MockerFixture):
+        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        GuestFactory.create(last_refreshed_token=fixed_datetime)
+
+        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+
+        db.execute(select(GuestUser)).scalar_one()
+
+    def test_delete_inactive(self, db: Session, mocker: MockerFixture):
+        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        GuestFactory.create(
+            last_refreshed_token=fixed_datetime - timedelta(minutes=15)
+        )
+
+        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+
+        assert not db.execute(select(GuestUser)).all()
+
+    def test_doesnt_delete_registered(self, db: Session, mocker: MockerFixture):
+        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        AuthedUserFactory.create(
+            last_refreshed_token=fixed_datetime - timedelta(minutes=15)
+        )
+
+        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+
+        assert db.execute(select(AuthedUser)).scalar_one()

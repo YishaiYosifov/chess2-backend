@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class Piece(Base, kw_only=True):
     """Represents a piece in a game. This class holds its index (position), name and color."""
 
-    __tablename__ = "piece_positions"
+    __tablename__ = "piece_position"
 
     piece_position_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     piece: Mapped[enums.Piece]
@@ -24,7 +24,7 @@ class Piece(Base, kw_only=True):
     index: Mapped[int] = mapped_column()
 
     game_id: Mapped[int] = mapped_column(
-        ForeignKey("games.game_id"),
+        ForeignKey("game.game_id"),
         init=False,
         index=True,
     )
