@@ -75,6 +75,8 @@ class TestCreateGuest:
 @pytest.mark.integration
 class TestDeleteInactiveGuests:
     def test_dont_delete_active(self, db: Session, mocker: MockerFixture):
+        """Test if the `delete_inactive_guest` crud function ignores all active guests"""
+
         fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
         GuestFactory.create(last_refreshed_token=fixed_datetime)
 
@@ -83,6 +85,8 @@ class TestDeleteInactiveGuests:
         db.execute(select(GuestUser)).scalar_one()
 
     def test_delete_inactive(self, db: Session, mocker: MockerFixture):
+        """Test if the `delete_inactive_guest` crud function succesfully delete all inactive guests"""
+
         fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
         GuestFactory.create(
             last_refreshed_token=fixed_datetime - timedelta(minutes=15)
@@ -93,6 +97,8 @@ class TestDeleteInactiveGuests:
         assert not db.execute(select(GuestUser)).all()
 
     def test_doesnt_delete_registered(self, db: Session, mocker: MockerFixture):
+        """Test if the `delete_inactive_guest` crud function ignores all authorized users"""
+
         fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
         AuthedUserFactory.create(
             last_refreshed_token=fixed_datetime - timedelta(minutes=15)

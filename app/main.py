@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
         "cron",
         hour=0,
     )
+
     scheduler.start()
     yield
     scheduler.shutdown()
