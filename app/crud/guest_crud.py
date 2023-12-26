@@ -41,7 +41,7 @@ def fetch_or_create_guest_by_token(
 
 def delete_inactive_guests(db: Session, delete_minutes: int):
     """
-    Delete all inactive guest accounts
+    Delete all inactive guest accounts. This functions commits at the end
 
     :param db: the database session
     :param delete_minutes: how long do the accounts need to be inactive in minutes to delete
@@ -58,5 +58,10 @@ def delete_inactive_guests(db: Session, delete_minutes: int):
         .scalars()
         .all()
     )
+
+    # this looping over every guest and manually deleting them to
+    # cascade the deletion to relationships
     for guest in guests:
         db.delete(guest)
+
+    db.commit()

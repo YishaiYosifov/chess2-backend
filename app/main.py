@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from app.schemas.config_schema import get_config, CONFIG
 from app.schemas import response_schema
+from app.utils import common
 from app.crud import guest_crud
 from app.db import engine, SessionLocal, Base
 
@@ -16,20 +17,14 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    def run_delete_inactive():
-        db = SessionLocal()
-        try:
-            guest_crud.delete_inactive_guests(
-                db,
-                CONFIG.access_token_expires_minutes,
-            )
-            db.commit()
-        finally:
-            db.close()
-
+    # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
-        run_delete_inactive,
+        lambda: common.run_with_db(
+            SessionLocal,
+            guest_crud.delete_inactive_guests,
+            CONFIG.access_token_expires_minutes,
+        ),
         "cron",
         hour=0,
     )

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends, Path
 
 from app.services.auth_service import oauth2_scheme
-from app.models.user_model import AuthedUser, GuestUser
+from app.models.user_model import AuthedUser, GuestUser, User
 from app.schemas import user_schema
 from app.crud import user_crud
 
@@ -87,7 +87,7 @@ class GetCurrentUser:
         db: DBDep,
         config: ConfigDep,
         tokens: TokensDep,
-    ) -> GuestUser | None:
+    ) -> User | None:
         """Dependency to fetch the authorized user"""
 
         return (
