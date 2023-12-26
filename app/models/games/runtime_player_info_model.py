@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, ForeignKey, Text
+from sqlalchemy import func, ForeignKey, DateTime, Text
 
 from app.constants import enums
 from app.db import Base
@@ -47,6 +47,7 @@ class RuntimePlayerInfo(Base, kw_only=True):
     color: Mapped[enums.Color]
 
     player_last_moved: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         init=False,
     )

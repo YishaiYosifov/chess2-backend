@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import event, func, ForeignKey, Index, DDL
+from sqlalchemy import event, func, ForeignKey, DateTime, Index, DDL
 
 from app.schemas.config_schema import CONFIG
 from app.constants import enums
@@ -36,6 +36,7 @@ class Rating(Base, kw_only=True):
     elo: Mapped[int] = mapped_column(default=CONFIG.default_rating)
 
     achieved_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         default=None,
     )

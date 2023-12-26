@@ -1,4 +1,3 @@
-from unittest.mock import _patch, patch
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Generator
@@ -9,18 +8,9 @@ from fastapi import FastAPI
 from pytest import MonkeyPatch
 
 from app.models.user_model import AuthedUser
-from app.crud import user_crud
 from app import deps
 
 from .dep_overrider import DependencyOverrider
-
-
-def mock_hash() -> _patch:
-    return patch.object(
-        user_crud.auth_service,
-        "hash_password",
-        return_value="$2b$12$kXC0QfbIfmjauYXOp9Hoj.ehDU1mWXgvTCvxlTVfEKyf35lR71Fam",
-    )
 
 
 @contextmanager

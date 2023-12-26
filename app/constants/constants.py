@@ -35,9 +35,7 @@ MAILBOX_INDICES = [
    121, 122, 123, 124, 125, 126, 127, 128, 129, 130,
    133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
 ]
-# fmt: on
 
-# fmt: off
 STARTING_POSITION: list[game_schema.Piece] = [
     game_schema.Piece(piece=enums.Piece.ROOK, color=enums.Color.WHITE, index=0),
     game_schema.Piece(piece=enums.Piece.HORSE, color=enums.Color.WHITE, index=1),

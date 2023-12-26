@@ -76,7 +76,7 @@ def test_signup_params(client: TestClient, data: dict):
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_hash")
+@pytest.mark.usefixtures("mock_password_hash")
 def test_signup_success(client: TestClient, db: Session):
     """Test if `/auth/signup` works in creating the user when valid arugments are provided"""
 

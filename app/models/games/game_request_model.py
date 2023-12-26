@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, ForeignKey
+from sqlalchemy import func, ForeignKey, DateTime
 
 from app.constants import enums
 from app.db import Base
@@ -51,6 +51,7 @@ class GameRequest(Base, kw_only=True):
     increment: Mapped[int]
 
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         default=None,
     )

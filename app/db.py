@@ -14,6 +14,7 @@ config = get_config()
 engine = create_engine(
     "postgresql+psycopg2://"
     f"{config.db_username}:{urllib.parse.quote_plus(config.db_password)}"
-    f"@{config.db_host}/{config.db_name}"
+    f"@{config.db_host}/{config.db_name}",
+    connect_args={"options": "-c timezone=UTC"},
 )
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)

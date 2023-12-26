@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, ForeignKey, CHAR
+from sqlalchemy import func, ForeignKey, DateTime, CHAR
 
 from app.constants import enums
 from app.db import Base
@@ -43,8 +43,9 @@ class GameResult(Base, kw_only=True):
 
     results: Mapped[enums.GameResult]
 
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         init=False,
     )

@@ -14,19 +14,14 @@ from tests.utils import mocks
 
 
 @pytest.mark.unit
-def test_password_setting(mocker: MockerFixture):
+@pytest.mark.parametrize("mock_password_hash", ["mocked hash"], indirect=True)
+def test_password_setting(mock_password_hash: str):
     """Test if the password setting hashes correctly"""
-
-    mocked_hash = "mocked hash"
-    mock_hash_password = mocker.patch.object(
-        settings_service.auth_service, "hash_password"
-    )
-    mock_hash_password.return_value = mocked_hash
 
     user: AuthedUser = AuthedUserFactory.build()
 
     settings_service.PasswordSetting(user).update("new password")
-    assert user.hashed_password == mocked_hash
+    assert user.hashed_password == mock_password_hash
 
 
 @pytest.mark.unit

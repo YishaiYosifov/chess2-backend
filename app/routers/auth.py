@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from http import HTTPStatus
 
@@ -8,7 +9,7 @@ from app.utils.email_verification import send_verification_email
 from app.models.user_model import AuthedUser
 from app.services import auth_service, jwt_service
 from app.schemas import response_schema, user_schema
-from app.crud import user_crud
+from app.crud import guest_crud, user_crud
 from app import deps
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -124,12 +125,30 @@ def refresh_access_token(
         access_token=access_token,
         access_token_max_age=config.access_token_expires_minutes * 60,
     )
+    user.last_refreshed_token = datetime.utcnow()
 
     return user_schema.AccessToken(access_token=access_token)
 
 
-@router.get("/guest-account", response_model=user_schema.AccessToken)
-def create_guest_account(config: deps.ConfigDep):
+@router.get(
+    "/guest-account",
+    response_model=user_schema.AccessToken,
+    status_code=HTTPStatus.CREATED,
+)
+def create_guest_account(db: deps.DBDep, config: deps.ConfigDep):
+    """
+    Create a new guest account and get its access token.
+    Keep in mind the account is temporary and is bound to be deleted.
+    """
+
+    guest = guest_crud.create_guest(db)
+    db.commit()
+
     access_token = jwt_service.create_access_token(
-        config.secret_key, config.jwt_algorithm
+        config.secret_key,
+        config.jwt_algorithm,
+        guest.user_id,
+        expires_in_minutes=config.access_token_expires_minutes,
     )
+
+    return user_schema.AccessToken(access_token=access_token)

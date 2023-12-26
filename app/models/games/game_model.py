@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, CheckConstraint, ForeignKey, CHAR
+from sqlalchemy import func, CheckConstraint, ForeignKey, DateTime, CHAR
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.piece_model import Piece
@@ -18,6 +18,7 @@ class Game(Base, kw_only=True):
     token: Mapped[str] = mapped_column(CHAR(8))
 
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         init=False,
     )

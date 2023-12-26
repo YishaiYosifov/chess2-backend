@@ -2,8 +2,6 @@ import os
 
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
-from app.constants import enums
-
 
 class Config(BaseSettings):
     secret_key: str = ""
@@ -30,12 +28,6 @@ class Config(BaseSettings):
 
     default_rating: int = 800
     acceptable_rating_difference: int = 300
-
-    guest_elo_level: dict[enums.GuestLevels, int] = {
-        enums.GuestLevels.BEGINNER: 800,
-        enums.GuestLevels.INTERMEDIATE: 1200,
-        enums.GuestLevels.ADVANCED: 1800,
-    }
 
     model_config = SettingsConfigDict(env_file=os.getenv("ENV"))
 

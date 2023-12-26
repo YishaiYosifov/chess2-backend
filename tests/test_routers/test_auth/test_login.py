@@ -26,7 +26,7 @@ def mock_verify_password(request: SubRequest):
     ),
     indirect=["mock_verify_password"],
 )
-@pytest.mark.usefixtures("mock_verify_password", "db")
+@pytest.mark.usefixtures("mock_verify_password", "mock_create_jwt_tokens", "db")
 def test_login_fail(client: TestClient, data):
     """Test how `/auth/login` handles non existing credentials"""
 
@@ -41,7 +41,7 @@ def test_login_fail(client: TestClient, data):
 
 @pytest.mark.integration
 @pytest.mark.parametrize("mock_verify_password", [True], indirect=True)
-@pytest.mark.usefixtures("mock_verify_password", "db")
+@pytest.mark.usefixtures("mock_verify_password", "mock_create_jwt_tokens", "db")
 def test_login_success(client: TestClient):
     "Test how `/auth/login` handles valid credentials"
 

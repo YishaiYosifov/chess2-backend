@@ -49,15 +49,11 @@ def delete_inactive_guests(db: Session, delete_minutes: int):
 
     delete_from = datetime.utcnow() - timedelta(minutes=delete_minutes)
 
-    guests = (
-        db.execute(
-            select(GuestUser).filter(
-                GuestUser.last_refreshed_token <= delete_from,
-            )
+    guests = db.execute(
+        select(GuestUser).filter(
+            GuestUser.last_refreshed_token <= delete_from,
         )
-        .scalars()
-        .all()
-    )
+    ).scalars()
 
     # this looping over every guest and manually deleting them to
     # cascade the deletion to relationships

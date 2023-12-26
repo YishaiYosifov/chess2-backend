@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, ForeignKey, String, Text
+from sqlalchemy import func, ForeignKey, DateTime, String, Text
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_request_model import GameRequest
@@ -17,7 +17,7 @@ class User(Base, kw_only=True):
     __tablename__ = "user"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    test: Mapped[str] = mapped_column(init=False)
+    user_type: Mapped[str] = mapped_column(init=False)
 
     sid: Mapped[str | None] = mapped_column(
         Text,
@@ -31,6 +31,7 @@ class User(Base, kw_only=True):
     last_color: Mapped[enums.Color] = mapped_column(default=enums.Color.BLACK)
 
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         default=None,
     )
@@ -47,15 +48,10 @@ class User(Base, kw_only=True):
     )
 
     last_refreshed_token: Mapped[datetime] = mapped_column(
-        insert_default=func.current_timestamp(), default=None
+        DateTime(timezone=True),
+        insert_default=func.current_timestamp(),
+        default=None,
     )
-
-    def __eq__(self, to) -> bool:
-        from .games.runtime_player_info_model import RuntimePlayerInfo
-
-        if not isinstance(to, User) and not isinstance(to, RuntimePlayerInfo):
-            return False
-        return to.user_id == self.user_id
 
     @property
     def game(self) -> Game | None:
@@ -65,8 +61,8 @@ class User(Base, kw_only=True):
         return self.player.game
 
     __mapper_args__ = {
-        "polymorphic_identity": "test",
-        "polymorphic_on": test,
+        "polymorphic_identity": "base",
+        "polymorphic_on": user_type,
     }
 
 
@@ -95,10 +91,12 @@ class AuthedUser(User):
     country: Mapped[str | None] = mapped_column(String(100), default=None)
 
     username_last_changed: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
         default=None,
     )
     pfp_last_changed: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         insert_default=func.current_timestamp(),
         default=None,
     )

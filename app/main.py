@@ -17,6 +17,12 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    common.run_with_db(
+        SessionLocal,
+        guest_crud.delete_inactive_guests,
+        CONFIG.access_token_expires_minutes,
+    )
+
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
