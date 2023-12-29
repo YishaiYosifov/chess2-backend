@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from app.schemas.config_schema import get_config, CONFIG
 from app.schemas import response_schema
 from app.utils import common
-from app.crud import guest_crud
+from app.crud import user_crud
 from app.db import engine, SessionLocal, Base
 
 from .routers import game_requests, settings, profile, auth
@@ -17,18 +17,12 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    common.run_with_db(
-        SessionLocal,
-        guest_crud.delete_inactive_guests,
-        CONFIG.access_token_expires_minutes,
-    )
-
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         lambda: common.run_with_db(
             SessionLocal,
-            guest_crud.delete_inactive_guests,
+            user_crud.delete_inactive_guests,
             CONFIG.access_token_expires_minutes,
         ),
         "cron",
@@ -61,6 +55,10 @@ app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(settings.router)
 app.include_router(game_requests.router)
+
+# openapi-generator doesn't support 3.1.0 "yet"
+# https://github.com/OpenAPITools/openapi-generator/issues/9083
+app.openapi_version = "3.0.3"
 
 app.add_middleware(
     CORSMiddleware,

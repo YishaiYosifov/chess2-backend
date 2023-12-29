@@ -66,21 +66,25 @@ class User(Base, kw_only=True):
     }
 
 
-class GuestUser(User):
+class GuestUser(User, kw_only=True):
     __tablename__ = "guest_user"
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.user_id"), primary_key=True, init=False
+        ForeignKey("user.user_id"),
+        primary_key=True,
+        init=False,
     )
 
     __mapper_args__ = {"polymorphic_identity": "guest"}
 
 
-class AuthedUser(User):
+class AuthedUser(User, kw_only=True):
     __tablename__ = "authed_user"
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.user_id"), primary_key=True, init=False
+        ForeignKey("user.user_id"),
+        primary_key=True,
+        default=None,
     )
     hashed_password: Mapped[str]
 

@@ -73,7 +73,7 @@ class EmailSetting(ValidationSetting):
             - check if the email is taken
         """
 
-        user_crud.original_email_or_raise(self.db, new_email)
+        user_crud.unique_email_or_raise(self.db, new_email)
 
 
 class UsernameSetting(ValidationSetting):
@@ -103,7 +103,7 @@ class UsernameSetting(ValidationSetting):
             - check if the username was changed too recently
         """
 
-        user_crud.original_username_or_raise(self.db, new_username)
+        user_crud.unique_username_or_raise(self.db, new_username)
 
         now = datetime.utcnow()
         if (
@@ -125,6 +125,7 @@ def update_setting_single(
     :param db: the database session to use
     :param setting: the setting object
     :param new_value: which value to pass to the update function
+
     :return: the updated user
     """
 

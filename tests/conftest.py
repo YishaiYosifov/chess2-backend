@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from _pytest.fixtures import SubRequest
 from sqlalchemy.orm import scoped_session, sessionmaker
 from pytest_mock import MockerFixture
+from httpx import AsyncClient
 import pytest
 
 from app.schemas.config_schema import get_config
@@ -28,6 +29,11 @@ def client():
 
     for file in glob("uploads/*"):
         shutil.rmtree(file)
+
+
+@pytest.fixture()
+def async_client():
+    return AsyncClient(app=app, base_url="http://testserver")
 
 
 @pytest.fixture

@@ -61,6 +61,7 @@ def create_or_start_pool_game(
     :param db: the database session
     :param user: the user for whom to search a game request
     :param game_settings: the game settings object
+
     :return: the game token if a request was found, otherwise None
     """
 

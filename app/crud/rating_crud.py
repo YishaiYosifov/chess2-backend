@@ -17,6 +17,7 @@ def fetch_single(
 
     :param user: the user the get the rating for
     :param variant: the variant to get
+
     :return: the rating object, or None if it was not found
     """
 
@@ -41,6 +42,7 @@ def fetch_many(
     :param db: the database session
     :param user: the user for whom to fetch for
     :param variants: a list of variants
+
     :return: a dictionary containing all the current ratings
     """
 
@@ -68,6 +70,7 @@ def fetch_history(
     :param user: the user for whom to fetch for
     :param since: the date to fetch since
     :param variants: a list of variants
+
     :return: a dictionary containing the variants their list of ratings
     """
 
@@ -102,6 +105,7 @@ def fetch_min_max(
     :param db: the database session
     :param user: the user for whom to fetch for
     :param variants: a list of the variants to search
+
     :return: a dictionary containing the variants as a key and min, max as a tuple value
     """
 

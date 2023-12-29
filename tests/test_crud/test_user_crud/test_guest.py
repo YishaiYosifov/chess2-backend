@@ -10,19 +10,10 @@ import pytest
 from app.models.user_model import AuthedUser, GuestUser
 from tests.factories.user import AuthedUserFactory, GuestFactory
 from tests.utils import mocks
-from app.crud import guest_crud
+from app.crud import user_crud
 
 
 @pytest.mark.integration
-class TestGuestUsernameTokenExists:
-    def test_exists(self, db: Session):
-        GuestFactory.create(username="Guest-TestToken")
-        assert guest_crud.username_token_exists(db, "TestToken")
-
-    def test_doesnt_exist(self, db: Session):
-        assert not guest_crud.username_token_exists(db, "TestToken")
-
-
 class TestCreateGuest:
     @pytest.fixture
     def mock_token(self, request: SubRequest, mocker: MockerFixture):
@@ -37,7 +28,7 @@ class TestCreateGuest:
         )
 
         mock_truncated_uuid = mocker.patch.object(
-            guest_crud.common, "truncated_uuid"
+            user_crud.common, "truncated_uuid"
         )
         if isinstance(new_token, str):
             mock_truncated_uuid.return_value = new_token
@@ -47,7 +38,7 @@ class TestCreateGuest:
         return new_token
 
     def test_create_success(self, db: Session, mock_token: str):
-        guest_crud.create_guest(db)
+        user_crud.create_guest(db)
         guest = db.execute(select(GuestUser)).scalar_one()
         assert guest.username == f"Guest-{mock_token}"
 
@@ -63,12 +54,12 @@ class TestCreateGuest:
         """
 
         mocker.patch.object(
-            guest_crud,
-            "username_token_exists",
-            new=lambda db, token: token == mock_token[0],
+            user_crud,
+            "get_by_username",
+            new=lambda db, username: username == f"Guest-{mock_token[0]}",
         )
 
-        guest = guest_crud.create_guest(db)
+        guest = user_crud.create_guest(db)
         assert guest.username == f"Guest-{mock_token[1]}"
 
 
@@ -77,33 +68,33 @@ class TestDeleteInactiveGuests:
     def test_dont_delete_active(self, db: Session, mocker: MockerFixture):
         """Test if the `delete_inactive_guest` crud function ignores all active guests"""
 
-        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        fixed_datetime, _ = mocks.fix_time(user_crud, mocker)
         GuestFactory.create(last_refreshed_token=fixed_datetime)
 
-        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+        user_crud.delete_inactive_guests(db, delete_minutes=10)
 
         db.execute(select(GuestUser)).scalar_one()
 
     def test_delete_inactive(self, db: Session, mocker: MockerFixture):
         """Test if the `delete_inactive_guest` crud function succesfully delete all inactive guests"""
 
-        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        fixed_datetime, _ = mocks.fix_time(user_crud, mocker)
         GuestFactory.create(
             last_refreshed_token=fixed_datetime - timedelta(minutes=15)
         )
 
-        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+        user_crud.delete_inactive_guests(db, delete_minutes=10)
 
         assert not db.execute(select(GuestUser)).all()
 
     def test_doesnt_delete_registered(self, db: Session, mocker: MockerFixture):
         """Test if the `delete_inactive_guest` crud function ignores all authorized users"""
 
-        fixed_datetime, _ = mocks.fix_time(guest_crud, mocker)
+        fixed_datetime, _ = mocks.fix_time(user_crud, mocker)
         AuthedUserFactory.create(
             last_refreshed_token=fixed_datetime - timedelta(minutes=15)
         )
 
-        guest_crud.delete_inactive_guests(db, delete_minutes=10)
+        user_crud.delete_inactive_guests(db, delete_minutes=10)
 
         assert db.execute(select(AuthedUser)).scalar_one()

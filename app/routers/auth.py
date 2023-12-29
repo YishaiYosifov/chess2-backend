@@ -9,7 +9,7 @@ from app.utils.email_verification import send_verification_email
 from app.models.user_model import AuthedUser
 from app.services import auth_service, jwt_service
 from app.schemas import response_schema, user_schema
-from app.crud import guest_crud, user_crud
+from app.crud import user_crud
 from app import deps
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -40,10 +40,10 @@ def signup(
     - create the necessary files
     """
 
-    user_crud.original_username_or_raise(db, user.username)
-    user_crud.original_email_or_raise(db, user.email)
+    user_crud.unique_username_or_raise(db, user.username)
+    user_crud.unique_email_or_raise(db, user.email)
 
-    db_user = user_crud.create_user(db, user)
+    db_user = user_crud.create_authed(db, user)
     db.commit()
 
     if config.send_verification_email:
@@ -141,7 +141,7 @@ def create_guest_account(db: deps.DBDep, config: deps.ConfigDep):
     Keep in mind the account is temporary and is bound to be deleted.
     """
 
-    guest = guest_crud.create_guest(db)
+    guest = user_crud.create_guest(db)
     db.commit()
 
     access_token = jwt_service.create_access_token(

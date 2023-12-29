@@ -14,7 +14,9 @@ def load_and_validate_image(img_bytes: bytes) -> Image.Image:
     Load an image from a byte array, verify its integrity and return the image.
 
     :param img_bytes: the image bytes
+
     :return: the loaded image
+
     :raise HTTPException (BAD_REQUEST): the image could not be loaded
     """
 
@@ -41,6 +43,7 @@ def center_crop(img: Image.Image) -> Image.Image:
     Center cropping is cutting out the middle part of a picture and only keeping that part.
 
     :param image: the image to center crop
+
     :return: the center cropped image
     """
 
@@ -63,6 +66,7 @@ async def save_pfp(user_id: int, img: Image.Image) -> None:
     Asynchronicity save the image save a profile picture in the correct place.
 
     :param user_id: the id of the profile picture owner user
+
     :param img: the profile picture
     """
 

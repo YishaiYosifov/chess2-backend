@@ -25,6 +25,7 @@ def paginate_history(
     :param user: the user to fetch the history of
     :param page: which page to fetch
     :param per_page: how many games to show per page
+
     :return: a list of games
     """
 

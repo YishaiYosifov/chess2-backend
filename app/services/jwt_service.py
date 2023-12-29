@@ -59,6 +59,7 @@ def create_access_token(
     :param jwt_algorithm: which algorithm to use to generate the key
     :param user_id: the user id to incode in the token
     :param expires_in_minutes: when should this token expires
+
     :return: the encoded jwt access token
     """
 
@@ -83,6 +84,7 @@ def create_refresh_token(
     :param jwt_algorithm: which algorithm to use to generate the key
     :param user_id: the user id to incode in the token
     :param expires_in_days: when should this token expires
+
     :return: the encoded jwt refresh token
     """
 
@@ -116,6 +118,7 @@ def _decode_jwt_token(
     :param secret_key: the secret key to sign the token with
     :param jwt_algorithm: which algorithm to use to generate the key
     :param options: options to update the default decode options
+
     :return: a dictionary containing the jwt payload
     """
 
@@ -142,6 +145,7 @@ def _get_jwt_indentity(payload: dict[str, Any]) -> int | None:
     Try to get the user id from a jwt token.
 
     :param payload: the decoded payload returned from the jwt token
+
     :return: the user_id if it was found, otherwise None
     """
 
@@ -158,6 +162,7 @@ def decode_access_token(
     :param secret_key: the secret key to sign the token with
     :param jwt_algorithm: which algorithm to use to generate the key
     :param token: the jwt token
+
     :return: the user id if decoding was successful, otherwise None
     """
 
@@ -174,6 +179,7 @@ def _check_token_revocation(db: Session, payload: dict[str, Any]) -> bool:
 
     :param db: an sqlalchemy session to check for revocation in
     :param payload: the decoded payload returned from the jwt token
+
     :return: whether the token is revoked
     """
 
@@ -198,6 +204,7 @@ def decode_refresh_token(
     :param jwt_algorithm: which algorithm to use to generate the key
     :param db: a db session to search for expired jtis in
     :param token: the jwt token
+
     :return: the user id if decoding was successful, otherwise None
     """
 

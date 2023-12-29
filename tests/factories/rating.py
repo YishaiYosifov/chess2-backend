@@ -31,6 +31,7 @@ class RatingFactory(SQLAlchemyModelFactory):
 
         :param user: the user for whom the rating history is being created
         :param variants: a dictionary of variants and a list of elos or an amount to create
+
         :return: a list of the created ratings
         """
 

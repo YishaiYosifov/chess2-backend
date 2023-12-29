@@ -1,8 +1,8 @@
 from unittest.mock import patch
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
 from _pytest.fixtures import SubRequest
+from httpx import AsyncClient
 import pytest
 
 from app.models.user_model import AuthedUser
@@ -26,34 +26,37 @@ def mock_verify_password(request: SubRequest):
     ),
     indirect=["mock_verify_password"],
 )
-@pytest.mark.usefixtures("mock_verify_password", "mock_create_jwt_tokens", "db")
-def test_login_fail(client: TestClient, data):
+@pytest.mark.usefixtures("mock_verify_password", "db")
+async def test_login_fail(async_client: AsyncClient, data):
     """Test how `/auth/login` handles non existing credentials"""
 
     AuthedUserFactory.create(username="test-user")
-    response = client.post(
-        "/auth/login",
-        data=data,
-    )
+    async with async_client as ac:
+        response = await ac.post(
+            "/auth/login",
+            data=data,
+        )
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED, response.json()
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("mock_verify_password", [True], indirect=True)
-@pytest.mark.usefixtures("mock_verify_password", "mock_create_jwt_tokens", "db")
-def test_login_success(client: TestClient):
+@pytest.mark.usefixtures("mock_verify_password", "db")
+async def test_login_success(async_client: AsyncClient):
     "Test how `/auth/login` handles valid credentials"
 
     user: AuthedUser = AuthedUserFactory.create()
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": user.username,
-            "password": "password",
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
+
+    async with async_client as ac:
+        response = await ac.post(
+            "/auth/login",
+            data={
+                "username": user.username,
+                "password": "password",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
 
     assert response.status_code == HTTPStatus.OK, response.json()
 

@@ -1,12 +1,14 @@
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from httpx import AsyncClient
 import pytest
 
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
+
+pytestmark = [pytest.mark.slow]
 
 
 @pytest.mark.integration
@@ -66,28 +68,30 @@ from tests.factories.user import AuthedUserFactory
     ],
 )
 @pytest.mark.usefixtures("db")
-def test_signup_params(client: TestClient, data: dict):
+async def test_signup_params(async_client: AsyncClient, data: dict):
     """Test how `/auth/signup` handles bad arguments"""
 
-    response = client.post("/auth/signup", json=data)
+    async with async_client as ac:
+        response = await ac.post("/auth/signup", json=data)
+
     assert (
         response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     ), response.json()
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_password_hash")
-def test_signup_success(client: TestClient, db: Session):
+async def test_signup_success(async_client: AsyncClient, db: Session):
     """Test if `/auth/signup` works in creating the user when valid arugments are provided"""
 
-    response = client.post(
-        "/auth/signup",
-        json={
-            "username": "test-username",
-            "email": "test@example.com",
-            "password": "securePassword123",
-        },
-    )
+    async with async_client as ac:
+        response = await ac.post(
+            "/auth/signup",
+            json={
+                "username": "test-username",
+                "email": "test@example.com",
+                "password": "securePassword123",
+            },
+        )
     assert response.status_code == HTTPStatus.CREATED, response.json()
 
     user = db.execute(select(AuthedUser)).scalar_one()
@@ -113,9 +117,11 @@ def test_signup_success(client: TestClient, db: Session):
     ids=["email conflict", "username conflict"],
 )
 @pytest.mark.usefixtures("db")
-def test_signup_conflict(client: TestClient, data: dict):
+async def test_signup_conflict(async_client: AsyncClient, data: dict):
     """Test how `/auth/signup` handles username / email conflicts"""
 
     AuthedUserFactory.create(username="test-user", email="test@example.com")
-    response = client.post("/auth/signup", json=data)
+    async with async_client as ac:
+        response = await ac.post("/auth/signup", json=data)
+
     assert response.status_code == HTTPStatus.CONFLICT, response.json()

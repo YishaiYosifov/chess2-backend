@@ -86,6 +86,7 @@ class GameResultFactory(SQLAlchemyModelFactory):
         :param user1: the first user
         :param user2: the second user
         :param created_at: optionally set the date of the first game. defaults to utcnow
+
         :return: a list of game results
         """
 

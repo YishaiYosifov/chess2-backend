@@ -1,3 +1,5 @@
+from datetime import timedelta, datetime
+from typing import TypeVar
 from http import HTTPStatus
 
 from sqlalchemy.orm import Session
@@ -6,57 +8,94 @@ from fastapi import HTTPException
 
 from app.services import auth_service, jwt_service
 from app.models import user_model
+from app.utils import common
 
 from ..schemas import user_schema
 
-
-def fetch_by(
-    db: Session, *criteria: ColumnExpressionArgument[bool]
-) -> user_model.AuthedUser | None:
-    return db.execute(select(user_model.AuthedUser).filter(*criteria)).scalar()
+T = TypeVar("T", bound=user_model.User)
 
 
-def original_email_or_raise(db: Session, email: str) -> None:
-    if fetch_by(db, user_model.AuthedUser.email == email):
+def _fetch_by(
+    db: Session,
+    criteria: ColumnExpressionArgument[bool],
+    model: type[T] = user_model.User,
+) -> T | None:
+    return db.execute(select(model).filter(criteria)).scalar()
+
+
+def get_user(
+    db: Session,
+    selector: int | str,
+    model: type[T] = user_model.User,
+) -> T | None:
+    """Fetch a user by a username / id"""
+
+    return (
+        get_by_id(db, int(selector), model)
+        if isinstance(selector, int) or selector.isnumeric()
+        else get_by_username(db, selector, model)
+    )
+
+
+def get_by_id(
+    db: Session,
+    user_id: int,
+    model: type[T] = user_model.User,
+) -> T | None:
+    """Get a user by their user id from a specific model"""
+
+    return _fetch_by(db, model.user_id == user_id, model)
+
+
+def get_by_username(
+    db: Session,
+    username: str,
+    model: type[T] = user_model.User,
+) -> T | None:
+    """Get a user by their username from a specific model"""
+
+    return _fetch_by(db, model.username == username, model)
+
+
+def get_by_email(db: Session, email: str) -> user_model.AuthedUser | None:
+    """Get a user by their email from a specific model"""
+
+    return _fetch_by(
+        db,
+        user_model.AuthedUser.email == email,
+        user_model.AuthedUser,
+    )
+
+
+def unique_email_or_raise(db: Session, email: str) -> None:
+    """Make sure an email is unique or raise an HTTP conflict exception"""
+
+    if get_by_email(db, email):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
             detail={"email": "Email taken"},
         )
 
 
-def original_username_or_raise(db: Session, username: str) -> None:
-    if fetch_by(db, user_model.AuthedUser.username == username):
+def unique_username_or_raise(db: Session, username: str) -> None:
+    """Make sure an username is unique or raise an HTTP conflict exception"""
+
+    if get_by_username(db, username):
         raise HTTPException(
             status_code=HTTPStatus.CONFLICT,
             detail={"username": "Username taken"},
         )
 
 
-def generic_fetch(
-    db: Session, selector: int | str
-) -> user_model.AuthedUser | None:
-    """Fetch user by their username / id"""
-
-    return (
-        db.get(
-            user_model.AuthedUser,
-            selector,
-        )
-        if isinstance(selector, int)
-        else db.execute(
-            select(user_model.AuthedUser).filter_by(username=selector)
-        ).scalar()
-    )
-
-
-def fetch_authed_by_token(
+def get_by_token(
     db: Session,
     secret_key: str,
     jwt_algorithm: str,
     token: str,
     refresh: bool = False,
     fresh: bool = False,
-) -> user_model.AuthedUser | None:
+    model: type[T] = user_model.AuthedUser,
+) -> T | None:
     """
     Try to decode a jwt token into a user model
 
@@ -66,6 +105,8 @@ def fetch_authed_by_token(
     :param token: the jwt token
     :param refresh: whether to require a refresh token
     :param fresh: whether to require a fresh token
+    :param model: which user model to fetch. defaults to AuthedUser
+
     :return: the user model if decoding was successful, otherwise None
     """
 
@@ -87,14 +128,22 @@ def fetch_authed_by_token(
     if not user_id:
         return
 
-    user = generic_fetch(db, user_id)
-    return user
+    return get_user(db, user_id, model)
 
 
 def authenticate(
     db: Session, username: str, password: str
 ) -> user_model.AuthedUser | None:
-    user = fetch_by(db, user_model.AuthedUser.username == username)
+    """
+    Get a user by their username and password.
+    Will return None if the username was not found or the password was incorrect.
+    """
+
+    user = _fetch_by(
+        db,
+        user_model.AuthedUser.username == username,
+        user_model.AuthedUser,
+    )
     if not user:
         return
     if not auth_service.verify_password(password, user.hashed_password):
@@ -102,10 +151,12 @@ def authenticate(
     return user
 
 
-def create_user(
+def create_authed(
     db: Session,
     user: user_schema.UserIn,
 ) -> user_model.AuthedUser:
+    """Hash the password and create an authed user"""
+
     hashed_password = auth_service.hash_password(user.password)
     db_user = user_model.AuthedUser(
         username=user.username,
@@ -115,3 +166,40 @@ def create_user(
     db.add(db_user)
 
     return db_user
+
+
+def create_guest(db: Session) -> user_model.GuestUser:
+    """Create a guest user with a unique username"""
+
+    token = common.truncated_uuid()
+    while get_by_username(db, f"Guest-{token}"):
+        token = common.truncated_uuid()
+
+    guest = user_model.GuestUser(username=f"Guest-{token}")
+    db.add(guest)
+
+    return guest
+
+
+def delete_inactive_guests(db: Session, delete_minutes: int):
+    """
+    Delete all inactive guest accounts. This functions commits at the end
+
+    :param db: the database session
+    :param delete_minutes: how long do the accounts need to be inactive in minutes to delete
+    """
+
+    delete_from = datetime.utcnow() - timedelta(minutes=delete_minutes)
+
+    guests = db.execute(
+        select(user_model.GuestUser).filter(
+            user_model.GuestUser.last_refreshed_token <= delete_from,
+        )
+    ).scalars()
+
+    # this looping over every guest and manually deleting them to
+    # cascade the deletion to relationships
+    for guest in guests:
+        db.delete(guest)
+
+    db.commit()

@@ -46,21 +46,12 @@ class GetCurrentUser:
         secret_key: str,
         jwt_algorithm: str,
     ) -> AuthedUser | None:
-        credentials_exception = HTTPException(
-            status_code=HTTPStatus.UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
         token = tokens.refresh_token if self.refresh else tokens.access_token
-
-        if not token and self.required:
-            raise credentials_exception
-        elif not token:
+        if not token:
             return
 
         # Try to fetch the user with the token
-        user = user_crud.fetch_authed_by_token(
+        user = user_crud.get_by_token(
             db,
             secret_key,
             jwt_algorithm,
@@ -68,8 +59,6 @@ class GetCurrentUser:
             self.refresh,
             self.fresh,
         )
-        if not user:
-            raise credentials_exception
 
         return user
 
@@ -80,7 +69,16 @@ class GetCurrentUser:
         secret_key: str,
         jwt_algorithm: str,
     ) -> GuestUser | None:
-        pass
+        if not tokens.access_token:
+            return
+
+        return user_crud.get_by_token(
+            db,
+            secret_key,
+            jwt_algorithm,
+            tokens.access_token,
+            model=GuestUser,
+        )
 
     def __call__(
         self,
@@ -90,7 +88,7 @@ class GetCurrentUser:
     ) -> User | None:
         """Dependency to fetch the authorized user"""
 
-        return (
+        user = (
             self.get_authed_user(
                 db, tokens, config.secret_key, config.jwt_algorithm
             )
@@ -100,8 +98,18 @@ class GetCurrentUser:
             )
         )
 
+        if not user and self.required:
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return user
+
 
 AuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser())]
+GuestUserDep = Annotated[GuestUser, Depends(GetCurrentUser(authed=False))]
 
 
 def target_or_me(
@@ -120,7 +128,7 @@ def target_or_me(
 
     if target == "me":
         user = (
-            user_crud.fetch_authed_by_token(
+            user_crud.get_by_token(
                 db,
                 config.secret_key,
                 config.jwt_algorithm,
@@ -130,7 +138,7 @@ def target_or_me(
             else None
         )
     else:
-        user = user_crud.generic_fetch(db, target)
+        user = user_crud.get_user(db, target, AuthedUser)
 
     if not user:
         raise HTTPException(

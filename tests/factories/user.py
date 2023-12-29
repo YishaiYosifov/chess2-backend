@@ -1,5 +1,5 @@
 from factory.alchemy import SQLAlchemyModelFactory
-from factory import post_generation, SubFactory, Faker
+from factory import post_generation, SubFactory, Sequence, Faker
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.services.auth_service import hash_password
@@ -21,10 +21,12 @@ class AuthedUserFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = TestScopedSession
         model = AuthedUser
 
+    user_id = Sequence(lambda n: n)
+
     username = Faker("name")
     email = Faker("email")
     hashed_password = (
-        "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"
+        "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"  # luka
     )
 
     @post_generation
