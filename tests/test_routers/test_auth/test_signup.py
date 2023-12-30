@@ -8,8 +8,6 @@ import pytest
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 
-pytestmark = [pytest.mark.slow]
-
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
@@ -69,7 +67,7 @@ pytestmark = [pytest.mark.slow]
 )
 @pytest.mark.usefixtures("db")
 async def test_signup_params(async_client: AsyncClient, data: dict):
-    """Test how `/auth/signup` handles bad arguments"""
+    """Test how it handles bad arguments"""
 
     async with async_client as ac:
         response = await ac.post("/auth/signup", json=data)
@@ -80,8 +78,9 @@ async def test_signup_params(async_client: AsyncClient, data: dict):
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 async def test_signup_success(async_client: AsyncClient, db: Session):
-    """Test if `/auth/signup` works in creating the user when valid arugments are provided"""
+    """Test if it works in creating the user when valid arugments are provided"""
 
     async with async_client as ac:
         response = await ac.post(
@@ -118,7 +117,7 @@ async def test_signup_success(async_client: AsyncClient, db: Session):
 )
 @pytest.mark.usefixtures("db")
 async def test_signup_conflict(async_client: AsyncClient, data: dict):
-    """Test how `/auth/signup` handles username / email conflicts"""
+    """Test how it handles username / email conflicts"""
 
     AuthedUserFactory.create(username="test-user", email="test@example.com")
     async with async_client as ac:

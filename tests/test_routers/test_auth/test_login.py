@@ -1,32 +1,22 @@
-from unittest.mock import patch
 from http import HTTPStatus
 
-from _pytest.fixtures import SubRequest
 from httpx import AsyncClient
 import pytest
 
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
-from app.crud import user_crud
 
 
-@pytest.fixture
-def mock_verify_password(request: SubRequest):
-    with patch.object(user_crud, "auth_service") as a:
-        a.verify_password.return_value = request.param
-        yield
-
-
+@pytest.mark.slow
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "data, mock_verify_password",
+    "data",
     (
-        [{"username": "non-existing-user", "password": "password"}, True],
-        [{"username": "test-user", "password": "bad password"}, False],
+        {"username": "non-existing-user", "password": "luka"},
+        {"username": "test-user", "password": "bad password"},
     ),
-    indirect=["mock_verify_password"],
 )
-@pytest.mark.usefixtures("mock_verify_password", "db")
+@pytest.mark.usefixtures("db")
 async def test_login_fail(async_client: AsyncClient, data):
     """Test how `/auth/login` handles non existing credentials"""
 
@@ -40,9 +30,9 @@ async def test_login_fail(async_client: AsyncClient, data):
     assert response.status_code == HTTPStatus.UNAUTHORIZED, response.json()
 
 
+@pytest.mark.slow
 @pytest.mark.integration
-@pytest.mark.parametrize("mock_verify_password", [True], indirect=True)
-@pytest.mark.usefixtures("mock_verify_password", "db")
+@pytest.mark.usefixtures("db")
 async def test_login_success(async_client: AsyncClient):
     "Test how `/auth/login` handles valid credentials"
 
@@ -53,9 +43,8 @@ async def test_login_success(async_client: AsyncClient):
             "/auth/login",
             data={
                 "username": user.username,
-                "password": "password",
+                "password": "luka",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
     assert response.status_code == HTTPStatus.OK, response.json()
