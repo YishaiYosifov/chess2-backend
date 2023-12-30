@@ -139,15 +139,12 @@ def authenticate(
     Will return None if the username was not found or the password was incorrect.
     """
 
-    user = _fetch_by(
-        db,
-        user_model.AuthedUser.username == username,
-        user_model.AuthedUser,
-    )
-    if not user:
+    user = get_by_username(db, username, user_model.AuthedUser)
+    if not user or not auth_service.verify_password(
+        password, user.hashed_password
+    ):
         return
-    if not auth_service.verify_password(password, user.hashed_password):
-        return
+
     return user
 
 

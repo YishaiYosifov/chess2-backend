@@ -54,9 +54,7 @@ class UserIn(UserAccountInfoSensitive):
 
 class UserOut(BaseUserProfile, BaseUserAccountInfo):
     user_id: int
-    pfp_last_changed: Annotated[
-        datetime, Field(default_factory=datetime.utcnow)
-    ]
+    pfp_last_changed: datetime
 
 
 class UserOutSensitive(UserOut, UserAccountInfoSensitive):

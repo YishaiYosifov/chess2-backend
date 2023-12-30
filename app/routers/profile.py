@@ -90,7 +90,7 @@ def get_ratings(
 
 @router.get(
     "/{target}/rating-history",
-    response_model=dict[enums.Variant, game_schema.RatingOverview | None],
+    response_model=dict[enums.Variant, game_schema.RatingOverview],
     responses={
         **user_not_found_response,
         HTTPStatus.BAD_REQUEST: {
