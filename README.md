@@ -9,9 +9,9 @@ Set up the enviroment:
 ```bash
   python3 -m venv env
 
-  "env/Scripts/activate.bat" // Windows
-  // OR
-  source env/Scripts/activate.bat // Linux & Mac
+  "env/Scripts/activate.bat" # Windows
+  # OR
+  source env/Scripts/activate.bat # Linux & Mac
 ```
 
 Install requirements and run
