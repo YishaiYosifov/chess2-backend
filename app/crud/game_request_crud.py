@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import literal, select, func
 
 from app.models.games.game_request_model import GameRequest
 from app.schemas.config_schema import CONFIG
@@ -45,7 +45,7 @@ def search_game_request(
             increment=game_settings.increment,
             recipient=None,
         )
-        # making sure guests can only play against guests
+        # this makes sure guests can only play against guests
         # and authed users can only play against authed users
         .join(
             User,
@@ -61,7 +61,7 @@ def search_game_request(
             Rating.user_id == GameRequest.inviter_id,
             isouter=True,
         ).filter(
-            func.coalesce(Rating.elo, CONFIG.default_rating).between(
+            func.coalesce(Rating.elo, literal(CONFIG.default_rating)).between(
                 rating - CONFIG.acceptable_rating_difference,
                 rating + CONFIG.acceptable_rating_difference,
             )

@@ -59,8 +59,8 @@ class User(Base, kw_only=True):
         return self.player.game
 
     __mapper_args__ = {
-        "polymorphic_identity": enums.UserType.BASE,
         "polymorphic_on": user_type,
+        "polymorphic_abstract": True,
     }
 
 

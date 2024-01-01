@@ -67,7 +67,7 @@ def create_or_start_pool_game(
 
     is_authed = isinstance(user, AuthedUser)
     rating = (
-        rating_crud.fetch_rating_value(db, user, game_settings.variant)
+        rating_crud.fetch_rating_elo(db, user, game_settings.variant)
         if is_authed
         else None
     )

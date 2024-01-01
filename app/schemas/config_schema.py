@@ -29,7 +29,7 @@ class Config(BaseSettings):
     default_rating: int = 800
     acceptable_rating_difference: int = 300
 
-    model_config = SettingsConfigDict(env_file=os.getenv("ENV"))
+    model_config = SettingsConfigDict(env_file=os.getenv("ENV") or ".env")
 
 
 CONFIG = Config()

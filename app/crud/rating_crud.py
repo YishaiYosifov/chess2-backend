@@ -18,8 +18,9 @@ def fetch_single(
     """
     Get a user's latest rating.
 
-    :param user: the user the get the rating for
-    :param variant: the variant to get
+    :param db: the database session
+    :param user: the user to fetch the rating for
+    :param variant: the rating variant to fetch
 
     :return: the rating object, or None if it was not found
     """
@@ -34,12 +35,27 @@ def fetch_single(
     return rating
 
 
-def fetch_rating_value(
+def fetch_rating_elo(
     db: Session,
     user: AuthedUser,
     variant: enums.Variant,
-    default: int | None = CONFIG.default_rating,
-):
+    default: int = CONFIG.default_rating,
+) -> int:
+    """
+    Get the user's latest rating elo value.
+
+    Used in cases where the elo value is required but
+    the rating model object isn't so important.
+
+    :param db: the database session
+    :param user: the user to fetch the elo for
+    :param variant: the rating variant to fetch
+    :param default: what to return when the user doesn't have a rating.
+                    defaults to the `default_rating` value in the config.
+
+    :return: the elo if the rating exists or the default value
+    """
+
     rating = fetch_single(db, user, variant)
     if not rating:
         return default

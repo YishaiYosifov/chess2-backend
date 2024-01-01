@@ -24,7 +24,6 @@ class GameResult(Enum):
 
 
 class UserType(Enum):
-    BASE = "base"
     AUTHED = "authed"
     GUEST = "guest"
 

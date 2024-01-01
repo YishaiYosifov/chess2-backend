@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 from typing import Any
 
 from pytest_mock.plugin import MockType
@@ -10,7 +10,6 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.schemas.config_schema import CONFIG
 from app.models.user_model import User
 from tests.factories.user import AuthedUserFactory, GuestUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
@@ -28,7 +27,7 @@ from app.crud import game_request_crud, rating_crud, game_crud
 class TestCreateOrStartPoolGame:
     @pytest.fixture
     def mock_fetch_rating(self, mocker: MockerFixture):
-        return mocker.patch.object(rating_crud, "fetch_single")
+        return mocker.patch.object(rating_crud, "fetch_rating_elo")
 
     @pytest.fixture
     def mock_search_request(self, mocker: MockerFixture):
@@ -51,13 +50,11 @@ class TestCreateOrStartPoolGame:
         return mocker.patch.object(game_request_crud, "create_game_request")
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("rating", [Mock(elo=CONFIG.default_rating), None])
     def test_correct_rating_calls_authed(
         self,
         mocker: MockerFixture,
         mock_search_request: MockType,
         mock_fetch_rating: MockType,
-        rating: Mock | None,
     ):
         """
         Test if the correct rating is fetched when the user is authenticated.
@@ -65,7 +62,7 @@ class TestCreateOrStartPoolGame:
         should be used.
         """
 
-        mock_fetch_rating.return_value = rating
+        mock_fetch_rating.return_value = 800
 
         db = mocker.MagicMock()
         game_settings = GameSettingsFactory.build()
@@ -73,13 +70,10 @@ class TestCreateOrStartPoolGame:
         game_request_service.create_or_start_pool_game(db, user, game_settings)
 
         mock_fetch_rating.assert_called_once_with(
-            db, user, variant=game_settings.variant
+            db, user, game_settings.variant
         )
         mock_search_request.assert_called_once_with(
-            db,
-            game_settings,
-            rating.elo if rating else CONFIG.default_rating,
-            enums.UserType.AUTHED,
+            db, game_settings, 800, enums.UserType.AUTHED
         )
 
     @pytest.mark.unit

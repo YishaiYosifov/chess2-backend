@@ -34,10 +34,7 @@ def signup(
 ):
     """
     Takes a username, email and password and creates registers a new user.
-
-    This path operation will also:
-    - send a verification email
-    - create the necessary files
+    This path operation will also send a verification email.
     """
 
     user_crud.unique_username_or_raise(db, user.username)
