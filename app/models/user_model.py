@@ -17,7 +17,7 @@ class User(Base, kw_only=True):
     __tablename__ = "user"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    user_type: Mapped[str] = mapped_column(init=False)
+    user_type: Mapped[enums.UserType] = mapped_column(init=False)
 
     sid: Mapped[str | None] = mapped_column(
         Text,
@@ -26,9 +26,7 @@ class User(Base, kw_only=True):
         nullable=True,
         unique=True,
     )
-
     username: Mapped[str] = mapped_column(String(30), unique=True, index=True)
-    last_color: Mapped[enums.Color] = mapped_column(default=enums.Color.BLACK)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -61,7 +59,7 @@ class User(Base, kw_only=True):
         return self.player.game
 
     __mapper_args__ = {
-        "polymorphic_identity": "base",
+        "polymorphic_identity": enums.UserType.BASE,
         "polymorphic_on": user_type,
     }
 
@@ -75,7 +73,7 @@ class GuestUser(User, kw_only=True):
         init=False,
     )
 
-    __mapper_args__ = {"polymorphic_identity": "guest"}
+    __mapper_args__ = {"polymorphic_identity": enums.UserType.GUEST}
 
 
 class AuthedUser(User, kw_only=True):
@@ -117,4 +115,4 @@ class AuthedUser(User, kw_only=True):
         init=False,
     )
 
-    __mapper_args__ = {"polymorphic_identity": "authed"}
+    __mapper_args__ = {"polymorphic_identity": enums.UserType.AUTHED}

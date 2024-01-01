@@ -62,13 +62,13 @@ class GetCurrentUser:
 
         return user
 
-    def get_guest_user(
+    def get_unauthed_user(
         self,
         db: Session,
         tokens: user_schema.AuthTokens,
         secret_key: str,
         jwt_algorithm: str,
-    ) -> GuestUser | None:
+    ) -> User | None:
         if not tokens.access_token:
             return
 
@@ -77,7 +77,7 @@ class GetCurrentUser:
             secret_key,
             jwt_algorithm,
             tokens.access_token,
-            model=GuestUser,
+            model=User,
         )
 
     def __call__(
@@ -93,7 +93,7 @@ class GetCurrentUser:
                 db, tokens, config.secret_key, config.jwt_algorithm
             )
             if self.authed
-            else self.get_guest_user(
+            else self.get_unauthed_user(
                 db, tokens, config.secret_key, config.jwt_algorithm
             )
         )
@@ -109,7 +109,7 @@ class GetCurrentUser:
 
 
 AuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser())]
-GuestUserDep = Annotated[GuestUser, Depends(GetCurrentUser(authed=False))]
+UnauthedUserDep = Annotated[GuestUser, Depends(GetCurrentUser(authed=False))]
 
 
 def target_or_me(

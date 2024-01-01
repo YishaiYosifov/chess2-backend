@@ -22,12 +22,12 @@ router = APIRouter(prefix="/game-requests", tags=["game-requests"])
 )
 def start_pool_game(
     db: deps.DBDep,
-    user: deps.AuthedUserDep,
+    user: deps.UnauthedUserDep,
     game_settings: game_schema.GameSettings,
 ):
     """
-    Searches for a game request that fits the criterias.
-    If a game was not found, it will create a new game request with an unspecified recipient.
+    Joins the matchmaking pool with the specified game settings.
+    If a game was not found, it will create a new game request.
     """
 
     if user.game:

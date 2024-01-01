@@ -1,12 +1,12 @@
 from datetime import timedelta, datetime
 from typing import Any
 
-from factory.alchemy import SQLAlchemyModelFactory
-from factory import SubFactory, Factory, Faker
+from factory import SubFactory, Faker
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_result_model import GameResult
 from app.models.games.game_model import Game
+from tests.utils.factory_model import TypedSQLAlchemyFactory, TypedFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.conftest import TestScopedSession
@@ -14,7 +14,7 @@ from app.constants import enums
 from app.schemas import game_schema
 
 
-class GameFactory(SQLAlchemyModelFactory):
+class GameFactory(TypedSQLAlchemyFactory[Game]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = Game
@@ -29,7 +29,7 @@ class GameFactory(SQLAlchemyModelFactory):
     player_black = SubFactory(PlayerFactory)
 
 
-class GameRequestFactory(SQLAlchemyModelFactory):
+class GameRequestFactory(TypedSQLAlchemyFactory[GameRequest]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = GameRequest
@@ -41,16 +41,14 @@ class GameRequestFactory(SQLAlchemyModelFactory):
     increment = 0
 
     @classmethod
-    def create(
-        cls, game_settings: game_schema.GameSettings | None = None, **kwargs
-    ):
-        if game_settings:
-            kwargs.update(game_settings.model_dump())
+    def create(cls, settings: game_schema.GameSettings | None = None, **kwargs):
+        if settings:
+            kwargs.update(settings.model_dump())
 
         return super().create(**kwargs)
 
 
-class GameResultFactory(SQLAlchemyModelFactory):
+class GameResultFactory(TypedSQLAlchemyFactory[GameResult]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = GameResult
@@ -110,10 +108,10 @@ class GameResultFactory(SQLAlchemyModelFactory):
         return games
 
 
-class GameSettingsFactory(Factory):
+class GameSettingsFactory(TypedFactory[game_schema.GameSettings]):
     class Meta:
         model = game_schema.GameSettings
 
     variant = enums.Variant.ANARCHY
-    time_control = 60
+    time_control = 600
     increment = 0

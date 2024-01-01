@@ -7,14 +7,14 @@ from pytest_mock import MockerFixture
 from fastapi import FastAPI
 from pytest import MonkeyPatch
 
-from app.models.user_model import AuthedUser
+from app.models.user_model import AuthedUser, User
 from app import deps
 
 from .dep_overrider import DependencyOverrider
 
 
 @contextmanager
-def mock_login(user: AuthedUser) -> Generator:
+def mock_login(user: User) -> Generator:
     """
     Creates a context where the user is logged in.
     This is faster than sending a request to /auth/login because it doesn't actually generate a hash.

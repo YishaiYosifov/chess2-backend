@@ -1,8 +1,8 @@
 from datetime import timedelta, datetime
 
-from factory.alchemy import SQLAlchemyModelFactory
 from factory import SubFactory
 
+from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.models.rating_model import Rating
 from app.models.user_model import AuthedUser
 from tests.conftest import TestScopedSession
@@ -11,7 +11,7 @@ from app.constants import enums
 from .user import AuthedUserFactory
 
 
-class RatingFactory(SQLAlchemyModelFactory):
+class RatingFactory(TypedSQLAlchemyFactory[Rating]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = Rating

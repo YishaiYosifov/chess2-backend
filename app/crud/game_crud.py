@@ -1,4 +1,5 @@
 from typing import Sequence
+import random
 import uuid
 
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
 from app.models.games.piece_model import Piece
 from app.models.games.game_model import Game
-from app.models.user_model import AuthedUser
+from app.models.user_model import AuthedUser, User
 from app.constants import constants, enums
 
 
@@ -63,7 +64,7 @@ def total_count(db: Session, user: AuthedUser) -> int:
 
 
 def create_players(
-    db: Session, inviter: AuthedUser, recipient: AuthedUser, time_control: int
+    db: Session, inviter: User, recipient: User, time_control: int
 ) -> tuple[RuntimePlayerInfo, RuntimePlayerInfo]:
     """
     Create the players for a game.
@@ -75,22 +76,20 @@ def create_players(
     :param time_control: the game time control to decide how much time each player has left
     """
 
-    inviter_color = inviter.last_color.invert()
-    recipient_color = inviter.last_color
+    inviter_color = random.choice(list(enums.Color))
+    recipient_color = inviter_color.invert()
 
     inviter_player = RuntimePlayerInfo(
         user=inviter,
         color=inviter_color,
         time_remaining=time_control,
     )
-    inviter.last_color = inviter_color
 
     recipient_player = RuntimePlayerInfo(
         user=recipient,
         color=recipient_color,
         time_remaining=time_control,
     )
-    recipient.last_color = recipient_color
 
     db.add_all([inviter_player, recipient_player])
     return inviter_player, recipient_player

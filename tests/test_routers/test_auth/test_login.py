@@ -3,7 +3,6 @@ from http import HTTPStatus
 from httpx import AsyncClient
 import pytest
 
-from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 
 
@@ -36,7 +35,7 @@ async def test_login_fail(async_client: AsyncClient, data):
 async def test_login_success(async_client: AsyncClient):
     "Test how `/auth/login` handles valid credentials"
 
-    user: AuthedUser = AuthedUserFactory.create()
+    user = AuthedUserFactory.create()
 
     async with async_client as ac:
         response = await ac.post(

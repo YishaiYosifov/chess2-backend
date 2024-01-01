@@ -7,7 +7,6 @@ from fastapi import HTTPException
 import pytest
 
 from app.schemas.config_schema import Config
-from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 from app.services import settings_service
 from tests.utils import mocks
@@ -18,7 +17,7 @@ from tests.utils import mocks
 def test_password_setting(mock_password_hash: str):
     """Test if the password setting hashes correctly"""
 
-    user: AuthedUser = AuthedUserFactory.build()
+    user = AuthedUserFactory.build()
 
     settings_service.PasswordSetting(user).update("new password")
     assert user.hashed_password == mock_password_hash
@@ -37,7 +36,7 @@ def test_email_setting(
         "send_verification_email",
     )
 
-    user: AuthedUser = AuthedUserFactory.build()
+    user = AuthedUserFactory.build()
     new_email = "test@example.com"
 
     mocked_db = MagicMock()

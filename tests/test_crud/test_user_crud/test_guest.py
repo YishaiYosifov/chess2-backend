@@ -8,7 +8,7 @@ from sqlalchemy import select
 import pytest
 
 from app.models.user_model import AuthedUser, GuestUser
-from tests.factories.user import AuthedUserFactory, GuestFactory
+from tests.factories.user import AuthedUserFactory, GuestUserFactory
 from tests.utils import mocks
 from app.crud import user_crud
 
@@ -69,7 +69,7 @@ class TestDeleteInactiveGuests:
         """Test if the `delete_inactive_guest` crud function ignores all active guests"""
 
         fixed_datetime, _ = mocks.fix_time(user_crud, mocker)
-        GuestFactory.create(last_refreshed_token=fixed_datetime)
+        GuestUserFactory.create(last_refreshed_token=fixed_datetime)
 
         user_crud.delete_inactive_guests(db, delete_minutes=10)
 
@@ -79,7 +79,7 @@ class TestDeleteInactiveGuests:
         """Test if the `delete_inactive_guest` crud function succesfully delete all inactive guests"""
 
         fixed_datetime, _ = mocks.fix_time(user_crud, mocker)
-        GuestFactory.create(
+        GuestUserFactory.create(
             last_refreshed_token=fixed_datetime - timedelta(minutes=15)
         )
 

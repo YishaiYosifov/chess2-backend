@@ -1,6 +1,7 @@
 from typing import NamedTuple
 
 from _pytest.fixtures import SubRequest
+from factory.alchemy import SQLAlchemyModelFactory
 from sqlalchemy.orm import Session
 from pytest_mock import MockerFixture
 from sqlalchemy import select
@@ -10,7 +11,11 @@ from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
 from app.models.games.piece_model import Piece
 from app.models.user_model import AuthedUser
-from tests.factories.user import AuthedUserFactory, PlayerFactory
+from tests.factories.user import (
+    AuthedUserFactory,
+    GuestUserFactory,
+    PlayerFactory,
+)
 from tests.factories.game import GameResultFactory, GameFactory
 from app.constants import enums
 from app.schemas import game_schema
@@ -85,33 +90,34 @@ def test_paginate_history(
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "inviter_color, recipient_color, expected_inviter_player_color",
-    (
-        [
-            enums.Color.WHITE,
-            enums.Color.BLACK,
-            enums.Color.BLACK,
-        ],
-        [
-            enums.Color.BLACK,
-            enums.Color.BLACK,
-            enums.Color.WHITE,
-        ],
-    ),
+    "random_color_results, expected_inviter_color, expected_recipient_color",
+    [
+        (enums.Color.WHITE, enums.Color.WHITE, enums.Color.BLACK),
+        (enums.Color.BLACK, enums.Color.BLACK, enums.Color.WHITE),
+    ],
 )
+@pytest.mark.parametrize("user_factory", [AuthedUserFactory, GuestUserFactory])
 def test_create_players(
     db: Session,
-    inviter_color: enums.Color,
-    recipient_color: enums.Color,
-    expected_inviter_player_color: enums.Color,
+    mocker: MockerFixture,
+    random_color_results: enums.Color,
+    expected_inviter_color: enums.Color,
+    expected_recipient_color: enums.Color,
+    user_factory: SQLAlchemyModelFactory,
 ):
     """
     Test the `create_players` crud function to ensure it correctly assigns the colors
     the to inviter and recipient, as well as how much time they have remaining.
     """
 
-    inviter = AuthedUserFactory.build(last_color=inviter_color)
-    recipient = AuthedUserFactory.build(last_color=recipient_color)
+    mocker.patch.object(
+        game_crud.random,
+        "choice",
+        return_value=random_color_results,
+    )
+
+    inviter = user_factory.create()
+    recipient = user_factory.create()
     time_control = 69
 
     inviter_player, recipient_player = game_crud.create_players(
@@ -128,8 +134,8 @@ def test_create_players(
     assert inviter_player.user == inviter
     assert recipient_player.user == recipient
 
-    assert inviter_player.color == expected_inviter_player_color
-    assert recipient_player.color == expected_inviter_player_color.invert()
+    assert inviter_player.color == expected_inviter_color
+    assert recipient_player.color == expected_recipient_color
 
 
 @pytest.mark.integration

@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 import pytest
 
-from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 from app.services import jwt_service
 from app.crud import user_crud
@@ -9,19 +8,19 @@ from app.crud import user_crud
 
 @pytest.mark.integration
 def test_get_by_id(db: Session):
-    user: AuthedUser = AuthedUserFactory.create()
+    user = AuthedUserFactory.create()
     assert user_crud.get_by_id(db, user.user_id) == user
 
 
 @pytest.mark.integration
 def test_get_by_username(db: Session):
-    user: AuthedUser = AuthedUserFactory.create(username="test username")
+    user = AuthedUserFactory.create(username="test username")
     assert user_crud.get_by_username(db, user.username) == user
 
 
 @pytest.mark.integration
 def test_get_by_email(db: Session):
-    user: AuthedUser = AuthedUserFactory.create(email="test@example.com")
+    user = AuthedUserFactory.create(email="test@example.com")
     assert user_crud.get_by_email(db, user.email) == user
 
 
@@ -30,7 +29,7 @@ class TestGetUser:
     def test_id(self, db: Session):
         """Test that the user is fetched when an id is provided in int and str forms"""
 
-        user: AuthedUser = AuthedUserFactory.create()
+        user = AuthedUserFactory.create()
 
         assert user_crud.get_user(db, user.user_id) == user
         assert user_crud.get_user(db, str(user.user_id)) == user
@@ -38,7 +37,7 @@ class TestGetUser:
     def test_username(self, db: Session):
         """Test that the user i fetched when a username is provided"""
 
-        user: AuthedUser = AuthedUserFactory.create(username="test username")
+        user = AuthedUserFactory.create(username="test username")
         assert user_crud.get_by_username(db, user.username) == user
 
     def test_invalid_selector(self, db: Session):
@@ -66,7 +65,7 @@ class TestGetByToken:
 
         is_refresh = token_type == "refresh"
 
-        user: AuthedUser = AuthedUserFactory.create()
+        user = AuthedUserFactory.create()
         token = self.create_token(user.user_id, is_refresh)
 
         fetched_user = user_crud.get_by_token(
@@ -100,7 +99,7 @@ class TestGetByToken:
         was requested but an access token was given
         """
 
-        user: AuthedUser = AuthedUserFactory.create()
+        user = AuthedUserFactory.create()
         access_token = self.create_token(user.user_id)
 
         fetched_user = user_crud.get_by_token(

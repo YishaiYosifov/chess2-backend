@@ -11,7 +11,7 @@ from app.db import Base
 
 if TYPE_CHECKING:
     from app.models.games.game_model import Game
-    from app.models.user_model import AuthedUser
+    from app.models.user_model import User
 
 
 class RuntimePlayerInfo(Base, kw_only=True):
@@ -25,7 +25,7 @@ class RuntimePlayerInfo(Base, kw_only=True):
         ForeignKey("user.user_id"),
         init=False,
     )
-    user: Mapped[AuthedUser] = relationship(back_populates="player")
+    user: Mapped[User] = relationship(back_populates="player")
 
     game_white: Mapped[Game] = relationship(
         back_populates="player_white",

@@ -4,13 +4,16 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import select, true, func
 
+from app.schemas.config_schema import CONFIG
 from app.models.rating_model import Rating
 from app.models.user_model import AuthedUser
 from app.constants import enums
 
 
 def fetch_single(
-    db: Session, user: AuthedUser, variant: enums.Variant
+    db: Session,
+    user: AuthedUser,
+    variant: enums.Variant,
 ) -> Rating | None:
     """
     Get a user's latest rating.
@@ -29,6 +32,18 @@ def fetch_single(
         )
     ).scalar()
     return rating
+
+
+def fetch_rating_value(
+    db: Session,
+    user: AuthedUser,
+    variant: enums.Variant,
+    default: int | None = CONFIG.default_rating,
+):
+    rating = fetch_single(db, user, variant)
+    if not rating:
+        return default
+    return rating.elo
 
 
 def fetch_many(

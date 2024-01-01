@@ -10,7 +10,7 @@ from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.user_model import AuthedUser
+    from app.models.user_model import AuthedUser, User
 
 
 class GameRequest(Base, kw_only=True):
@@ -29,7 +29,7 @@ class GameRequest(Base, kw_only=True):
         init=False,
         index=True,
     )
-    inviter: Mapped[AuthedUser] = relationship(
+    inviter: Mapped[User] = relationship(
         foreign_keys=inviter_id,
         back_populates="game_request",
     )

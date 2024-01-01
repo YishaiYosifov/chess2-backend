@@ -1,14 +1,14 @@
-from factory.alchemy import SQLAlchemyModelFactory
 from factory import post_generation, SubFactory, Sequence, Faker
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.services.auth_service import hash_password
 from app.models.user_model import AuthedUser, GuestUser
 from tests.conftest import TestScopedSession
 from app.constants import enums
 
 
-class GuestFactory(SQLAlchemyModelFactory):
+class GuestUserFactory(TypedSQLAlchemyFactory[GuestUser]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = GuestUser
@@ -16,7 +16,7 @@ class GuestFactory(SQLAlchemyModelFactory):
     username = Faker("name")
 
 
-class AuthedUserFactory(SQLAlchemyModelFactory):
+class AuthedUserFactory(TypedSQLAlchemyFactory[AuthedUser]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = AuthedUser
@@ -37,7 +37,7 @@ class AuthedUserFactory(SQLAlchemyModelFactory):
         obj.hashed_password = hash_password(extracted)
 
 
-class PlayerFactory(SQLAlchemyModelFactory):
+class PlayerFactory(TypedSQLAlchemyFactory[RuntimePlayerInfo]):
     class Meta:
         sqlalchemy_session = TestScopedSession
         model = RuntimePlayerInfo

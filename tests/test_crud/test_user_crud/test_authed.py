@@ -28,7 +28,7 @@ class TestAuthenticate:
     ):
         """Test if it calls everything correctly and returns the user"""
 
-        user: AuthedUser = AuthedUserFactory.build()
+        user = AuthedUserFactory.build()
         mock_get_by_username.return_value = user
         mock_verify_password.return_value = True
 
@@ -51,7 +51,7 @@ class TestAuthenticate:
     ):
         """Test that a user is not returned if the password is wrong"""
 
-        user: AuthedUser = AuthedUserFactory.build()
+        user = AuthedUserFactory.build()
         mock_get_by_username.return_value = user
         mock_verify_password.return_value = False
 

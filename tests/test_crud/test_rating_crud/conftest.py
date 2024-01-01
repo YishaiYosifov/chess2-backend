@@ -24,7 +24,7 @@ class RatingHistory(RatingBatch):
 def rating_batch(db, request: SubRequest) -> RatingBatch:
     variants: list[enums.Variant] = request.param
 
-    user: AuthedUser = AuthedUserFactory.create()
+    user = AuthedUserFactory.create()
     RatingFactory.create_variant_batch(user, variants)
 
     return RatingBatch(user=user, variants=variants)
@@ -35,7 +35,7 @@ def rating_history(db, request: SubRequest) -> RatingHistory:
     variants: list[enums.Variant] = request.param
 
     elos = [500, 57, 1]
-    user: AuthedUser = AuthedUserFactory.create()
+    user = AuthedUserFactory.create()
     RatingFactory.create_history(user, {variant: elos for variant in variants})
 
     return RatingHistory(user=user, elos=elos, variants=variants)

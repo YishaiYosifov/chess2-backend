@@ -7,8 +7,12 @@ import pytest
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.models.user_model import AuthedUser
-from tests.factories.user import AuthedUserFactory, PlayerFactory
+from app.models.user_model import User
+from tests.factories.user import (
+    AuthedUserFactory,
+    GuestUserFactory,
+    PlayerFactory,
+)
 from tests.factories.game import GameRequestFactory, GameFactory
 from app.constants import enums
 from tests.utils import mocks
@@ -17,12 +21,12 @@ from tests.utils import mocks
 @pytest.mark.integration
 @pytest.mark.usefixtures("db")
 class TestStartPoolGame:
-    async def _send_request(
+    async def join_pool(
         self,
         async_client: AsyncClient,
-        user: AuthedUser,
+        user: User,
         variant: enums.Variant = enums.Variant.ANARCHY,
-        time_control: int = 69,
+        time_control: int = 600,
         increment: int = 10,
     ):
         with mocks.mock_login(user):
@@ -44,22 +48,22 @@ class TestStartPoolGame:
             player_white=PlayerFactory.create(user=user), player_black=None
         )
 
-        response = await self._send_request(async_client, user)
+        response = await self.join_pool(async_client, user)
         assert response.status_code == HTTPStatus.CONFLICT
 
     async def test_no_existing_request_found(
-        self, async_client: AsyncClient, db: Session
+        self, db: Session, async_client: AsyncClient
     ):
         """Test if a game request is created if there is no existing request"""
 
         user = AuthedUserFactory.create()
-        response = await self._send_request(async_client, user)
+        response = await self.join_pool(async_client, user)
 
         assert response.status_code == HTTPStatus.CREATED
         assert db.execute(select(GameRequest)).scalar_one().inviter == user
 
     async def test_existing_request_found(
-        self, async_client: AsyncClient, db: Session
+        self, db: Session, async_client: AsyncClient
     ):
         """Test that a game is started if there is an existing request"""
 
@@ -74,14 +78,14 @@ class TestStartPoolGame:
             increment=increment,
         )
 
-        response = await self._send_request(
+        response = await self.join_pool(
             async_client, user, variant, time_control, increment
         )
         assert response.status_code == HTTPStatus.OK
         assert db.execute(select(Game)).scalar_one()
 
     async def test_user_has_request(
-        self, async_client: AsyncClient, db: Session
+        self, db: Session, async_client: AsyncClient
     ):
         """Test that if the user already has a game request it is deleted"""
 
@@ -89,6 +93,24 @@ class TestStartPoolGame:
         GameRequestFactory.create(inviter=user)
         db.flush()
 
-        response = await self._send_request(async_client, user)
+        response = await self.join_pool(async_client, user)
         assert response.status_code == HTTPStatus.CREATED
         assert db.execute(select(GameRequest)).scalar_one()
+
+    @pytest.mark.parametrize(
+        "user_type", [enums.UserType.AUTHED, enums.UserType.GUEST]
+    )
+    async def test_request_found_wrong_user_type(
+        self, async_client: AsyncClient, user_type: enums.UserType
+    ):
+        """Test that a guest user can't match with an authed user"""
+
+        if user_type == enums.UserType.GUEST:
+            GameRequestFactory.create(inviter=AuthedUserFactory.create())
+            user = GuestUserFactory.create()
+        else:
+            GameRequestFactory.create(inviter=GuestUserFactory.create())
+            user = AuthedUserFactory.create()
+
+        response = await self.join_pool(async_client, user)
+        assert response.status_code == HTTPStatus.CREATED

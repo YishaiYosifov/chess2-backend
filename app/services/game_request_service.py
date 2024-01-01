@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_model import Game
-from app.schemas.config_schema import CONFIG
-from app.models.user_model import AuthedUser
+from app.models.user_model import AuthedUser, User
+from app.constants import enums
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud, game_crud
 
@@ -11,7 +11,7 @@ from app.crud import game_request_crud, rating_crud, game_crud
 def start_game_request(
     db: Session,
     game_request: GameRequest,
-    recipient: AuthedUser | None = None,
+    recipient: User | None = None,
 ) -> Game:
     """
     Create the game from the game request.
@@ -50,7 +50,7 @@ def start_game_request(
 
 def create_or_start_pool_game(
     db: Session,
-    user: AuthedUser,
+    user: User,
     game_settings: game_schema.GameSettings,
 ) -> str | None:
     """
@@ -65,12 +65,18 @@ def create_or_start_pool_game(
     :return: the game token if a request was found, otherwise None
     """
 
-    rating = rating_crud.fetch_single(db, user, variant=game_settings.variant)
+    is_authed = isinstance(user, AuthedUser)
+    rating = (
+        rating_crud.fetch_rating_value(db, user, game_settings.variant)
+        if is_authed
+        else None
+    )
 
     found_game_request = game_request_crud.search_game_request(
         db,
         game_settings,
-        rating.elo if rating else CONFIG.default_rating,
+        rating,
+        enums.UserType.AUTHED if is_authed else enums.UserType.GUEST,
     )
     if found_game_request:
         game = start_game_request(db, found_game_request, user)
