@@ -10,7 +10,7 @@ Set up the enviroment:
 $ python3 -m venv env
 
 $ "env/Scripts/activate.bat" # Windows
-  # OR
+# OR
 $ source env/Scripts/activate.bat # Linux & Mac
 ```
 

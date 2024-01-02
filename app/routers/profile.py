@@ -23,7 +23,7 @@ user_not_found_response = {
 
 @router.get(
     "/{target}/info",
-    response_model=user_schema.UserOut,
+    response_model=user_schema.PublicUserOut,
     responses={**user_not_found_response},
 )
 def get_info(target: deps.TargetOrMeDep):
@@ -31,7 +31,7 @@ def get_info(target: deps.TargetOrMeDep):
     return target
 
 
-@router.get("/me/info-sensitive", response_model=user_schema.UserOutSensitive)
+@router.get("/me/info-sensitive", response_model=user_schema.PrivateUserOut)
 def get_info_sensitive(user: deps.AuthedUserDep):
     """Fetch the sensitive profile of user"""
     return user
@@ -39,7 +39,7 @@ def get_info_sensitive(user: deps.AuthedUserDep):
 
 @router.get(
     "/{target}/games",
-    response_model=list[game_schema.GameResults],
+    response_model=list[game_schema.FinishedGame],
     responses={**user_not_found_response},
 )
 def paginate_games(

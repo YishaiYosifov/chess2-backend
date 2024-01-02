@@ -5,13 +5,10 @@ from pydantic_extra_types.country import CountryAlpha3
 from pydantic import field_validator, BaseModel, EmailStr, Field
 
 
-class BaseUserProfile(BaseModel):
-    country: CountryAlpha3 | None = None
-    about: Annotated[str, Field(max_length=300)] = ""
-
-
-class BaseUserAccountInfo(BaseModel):
+class UserIn(BaseModel):
     username: Annotated[str, Field(min_length=3, max_length=30)]
+    email: EmailStr
+    password: str
 
     @field_validator("username")
     @classmethod
@@ -26,14 +23,6 @@ class BaseUserAccountInfo(BaseModel):
         if all(char.isdigit() for char in value):
             raise ValueError("Cannot be just numbers")
         return value
-
-
-class UserAccountInfoSensitive(BaseUserAccountInfo):
-    email: EmailStr
-
-
-class UserIn(UserAccountInfoSensitive):
-    password: str
 
     @field_validator("password")
     @classmethod
@@ -52,18 +41,22 @@ class UserIn(UserAccountInfoSensitive):
         return password
 
 
-class UserOut(BaseUserProfile, BaseUserAccountInfo):
+class PublicUserOut(BaseModel):
     user_id: int
+    username: str
+    about: str
+    country: CountryAlpha3 | None
     pfp_last_changed: datetime
 
 
-class UserOutSensitive(UserOut, UserAccountInfoSensitive):
-    pass
+class PrivateUserOut(PublicUserOut):
+    email: EmailStr
+    username_last_changed: datetime | None
 
 
-class SimpleUserOut(BaseModel):
-    user_id: int
-    username: str
+class EditableProfile(BaseModel):
+    country: CountryAlpha3 | None = None
+    about: Annotated[str, Field(max_length=300)] = ""
 
 
 class AccessToken(BaseModel):

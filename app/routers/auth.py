@@ -17,7 +17,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post(
     "/signup",
-    response_model=user_schema.UserOutSensitive,
+    response_model=user_schema.PrivateUserOut,
     status_code=HTTPStatus.CREATED,
     responses={
         HTTPStatus.CONFLICT: {

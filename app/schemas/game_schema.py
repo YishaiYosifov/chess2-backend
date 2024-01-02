@@ -7,11 +7,11 @@ from app.constants import enums
 from app.schemas import user_schema
 
 
-class GameResults(BaseModel):
+class FinishedGame(BaseModel):
     token: Annotated[str, Field(max_length=8)]
 
-    user_white: user_schema.SimpleUserOut | None
-    user_black: user_schema.SimpleUserOut | None
+    user_white: user_schema.PublicUserOut | None
+    user_black: user_schema.PublicUserOut | None
     results: enums.GameResult
     variant: enums.Variant
     time_control: int
