@@ -13,7 +13,11 @@ from tests.factories.user import (
     GuestUserFactory,
     PlayerFactory,
 )
-from tests.factories.game import GameRequestFactory, GameFactory
+from tests.factories.game import (
+    GameSettingsFactory,
+    GameRequestFactory,
+    GameFactory,
+)
 from app.constants import enums
 from tests.utils import mocks
 
@@ -25,18 +29,16 @@ class TestStartPoolGame:
         self,
         async_client: AsyncClient,
         user: User,
-        variant: enums.Variant = enums.Variant.ANARCHY,
-        time_control: int = 600,
-        increment: int = 10,
+        game_settings=GameSettingsFactory.build(),
     ):
         with mocks.mock_login(user):
             async with async_client as ac:
                 return await ac.post(
                     "/game-requests/pool/join",
                     json={
-                        "variant": variant.value,
-                        "time_control": time_control,
-                        "increment": increment,
+                        "variant": game_settings.variant.value,
+                        "time_control": game_settings.time_control,
+                        "increment": game_settings.increment,
                     },
                 )
 
@@ -68,19 +70,9 @@ class TestStartPoolGame:
         """Test that a game is started if there is an existing request"""
 
         user = AuthedUserFactory.create()
+        GameRequestFactory.create()
 
-        variant = enums.Variant.ANARCHY
-        time_control = 69
-        increment = 10
-        GameRequestFactory.create(
-            variant=variant,
-            time_control=time_control,
-            increment=increment,
-        )
-
-        response = await self.join_pool(
-            async_client, user, variant, time_control, increment
-        )
+        response = await self.join_pool(async_client, user)
         assert response.status_code == HTTPStatus.OK
         assert db.execute(select(Game)).scalar_one()
 

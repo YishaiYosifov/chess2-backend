@@ -67,5 +67,5 @@ def search_game_request(
             )
         )
 
-    game = db.execute(query).scalar()
-    return game
+    game_request = db.execute(query).scalar()
+    return game_request

@@ -37,6 +37,7 @@ def start_pool_game(
         )
     elif user.game_request:
         db.delete(user.game_request)
+        db.flush()
 
     token = game_request_service.create_or_start_pool_game(
         db, user, game_settings
