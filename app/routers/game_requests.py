@@ -51,3 +51,8 @@ def start_pool_game(
         if token
         else Response(status_code=HTTPStatus.CREATED)
     )
+
+
+@router.post("/cancel")
+def cancel():
+    raise HTTPException(status_code=HTTPStatus.NOT_IMPLEMENTED)

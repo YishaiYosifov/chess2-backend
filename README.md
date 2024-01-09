@@ -11,7 +11,7 @@ $ python3 -m venv env
 
 $ "env/Scripts/activate.bat" # Windows
 # OR
-$ source env/Scripts/activate.bat # Linux & Mac
+$ source env/bin/activate # Linux & Mac
 ```
 
 Install requirements and run

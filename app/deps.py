@@ -122,8 +122,6 @@ def target_or_me(
     Dependency to fetch a target user.
     If the target is `me`, it will fetch the currently logged in user.
     The target user is defined as a path parameter.
-
-    :raise HTTPException (Not Found): the target user was not found
     """
 
     if target == "me":

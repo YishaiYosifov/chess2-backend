@@ -7,6 +7,9 @@ addopts = "-p no:anyio -p no:faker -s"
 testpaths = ["tests"]
 markers = ["unit", "integration", "slow"]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore:'crypt' is deprecated and slated for removal in Python 3.13:DeprecationWarning"
+]
 
 [tool.black]
 line-length = 80

@@ -1,22 +1,24 @@
+from typing import Annotated
 from http import HTTPStatus
 
-from starlette.requests import Request
-from fastapi.security import utils as fastapi_security_utils
+from argon2.exceptions import VerifyMismatchError
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, Header, Cookie
+from argon2 import PasswordHasher
 
 from app.schemas import user_schema
 
 
 class OAuth2PasswordBearerCookie(OAuth2PasswordBearer):
-    def _get_from_header(self, request: Request) -> user_schema.AuthTokens:
+    def _get_from_header(
+        self, auth_header: str | None
+    ) -> user_schema.AuthTokens:
         """Create a AuthTokens model with the Authorization header"""
 
-        auth_header = request.headers.get("Authorization")
-        scheme, token = fastapi_security_utils.get_authorization_scheme_param(
-            auth_header
-        )
+        if auth_header:
+            scheme, _, token = auth_header.partition(" ")
+        else:
+            scheme, token = "", ""
 
         return (
             user_schema.AuthTokens()
@@ -24,32 +26,36 @@ class OAuth2PasswordBearerCookie(OAuth2PasswordBearer):
             else user_schema.AuthTokens(access_token=token, refresh_token=token)
         )
 
-    def _get_from_cookie(self, request: Request) -> user_schema.AuthTokens:
-        """Create a AuthTokens models with the access and refresh token cookies"""
-
-        access_token = request.cookies.get("access_token")
-        refresh_token = request.cookies.get("refresh_token")
-        return user_schema.AuthTokens(
-            access_token=access_token,
-            refresh_token=refresh_token,
-        )
-
     def _is_auth_empty(self, schema: user_schema.AuthTokens) -> bool:
         return schema.access_token is None and schema.refresh_token is None
 
-    def __call__(self, request: Request) -> user_schema.AuthTokens:
+    def __call__(
+        self,
+        auth_header: Annotated[
+            str | None,
+            Header(alias="authorization"),
+        ] = None,
+        access_token_cookie: Annotated[
+            str | None,
+            Cookie(alias="access_token"),
+        ] = None,
+        refresh_token_cookie: Annotated[
+            str | None,
+            Cookie(alias="refresh_token"),
+        ] = None,
+    ) -> user_schema.AuthTokens:
         """
         Handle authentication logic.
         This function first tries to get the token from the header, then the cookies.
         """
 
-        header_tokens = self._get_from_header(request)
-        cookie_tokens = self._get_from_cookie(request)
-        tokens = (
-            cookie_tokens
-            if self._is_auth_empty(header_tokens)
-            else header_tokens
-        )
+        if auth_header:
+            tokens = self._get_from_header(auth_header)
+        else:
+            tokens = user_schema.AuthTokens(
+                access_token=access_token_cookie,
+                refresh_token=refresh_token_cookie,
+            )
 
         if self._is_auth_empty(tokens) and self.auto_error:
             raise HTTPException(
@@ -65,15 +71,18 @@ oauth2_scheme = OAuth2PasswordBearerCookie(
     tokenUrl="auth/login", auto_error=False
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hasher = PasswordHasher()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return password_hasher.verify(hashed_password, plain_password)
+    except VerifyMismatchError:
+        return False
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return password_hasher.hash(password)
 
 
 def set_auth_cookies(
@@ -97,6 +106,7 @@ def set_auth_cookies(
         response.set_cookie(
             "access_token",
             access_token,
+            expires=access_token_max_age,
             max_age=access_token_max_age,
             httponly=True,
             secure=True,
@@ -106,6 +116,7 @@ def set_auth_cookies(
         response.set_cookie(
             "refresh_token",
             refresh_token,
+            expires=refresh_token_max_age,
             max_age=refresh_token_max_age,
             httponly=True,
             secure=True,

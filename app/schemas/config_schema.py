@@ -12,7 +12,7 @@ class Config(BaseSettings):
 
     db_host: str = ""
     db_name: str = ""
-    db_username: str = ""
+    db_user: str = ""
     db_password: str = ""
 
     frontend_url: str = ""

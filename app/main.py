@@ -3,13 +3,13 @@ from http import HTTPStatus
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.routing import APIRoute
 from fastapi import FastAPI
 
-from app.schemas.config_schema import get_config, CONFIG
+from app.schemas.config_schema import CONFIG
 from app.schemas import response_schema
 from app.utils import common
 from app.crud import user_crud
+from app.ws import broadcast
 from app.db import engine, SessionLocal, Base
 
 from .routers import game_requests, settings, profile, auth
@@ -17,6 +17,8 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await broadcast.connect()
+
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -30,12 +32,11 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
+
     yield
+
+    await broadcast.disconnect()
     scheduler.shutdown()
-
-
-def custom_generate_unique_id(route: APIRoute):
-    return f"{route.tags[0]}-{route.name}"
 
 
 Base.metadata.create_all(bind=engine)
@@ -48,7 +49,7 @@ app = FastAPI(
             "model": response_schema.ErrorResponse[str],
         },
     },
-    generate_unique_id_function=custom_generate_unique_id,
+    generate_unique_id_function=lambda route: f"{route.tags[0]}-{route.name}",
     lifespan=lifespan,
 )
 app.include_router(auth.router)
@@ -62,7 +63,7 @@ app.openapi_version = "3.0.3"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_config().frontend_url,
+    allow_origins=CONFIG.frontend_url,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

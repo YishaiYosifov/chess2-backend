@@ -25,9 +25,7 @@ class AuthedUserFactory(TypedSQLAlchemyFactory[AuthedUser]):
 
     username = Faker("name")
     email = Faker("email")
-    hashed_password = (
-        "$2b$12$faL2dTvq1ysp.1rduW1t0.QE7PNa7aYzNZmNSmkyFu.RKi6FbIxJe"  # luka
-    )
+    hashed_password = "$argon2id$v=19$m=65536,t=3,p=4$9f6TQfLJyVg0RisM6m2YUw$4e1KxrjDlgZ3CdO6Da19RPg4nMBqQ7g71FIIG3AFzRE"  # luka
 
     @post_generation
     def password(obj: AuthedUser, create: bool, extracted: str, **kwargs):  # type: ignore
