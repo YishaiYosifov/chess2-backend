@@ -98,6 +98,23 @@ def login(
     )
 
 
+@router.get("/is-fresh", response_model=bool)
+def is_fresh(config: deps.ConfigDep, tokens: deps.TokensDep):
+    """Test if the provided token is fresh or not"""
+
+    if not tokens.access_token:
+        return False
+
+    return bool(
+        jwt_service.decode_access_token(
+            config.secret_key,
+            config.jwt_algorithm,
+            tokens.access_token,
+            fresh=True,
+        )
+    )
+
+
 @router.post("/logout")
 def logout(response: Response):
     auth_service.remove_auth_cookies(response)

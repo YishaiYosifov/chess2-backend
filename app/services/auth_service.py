@@ -33,7 +33,7 @@ class OAuth2PasswordBearerCookie(OAuth2PasswordBearer):
         self,
         auth_header: Annotated[
             str | None,
-            Header(alias="authorization"),
+            Header(alias="Authorization"),
         ] = None,
         access_token_cookie: Annotated[
             str | None,
