@@ -90,11 +90,17 @@ class GetCurrentUser:
 
         user = (
             self.get_authed_user(
-                db, tokens, config.secret_key, config.jwt_algorithm
+                db,
+                tokens,
+                config.secret_key,
+                config.jwt_algorithm,
             )
             if self.authed
             else self.get_unauthed_user(
-                db, tokens, config.secret_key, config.jwt_algorithm
+                db,
+                tokens,
+                config.secret_key,
+                config.jwt_algorithm,
             )
         )
 

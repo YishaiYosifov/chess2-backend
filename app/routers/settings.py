@@ -52,7 +52,12 @@ def change_email(
 
     return settings_service.update_setting_single(
         db,
-        settings_service.EmailSetting(db, user, config.verification_url),
+        settings_service.EmailSetting(
+            db,
+            user,
+            config.verification_url,
+            config.send_verification_email,
+        ),
         new_email,
     )
 
@@ -89,7 +94,7 @@ def change_password(
 def change_username(
     db: deps.DBDep,
     config: deps.ConfigDep,
-    user: Annotated[AuthedUser, Depends(deps.GetCurrentUser(fresh=True))],
+    user: deps.AuthedUserDep,
     new_username: Annotated[str, Body()],
 ):
     """Update the username"""

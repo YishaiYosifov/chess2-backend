@@ -45,8 +45,10 @@ class EmailSetting(ValidationSetting):
         db: Session,
         user: AuthedUser,
         verification_url: str,
+        send_verification_email: bool = True,
     ):
         self.verification_url = verification_url
+        self.send_verification_email = send_verification_email
         super().__init__(db, user)
 
     def update(self, new_email: str):
@@ -62,10 +64,11 @@ class EmailSetting(ValidationSetting):
         self.user.is_email_verified = False
         self.user.email = new_email
 
-        email_verification.send_verification_email(
-            self.user.email,
-            self.verification_url,
-        )
+        if self.send_verification_email:
+            email_verification.send_verification_email(
+                self.user.email,
+                self.verification_url,
+            )
 
     def validate(self, new_email: str):
         """
