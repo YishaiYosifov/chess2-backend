@@ -18,8 +18,6 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await ws_server.connect()
-
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -33,10 +31,7 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-
     yield
-
-    await ws_server.disconnect()
     scheduler.shutdown()
 
 

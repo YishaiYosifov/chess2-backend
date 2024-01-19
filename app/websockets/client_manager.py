@@ -10,11 +10,11 @@ class ABCWebsocketClientManager(ABC):
         pass
 
     @abstractmethod
-    def connect_user(self, user_id: int, client: WebSocket) -> None:
+    def add_client(self, user_id: int, client: WebSocket) -> None:
         pass
 
     @abstractmethod
-    def disconnect_user(self, user_id: int) -> None:
+    def remove_client(self, user_id: int) -> None:
         pass
 
     @abstractmethod
@@ -53,10 +53,10 @@ class WebsocketClientManager(ABCWebsocketClientManager):
         for client_id in client_ids:
             yield self._clients[client_id]
 
-    def connect_user(self, user_id: int, client: WebSocket) -> None:
+    def add_client(self, user_id: int, client: WebSocket) -> None:
         self._clients[user_id] = client
 
-    def disconnect_user(self, user_id: int) -> None:
+    def remove_client(self, user_id: int) -> None:
         self._clients.pop(user_id, None)
 
     def enter_room(self, room_name: str, user_id: int) -> None:

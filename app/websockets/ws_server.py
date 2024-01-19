@@ -18,9 +18,10 @@ class WSServer:
         pubsub_channel: str = "websocket_emits",
         client_service: ABCWebsocketClientManager | None = None,
     ):
-        self._redis_url = redis_url
         self._pubsub_channel = pubsub_channel
         self.clients = client_service or WebsocketClientManager()
+
+        self.connect(redis_url)
 
     async def connect_websocket(
         self,
@@ -37,14 +38,14 @@ class WSServer:
         """
 
         await websocket.accept()
-        self.clients.connect_user(user_id, websocket)
+        self.clients.add_client(user_id, websocket)
 
         try:
             async for message in websocket.iter_text():
                 if on_receive:
                     on_receive(message)
         finally:
-            self.clients.disconnect_user(user_id)
+            self.clients.remove_client(user_id)
 
     async def emit(self, message: dict, clients_id: str | int):
         """
@@ -69,13 +70,13 @@ class WSServer:
             if message["type"] != "message":
                 continue
 
-            data: str = message["data"]
-            clients_id, message = data.split(":")
+            data: bytes = message["data"]
+            clients_id, message = data.decode("utf-8").split(":")
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
 
-    async def connect(self):
-        self._redis = redis.Redis.from_url(self._redis_url)
+    def connect(self, redis_url: str):
+        self._redis = redis.Redis.from_url(redis_url)
         self._pubsub = self._redis.pubsub()
         self._pubsub_task = asyncio.create_task(self._handle_pubsub())
 
