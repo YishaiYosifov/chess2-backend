@@ -52,7 +52,7 @@ def create_or_start_pool_game(
     db: Session,
     user: User,
     game_settings: game_schema.GameSettings,
-) -> str | None:
+) -> Game | None:
     """
     Search for a game request with a matching rating and game options.
     If a game request was found, start the game.
@@ -79,7 +79,6 @@ def create_or_start_pool_game(
         enums.UserType.AUTHED if is_authed else enums.UserType.GUEST,
     )
     if found_game_request:
-        game = start_game_request(db, found_game_request, user)
-        return game.token
+        return start_game_request(db, found_game_request, user)
 
     game_request_crud.create_game_request(db, user, game_settings)

@@ -3,21 +3,22 @@ from http import HTTPStatus
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+from fastapi import WebSocket, FastAPI
 
 from app.schemas.config_schema import CONFIG
+from app.websockets import ws_server
 from app.schemas import response_schema
 from app.utils import common
 from app.crud import user_crud
-from app.ws import broadcast
 from app.db import engine, SessionLocal, Base
+from app import deps
 
 from .routers import game_requests, settings, profile, auth
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await broadcast.connect()
+    await ws_server.connect()
 
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    await broadcast.disconnect()
+    await ws_server.disconnect()
     scheduler.shutdown()
 
 
@@ -68,3 +69,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.websocket("/ws")
+async def connect_websocket(websocket: WebSocket, user: deps.WSUnauthedUserDep):
+    await ws_server.connect_websocket(websocket, user.user_id)

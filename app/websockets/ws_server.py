@@ -1,0 +1,86 @@
+from typing import Awaitable, Callable
+import asyncio
+import json
+
+from fastapi import WebSocket
+import redis.asyncio as redis
+
+from app.websockets.client_manager import (
+    ABCWebsocketClientService,
+    WebsocketClientService,
+)
+
+
+class WSServer:
+    def __init__(
+        self,
+        redis_url: str,
+        pubsub_channel: str = "websocket_emits",
+        client_service: ABCWebsocketClientService | None = None,
+    ):
+        self._redis_url = redis_url
+        self._pubsub_channel = pubsub_channel
+        self.clients = client_service or WebsocketClientService()
+
+    async def connect_websocket(
+        self,
+        websocket: WebSocket,
+        user_id: int,
+        on_receive: Callable[[str], Awaitable[None]] | None = None,
+    ) -> None:
+        """
+        Subsribe a websocket client to a channel
+
+        :param websocket: the websocket client
+        :param channel: the channel to connect the client to
+        :param on_receive: a function to call when a message is received
+        """
+
+        await websocket.accept()
+        self.clients.connect_user(user_id, websocket)
+
+        try:
+            async for message in websocket.iter_text():
+                if on_receive:
+                    on_receive(message)
+        finally:
+            self.clients.disconnect_user(user_id)
+
+    async def emit(self, message: dict, clients_id: str | int):
+        """
+        Emit a message to a user or a room.
+
+        :param clients_id: an id of a user or a name of a room
+        """
+
+        message_str = json.dumps(message)
+        await self._redis.publish(
+            self._pubsub_channel, f"{clients_id}:{message_str}"
+        )
+
+    async def _handle_pubsub(self):
+        """
+        Handle emit messages from different servers.
+        Forwards messages to the correct connected clients
+        """
+
+        await self._pubsub.subscribe(self._pubsub_channel)
+        async for message in self._pubsub.listen():
+            if message["type"] != "message":
+                continue
+
+            data: str = message["data"]
+            clients_id, message = data.split(":")
+            for client in self.clients.get_clients(clients_id):
+                await client.send_text(message)
+
+    async def connect(self):
+        self._redis = redis.Redis.from_url(self._redis_url)
+        self._pubsub = self._redis.pubsub()
+        self._pubsub_task = asyncio.create_task(self._handle_pubsub())
+
+    async def disconnect(self):
+        self._pubsub_task.cancel()
+
+        await self._pubsub.close()
+        await self._redis.close()

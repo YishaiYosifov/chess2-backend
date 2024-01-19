@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import auto, Enum
 
 
 class Variant(Enum):
@@ -40,3 +40,9 @@ class Piece(Enum):
     HORSE = "horse"
     PAWN = "pawn"
     CHILD_PAWN = "child_pawn"
+
+
+class PubsubEvent(Enum):
+    ENTER_ROOM = auto()
+    LEAVE_ROOM = auto()
+    CLOSE_ROOOM = auto()

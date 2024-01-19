@@ -31,7 +31,7 @@ def client():
         shutil.rmtree(file)
 
 
-@pytest.fixture()
+@pytest.fixture
 def async_client():
     return AsyncClient(app=app, base_url="http://testserver")
 

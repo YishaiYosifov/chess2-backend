@@ -2,7 +2,7 @@ from typing import Generator, Annotated
 from http import HTTPStatus
 
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, Depends, Path
+from fastapi import status, WebSocketException, HTTPException, Depends, Path
 
 from app.services.auth_service import oauth2_scheme
 from app.models.user_model import AuthedUser, GuestUser, User
@@ -33,11 +33,13 @@ class GetCurrentUser:
         required: bool = True,
         refresh: bool = False,
         fresh: bool = False,
+        ws: bool = False,
     ) -> None:
         self.authed = authed
         self.required = required
         self.refresh = refresh
         self.fresh = fresh
+        self.ws = ws
 
     def get_authed_user(
         self,
@@ -105,17 +107,16 @@ class GetCurrentUser:
         )
 
         if not user and self.required:
-            raise HTTPException(
-                status_code=HTTPStatus.UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            if self.ws:
+                raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+            else:
+                raise HTTPException(
+                    status_code=HTTPStatus.UNAUTHORIZED,
+                    detail="Could not validate credentials",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
 
         return user
-
-
-AuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser())]
-UnauthedUserDep = Annotated[GuestUser, Depends(GetCurrentUser(authed=False))]
 
 
 def target_or_me(
@@ -154,3 +155,11 @@ def target_or_me(
 
 
 TargetOrMeDep = Annotated[AuthedUser, Depends(target_or_me)]
+
+AuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser())]
+UnauthedUserDep = Annotated[GuestUser, Depends(GetCurrentUser(authed=False))]
+
+WSAuthedUserDep = Annotated[AuthedUser, Depends(GetCurrentUser(ws=True))]
+WSUnauthedUserDep = Annotated[
+    GuestUser, Depends(GetCurrentUser(authed=False, ws=True))
+]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, ForeignKey, DateTime, String, Text
+from sqlalchemy import func, ForeignKey, DateTime, String
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_request_model import GameRequest
@@ -19,13 +19,6 @@ class User(Base, kw_only=True):
     user_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     user_type: Mapped[enums.UserType] = mapped_column(init=False)
 
-    sid: Mapped[str | None] = mapped_column(
-        Text,
-        default=None,
-        init=False,
-        nullable=True,
-        unique=True,
-    )
     username: Mapped[str] = mapped_column(String(30), unique=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
