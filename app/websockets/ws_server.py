@@ -78,10 +78,13 @@ class WSServer:
     def connect(self, redis_url: str):
         self._redis = redis.Redis.from_url(redis_url)
         self._pubsub = self._redis.pubsub()
+
+    def initilize(self):
         self._pubsub_task = asyncio.create_task(self._handle_pubsub())
 
     async def disconnect(self):
-        self._pubsub_task.cancel()
+        if hasattr(self, "_pubsub_task") and self._pubsub_task:
+            self._pubsub_task.cancel()
 
         await self._pubsub.close()
         await self._redis.close()
