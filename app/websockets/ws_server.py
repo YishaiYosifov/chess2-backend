@@ -6,8 +6,8 @@ from fastapi import WebSocket
 import redis.asyncio as redis
 
 from app.websockets.client_manager import (
-    ABCWebsocketClientService,
-    WebsocketClientService,
+    ABCWebsocketClientManager,
+    WebsocketClientManager,
 )
 
 
@@ -16,11 +16,11 @@ class WSServer:
         self,
         redis_url: str,
         pubsub_channel: str = "websocket_emits",
-        client_service: ABCWebsocketClientService | None = None,
+        client_service: ABCWebsocketClientManager | None = None,
     ):
         self._redis_url = redis_url
         self._pubsub_channel = pubsub_channel
-        self.clients = client_service or WebsocketClientService()
+        self.clients = client_service or WebsocketClientManager()
 
     async def connect_websocket(
         self,

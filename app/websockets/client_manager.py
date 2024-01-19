@@ -4,7 +4,7 @@ from abc import abstractmethod, ABC
 from fastapi import WebSocket
 
 
-class ABCWebsocketClientService(ABC):
+class ABCWebsocketClientManager(ABC):
     @abstractmethod
     def get_clients(self, id: str | int) -> Generator[WebSocket, None, None]:
         pass
@@ -30,7 +30,7 @@ class ABCWebsocketClientService(ABC):
         pass
 
 
-class WebsocketClientService(ABCWebsocketClientService):
+class WebsocketClientManager(ABCWebsocketClientManager):
     def __init__(self) -> None:
         self._rooms: dict[str, set[int]] = {}
         self._clients: dict[int, WebSocket] = {}
