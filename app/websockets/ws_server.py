@@ -14,7 +14,7 @@ from app.websockets.client_manager import (
 class WSServer:
     def __init__(
         self,
-        redis_url: str,
+        redis_url: str = "redis://localhost:6379",
         pubsub_channel: str = "websocket_emits",
         client_service: ABCWebsocketClientManager | None = None,
     ):
@@ -86,5 +86,5 @@ class WSServer:
         if hasattr(self, "_pubsub_task") and self._pubsub_task:
             self._pubsub_task.cancel()
 
-        await self._pubsub.close()
-        await self._redis.close()
+        await self._pubsub.aclose()
+        await self._redis.aclose()

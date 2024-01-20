@@ -22,6 +22,7 @@ from app.constants import enums
 from tests.utils import mocks
 
 
+@pytest.mark.anyio
 @pytest.mark.integration
 @pytest.mark.usefixtures("db")
 class TestStartPoolGame:

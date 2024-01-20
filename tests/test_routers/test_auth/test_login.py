@@ -7,6 +7,7 @@ from tests.factories.user import AuthedUserFactory
 
 
 @pytest.mark.slow
+@pytest.mark.anyio
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "data",
@@ -30,6 +31,7 @@ async def test_login_fail(async_client: AsyncClient, data):
 
 
 @pytest.mark.slow
+@pytest.mark.anyio
 @pytest.mark.integration
 @pytest.mark.usefixtures("db")
 async def test_login_success(async_client: AsyncClient):

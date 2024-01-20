@@ -1,5 +1,7 @@
 import os
 
+from app.websockets import ws_server
+
 os.environ["ENV"] = ".env.test.local"
 
 from glob import glob
@@ -24,11 +26,15 @@ TestScopedSession = scoped_session(sessionmaker())
 
 @pytest.fixture(scope="session")
 def client():
-    client = TestClient(app)
-    yield client
+    yield TestClient(app)
 
     for file in glob("uploads/*"):
         shutil.rmtree(file)
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def initialize_websockets(anyio_backend):
+    ws_server.initilize()
 
 
 @pytest.fixture
@@ -85,6 +91,11 @@ def mock_create_jwt_tokens(request: SubRequest, mocker: MockerFixture) -> str:
     )
 
     return new_token
+
+
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
 
 
 @pytest.fixture(scope="session")

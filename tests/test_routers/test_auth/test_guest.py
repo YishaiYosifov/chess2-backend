@@ -8,6 +8,7 @@ import pytest
 from app.models.user_model import GuestUser
 
 
+@pytest.mark.anyio
 @pytest.mark.integration
 async def test_create_guest_account(async_client: AsyncClient, db: Session):
     async with async_client as ac:
