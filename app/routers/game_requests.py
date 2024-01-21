@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from fastapi import HTTPException, APIRouter, Response
 
-from app.websockets import ws_server
+from app.websockets import ws_server_instance
 from app.services import game_request_service
 from app.schemas import response_schema, game_schema
 from app import deps
@@ -50,7 +50,7 @@ async def start_pool_game(
         return Response(status_code=HTTPStatus.CREATED)
 
     # If a game is returned, it means the game started so return the token.
-    await ws_server.emit(
+    await ws_server_instance.emit(
         {"event": "notification", "text": game.token},
         (
             game.player_white

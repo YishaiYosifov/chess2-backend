@@ -9,7 +9,6 @@ from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
 
 
-@pytest.mark.anyio
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "data",
@@ -79,7 +78,6 @@ async def test_signup_params(async_client: AsyncClient, data: dict):
 
 
 @pytest.mark.integration
-@pytest.mark.anyio
 @pytest.mark.slow
 async def test_signup_success(async_client: AsyncClient, db: Session):
     """Test if it works in creating the user when valid arugments are provided"""
@@ -100,7 +98,6 @@ async def test_signup_success(async_client: AsyncClient, db: Session):
     assert user.email == "test@example.com"
 
 
-@pytest.mark.anyio
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "data",

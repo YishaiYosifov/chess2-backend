@@ -3,7 +3,7 @@ import asyncio
 import json
 
 from fastapi import WebSocket
-import redis.asyncio as redis
+import redis.asyncio as aioredis
 
 from app.websockets.client_manager import (
     ABCWebsocketClientManager,
@@ -14,14 +14,13 @@ from app.websockets.client_manager import (
 class WSServer:
     def __init__(
         self,
-        redis_url: str = "redis://localhost:6379",
+        redis_client: aioredis.Redis,
         pubsub_channel: str = "websocket_emits",
-        client_service: ABCWebsocketClientManager | None = None,
+        client_manager: ABCWebsocketClientManager | None = None,
     ):
+        self.clients = client_manager or WebsocketClientManager()
         self._pubsub_channel = pubsub_channel
-        self.clients = client_service or WebsocketClientManager()
-
-        self.connect(redis_url)
+        self._redis = redis_client
 
     async def connect_websocket(
         self,
@@ -56,7 +55,8 @@ class WSServer:
 
         message_str = json.dumps(message)
         await self._redis.publish(
-            self._pubsub_channel, f"{clients_id}:{message_str}"
+            self._pubsub_channel,
+            f"{clients_id}:{message_str}",
         )
 
     async def _handle_pubsub(self):
@@ -75,16 +75,10 @@ class WSServer:
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
 
-    def connect(self, redis_url: str):
-        self._redis = redis.Redis.from_url(redis_url)
+    def connect_pubsub(self):
         self._pubsub = self._redis.pubsub()
-
-    def initilize(self):
         self._pubsub_task = asyncio.create_task(self._handle_pubsub())
 
-    async def disconnect(self):
-        if hasattr(self, "_pubsub_task") and self._pubsub_task:
-            self._pubsub_task.cancel()
-
+    async def disconnect_pubsub(self):
+        self._pubsub_task.cancel()
         await self._pubsub.aclose()
-        await self._redis.aclose()

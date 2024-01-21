@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, FastAPI
 
 from app.schemas.config_schema import CONFIG
-from app.websockets import ws_server
+from app.websockets import ws_server_instance
 from app.schemas import response_schema
 from app.utils import common
 from app.crud import user_crud
@@ -31,9 +31,11 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-    ws_server.initilize()
+
+    ws_server_instance.connect_pubsub()
     yield
-    await ws_server.disconnect()
+    await ws_server_instance.disconnect_pubsub()
+
     scheduler.shutdown()
 
 
@@ -69,5 +71,9 @@ app.add_middleware(
 
 
 @app.websocket("/ws")
-async def connect_websocket(websocket: WebSocket, user: deps.WSUnauthedUserDep):
+async def connect_websocket(
+    websocket: WebSocket,
+    user: deps.WSUnauthedUserDep,
+    ws_server: deps.WSServerDep,
+):
     await ws_server.connect_websocket(websocket, user.user_id)

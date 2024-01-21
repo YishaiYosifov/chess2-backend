@@ -1,29 +1,45 @@
+from functools import lru_cache
 from typing import Generator, Annotated
 from http import HTTPStatus
 
 from sqlalchemy.orm import Session
 from fastapi import status, WebSocketException, HTTPException, Depends, Path
+import redis.asyncio as aioredis
 
 from app.services.auth_service import oauth2_scheme
 from app.models.user_model import AuthedUser, GuestUser, User
+from app.websockets import ws_server_instance, ws_server
 from app.schemas import user_schema
 from app.crud import user_crud
 
 from .schemas.config_schema import get_config, Config
-from .db import SessionLocal
+from . import db
 
 
 def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
+    session = db.SessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
 
 
+def get_redis():
+    return db.redis_pool
+
+
+RedisDep = Annotated[aioredis.Redis, Depends(get_redis)]
 DBDep = Annotated[Session, Depends(get_db)]
 ConfigDep = Annotated[Config, Depends(get_config)]
 TokensDep = Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)]
+
+
+@lru_cache
+def get_ws_server(redis: RedisDep):
+    return ws_server_instance
+
+
+WSServerDep = Annotated[ws_server.WSServer, Depends(get_ws_server)]
 
 
 class GetCurrentUser:

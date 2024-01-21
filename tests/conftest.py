@@ -1,25 +1,22 @@
 import os
 
-from app.websockets import ws_server
-
 os.environ["ENV"] = ".env.test.local"
 
 from glob import glob
+import inspect
 import shutil
 
 from fastapi.testclient import TestClient
-from _pytest.fixtures import SubRequest
 from sqlalchemy.orm import scoped_session, sessionmaker
-from pytest_mock import MockerFixture
 from httpx import AsyncClient
 import pytest
 
 from app.schemas.config_schema import get_config
 from tests.utils.db_mock import DbMock
-from app.services import auth_service, jwt_service
+from app.websockets import ws_server_instance
 from app.main import app
 from app.deps import get_db
-from app.db import engine
+from app.db import redis_client, engine
 
 TestScopedSession = scoped_session(sessionmaker())
 
@@ -33,8 +30,10 @@ def client():
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def initialize_websockets(anyio_backend):
-    ws_server.initilize()
+async def connect_websockets(anyio_backend):
+    ws_server_instance.connect_pubsub()
+    yield
+    await ws_server_instance.disconnect_pubsub()
 
 
 @pytest.fixture
@@ -60,37 +59,9 @@ def db():
 
 
 @pytest.fixture
-def mock_password_hash(request: SubRequest, mocker: MockerFixture) -> str:
-    new_hash = getattr(
-        request,
-        "param",
-        "$2b$12$kXC0QfbIfmjauYXOp9Hoj.ehDU1mWXgvTCvxlTVfEKyf35lR71Fam",
-    )
-    mocker.patch.object(
-        auth_service,
-        "hash_password",
-        return_value=new_hash,
-    )
-
-    return new_hash
-
-
-@pytest.fixture
-def mock_create_jwt_tokens(request: SubRequest, mocker: MockerFixture) -> str:
-    new_token = getattr(request, "param", "new token")
-
-    mocker.patch.object(
-        jwt_service,
-        "create_access_token",
-        return_value=new_token,
-    )
-    mocker.patch.object(
-        jwt_service,
-        "create_refresh_token",
-        return_value=new_token,
-    )
-
-    return new_token
+async def redis(anyio_backend):
+    yield redis_client
+    await redis_client.flushall(True)
 
 
 @pytest.fixture(scope="session")
@@ -106,3 +77,11 @@ def config():
 @pytest.fixture
 def db_mock():
     return DbMock()
+
+
+def pytest_collection_modifyitems(items):
+    """Automatically mark async tests with anyio"""
+
+    for test in items:
+        if inspect.iscoroutinefunction(test):
+            test.add_market(pytest.mark.anyio)

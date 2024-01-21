@@ -15,6 +15,8 @@ class Config(BaseSettings):
     db_user: str = ""
     db_password: str = ""
 
+    redis_url: str = "redis://localhost:6379"
+
     frontend_url: str = ""
 
     verification_url: str = ""
