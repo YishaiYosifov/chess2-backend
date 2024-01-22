@@ -35,21 +35,21 @@ class WebsocketClientManager(ABCWebsocketClientManager):
         self._rooms: dict[str, set[int]] = {}
         self._clients: dict[int, WebSocket] = {}
 
-    def get_clients(self, id: str | int) -> Generator[WebSocket, None, None]:
+    def get_clients(self, ids: str | int) -> Generator[WebSocket, None, None]:
         """
         Get the clients connected to a room, or the client of a user
 
-        :param id: a room name or a user id
+        :param ids: a room name or a user id
         :return: a generator the yields with the client instances
         """
 
-        if isinstance(id, int) or id.isnumeric():
-            id = int(id)
+        if isinstance(ids, int) or ids.isnumeric():
+            id = int(ids)
             if id in self._clients:
                 yield self._clients[id]
             return
 
-        client_ids = self._rooms.get(id, set())
+        client_ids = self._rooms.get(ids, set())
         for client_id in client_ids:
             yield self._clients[client_id]
 

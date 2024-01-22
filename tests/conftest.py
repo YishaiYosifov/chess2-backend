@@ -12,7 +12,6 @@ from httpx import AsyncClient
 import pytest
 
 from app.schemas.config_schema import get_config
-from tests.utils.db_mock import DbMock
 from app.websockets import ws_server_instance
 from app.main import app
 from app.deps import get_db
@@ -72,11 +71,6 @@ def anyio_backend():
 @pytest.fixture(scope="session")
 def config():
     return get_config()
-
-
-@pytest.fixture
-def db_mock():
-    return DbMock()
 
 
 def pytest_collection_modifyitems(items):

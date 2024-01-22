@@ -46,17 +46,17 @@ class WSServer:
         finally:
             self.clients.remove_client(user_id)
 
-    async def emit(self, message: dict, clients_id: str | int):
+    async def emit(self, message: dict, to: str | int):
         """
         Emit a message to a user or a room.
 
-        :param clients_id: an id of a user or a name of a room
+        :param to: an id of a user or a name of a room
         """
 
         message_str = json.dumps(message)
         await self._redis.publish(
             self._pubsub_channel,
-            f"{clients_id}:{message_str}",
+            f"{to}:{message_str}",
         )
 
     async def _handle_pubsub(self):

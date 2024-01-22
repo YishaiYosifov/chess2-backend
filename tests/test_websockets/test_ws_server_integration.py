@@ -8,6 +8,8 @@ from tests.utils import dep_overrider, mocks
 from app.main import app
 from app import deps
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 async def test_ws_server(redis: aioredis.Redis):
@@ -23,7 +25,6 @@ async def test_ws_server(redis: aioredis.Redis):
     await server.disconnect_pubsub()
 
 
-@pytest.mark.integration
 @pytest.mark.usefixtures("db")
 async def test_ws_connect(
     client: TestClient, test_ws_server: ws_server.WSServer
