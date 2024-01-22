@@ -46,7 +46,7 @@ class WSServer:
         finally:
             self.clients.remove_client(user_id)
 
-    async def emit(self, message: dict, to: str | int):
+    async def emit(self, message: dict, to: str | int) -> None:
         """
         Emit a message to a user or a room.
 
@@ -59,7 +59,7 @@ class WSServer:
             f"{to}:{message_str}",
         )
 
-    async def _handle_pubsub(self):
+    async def _handle_pubsub(self) -> None:
         """
         Handle emit messages from different servers.
         Forwards messages to the correct connected clients
@@ -75,10 +75,10 @@ class WSServer:
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
 
-    def connect_pubsub(self):
+    def connect_pubsub(self) -> None:
         self._pubsub = self._redis.pubsub()
         self._pubsub_task = asyncio.create_task(self._handle_pubsub())
 
-    async def disconnect_pubsub(self):
+    async def disconnect_pubsub(self) -> None:
         self._pubsub_task.cancel()
         await self._pubsub.aclose()
