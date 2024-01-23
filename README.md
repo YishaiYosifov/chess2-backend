@@ -1,6 +1,15 @@
 # chess2
 
-The chess2 API, a FastAPI based backend for a chess website with numerous new rules and pieces.
+The chess2 website API made in python with FastAPI.
+
+Chess2 is chess website with many new pieces and rules.
+
+2 players can match against each other if they are rated similarly and choose the same game settings.
+You are also able to play as a guest, but your rating and game history will not be saved.
+
+A video from the older version:
+
+https://github.com/YishaiYosifov/chess2-backend/assets/74960133/01f7e833-a1e8-40bc-8bed-caacc3544d52
 
 ## Installation
 
