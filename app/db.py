@@ -2,6 +2,7 @@ import urllib.parse
 
 from sqlalchemy.orm import sessionmaker, MappedAsDataclass, DeclarativeBase
 from sqlalchemy import create_engine
+import redis.asyncio as aioredis
 
 from app.schemas.config_schema import CONFIG
 
@@ -17,3 +18,5 @@ engine = create_engine(
     connect_args={"options": "-c timezone=UTC"},
 )
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)
+
+redis_client = aioredis.from_url(CONFIG.redis_url)

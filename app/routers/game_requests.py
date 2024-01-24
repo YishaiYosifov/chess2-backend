@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from fastapi import HTTPException, APIRouter, Response
 
+from app.websockets import ws_server_instance
 from app.services import game_request_service
 from app.schemas import response_schema, game_schema
 from app import deps
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/game-requests", tags=["game-requests"])
         HTTPStatus.OK: {"description": "Game started"},
     },
 )
-def start_pool_game(
+async def start_pool_game(
     db: deps.DBDep,
     user: deps.UnauthedUserDep,
     game_settings: game_schema.GameSettings,
@@ -39,18 +40,26 @@ def start_pool_game(
         db.delete(user.game_request)
         db.flush()
 
-    token = game_request_service.create_or_start_pool_game(
+    game = game_request_service.create_or_start_pool_game(
         db, user, game_settings
     )
     db.commit()
 
-    # If a token is returned, it means the game started so return the token.
     # If None was returned, it means a new game request was created so return CREATED
-    return (
-        Response(content=token, status_code=HTTPStatus.OK)
-        if token
-        else Response(status_code=HTTPStatus.CREATED)
+    if not game:
+        return Response(status_code=HTTPStatus.CREATED)
+
+    # If a game is returned, it means the game started so return the token.
+    await ws_server_instance.emit(
+        {"event": "notification", "text": game.token},
+        (
+            game.player_white
+            if user.player == game.player_black
+            else game.player_black
+        ).user_id,
     )
+
+    return Response(content=game.token, status_code=HTTPStatus.OK)
 
 
 @router.post("/cancel")

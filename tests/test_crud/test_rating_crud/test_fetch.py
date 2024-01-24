@@ -7,7 +7,7 @@ import pytest
 from tests.factories.rating import RatingFactory
 from tests.factories.user import AuthedUserFactory
 from app.constants import enums
-from tests.utils import common as common_utils
+from tests.utils import test_common as common_utils
 from app.crud import rating_crud
 
 from .conftest import RatingHistory, RatingBatch

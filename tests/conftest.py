@@ -3,18 +3,20 @@ import os
 os.environ["ENV"] = ".env.test"
 
 from glob import glob
+import inspect
 import shutil
 
+from httpx_ws.transport import ASGIWebSocketTransport
 from fastapi.testclient import TestClient
-from _pytest.fixtures import SubRequest
 from sqlalchemy.orm import scoped_session, sessionmaker
-from pytest_mock import MockerFixture
 from httpx import AsyncClient
+import redis.asyncio as aioredis
+import httpx_ws
 import pytest
+import httpx
 
-from app.schemas.config_schema import get_config
-from tests.utils.db_mock import DbMock
-from app.services import auth_service, jwt_service
+from app.schemas.config_schema import get_config, CONFIG
+from app.websockets import ws_server_instance
 from app.main import app
 from app.deps import get_db
 from app.db import engine
@@ -24,16 +26,28 @@ TestScopedSession = scoped_session(sessionmaker())
 
 @pytest.fixture(scope="session")
 def client():
-    client = TestClient(app)
-    yield client
+    yield TestClient(app)
 
     for file in glob("uploads/*"):
         shutil.rmtree(file)
 
 
-@pytest.fixture()
+# @pytest.fixture(scope="session", autouse=True)
+async def connect_websockets(anyio_backend):
+    await ws_server_instance.connect_pubsub()
+    yield
+    await ws_server_instance.disconnect_pubsub()
+
+
+@pytest.fixture
 def async_client():
     return AsyncClient(app=app, base_url="http://testserver")
+
+
+@pytest.fixture
+def async_ws_client():
+    client = httpx.AsyncClient(transport=ASGIWebSocketTransport(app))
+    return httpx_ws.aconnect_ws("ws://testserver/ws", client)
 
 
 @pytest.fixture
@@ -54,37 +68,15 @@ def db():
 
 
 @pytest.fixture
-def mock_password_hash(request: SubRequest, mocker: MockerFixture) -> str:
-    new_hash = getattr(
-        request,
-        "param",
-        "$2b$12$kXC0QfbIfmjauYXOp9Hoj.ehDU1mWXgvTCvxlTVfEKyf35lR71Fam",
-    )
-    mocker.patch.object(
-        auth_service,
-        "hash_password",
-        return_value=new_hash,
-    )
-
-    return new_hash
+async def redis(anyio_backend):
+    redis_client = aioredis.from_url(CONFIG.redis_url)
+    yield redis_client
+    await redis_client.flushall(True)
 
 
-@pytest.fixture
-def mock_create_jwt_tokens(request: SubRequest, mocker: MockerFixture) -> str:
-    new_token = getattr(request, "param", "new token")
-
-    mocker.patch.object(
-        jwt_service,
-        "create_access_token",
-        return_value=new_token,
-    )
-    mocker.patch.object(
-        jwt_service,
-        "create_refresh_token",
-        return_value=new_token,
-    )
-
-    return new_token
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
 
 
 @pytest.fixture(scope="session")
@@ -92,6 +84,12 @@ def config():
     return get_config()
 
 
-@pytest.fixture
-def db_mock():
-    return DbMock()
+@pytest.hookimpl(tryfirst=True)
+def pytest_pycollect_makeitem(collector, name, obj) -> None:
+    """Automatically mark async tests with anyio"""
+
+    if not collector.istestfunction(obj, name):
+        return
+
+    if inspect.iscoroutinefunction(obj):
+        pytest.mark.usefixtures("anyio_backend")(obj)

@@ -15,6 +15,8 @@ class Config(BaseSettings):
     postgres_user: str = ""
     postgres_password: str = ""
 
+    redis_url: str = "redis://localhost:6379"
+
     frontend_url: str = ""
 
     verification_url: str = ""

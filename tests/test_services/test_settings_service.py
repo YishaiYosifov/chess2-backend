@@ -8,19 +8,20 @@ import pytest
 
 from app.schemas.config_schema import Config
 from tests.factories.user import AuthedUserFactory
-from app.services import settings_service
+from app.services import settings_service, auth_service
 from tests.utils import mocks
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("mock_password_hash", ["mocked hash"], indirect=True)
-def test_password_setting(mock_password_hash: str):
+def test_password_setting(mocker: MockerFixture):
     """Test if the password setting hashes correctly"""
 
+    mocked_hash = "mocked hash"
+    mocker.patch.object(auth_service, "hash_password", return_value=mocked_hash)
     user = AuthedUserFactory.build()
 
     settings_service.PasswordSetting(user).update("new password")
-    assert user.hashed_password == mock_password_hash
+    assert user.hashed_password == mocked_hash
 
 
 @pytest.mark.unit
