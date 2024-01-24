@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 
     scheduler.start()
 
-    ws_server_instance.connect_pubsub()
+    await ws_server_instance.connect_pubsub()
     yield
     await ws_server_instance.disconnect_pubsub()
 

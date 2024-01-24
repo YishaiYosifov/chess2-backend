@@ -1,21 +1,25 @@
 import os
 
-os.environ["ENV"] = ".env.test.local"
+os.environ["ENV"] = ".env.test"
 
 from glob import glob
 import inspect
 import shutil
 
+from httpx_ws.transport import ASGIWebSocketTransport
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import scoped_session, sessionmaker
 from httpx import AsyncClient
+import redis.asyncio as aioredis
+import httpx_ws
 import pytest
+import httpx
 
-from app.schemas.config_schema import get_config
+from app.schemas.config_schema import get_config, CONFIG
 from app.websockets import ws_server_instance
 from app.main import app
 from app.deps import get_db
-from app.db import redis_client, engine
+from app.db import engine
 
 TestScopedSession = scoped_session(sessionmaker())
 
@@ -28,9 +32,9 @@ def client():
         shutil.rmtree(file)
 
 
-@pytest.fixture(scope="session", autouse=True)
+# @pytest.fixture(scope="session", autouse=True)
 async def connect_websockets(anyio_backend):
-    ws_server_instance.connect_pubsub()
+    await ws_server_instance.connect_pubsub()
     yield
     await ws_server_instance.disconnect_pubsub()
 
@@ -38,6 +42,12 @@ async def connect_websockets(anyio_backend):
 @pytest.fixture
 def async_client():
     return AsyncClient(app=app, base_url="http://testserver")
+
+
+@pytest.fixture
+def async_ws_client():
+    client = httpx.AsyncClient(transport=ASGIWebSocketTransport(app))
+    return httpx_ws.aconnect_ws("ws://testserver/ws", client)
 
 
 @pytest.fixture
@@ -59,6 +69,7 @@ def db():
 
 @pytest.fixture
 async def redis(anyio_backend):
+    redis_client = aioredis.from_url(CONFIG.redis_url)
     yield redis_client
     await redis_client.flushall(True)
 
@@ -76,6 +87,12 @@ def config():
 def pytest_collection_modifyitems(items):
     """Automatically mark async tests with anyio"""
 
-    for test in items:
-        if inspect.iscoroutinefunction(test):
-            test.add_market(pytest.mark.anyio)
+    anyio_marker = pytest.mark.anyio
+    be_marker = pytest.mark.usefixtures("anyio_backend")
+    for item in items:
+        if item.originalname == "test_connect_websocket":
+            print(item.own_markers)
+
+        if inspect.iscoroutinefunction(item.obj):
+            item.add_marker(anyio_marker)
+            item.add_marker(be_marker)

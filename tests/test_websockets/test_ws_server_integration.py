@@ -1,4 +1,6 @@
-from fastapi.testclient import TestClient
+from typing import AsyncContextManager
+
+from httpx_ws import AsyncWebSocketSession
 import redis.asyncio as aioredis
 import pytest
 
@@ -14,7 +16,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 async def test_ws_server(redis: aioredis.Redis):
     server = ws_server.WSServer(redis)
-    server.connect_pubsub()
+    await server.connect_pubsub()
 
     with dep_overrider.DependencyOverrider(
         app,
@@ -27,8 +29,26 @@ async def test_ws_server(redis: aioredis.Redis):
 
 @pytest.mark.usefixtures("db")
 async def test_ws_connect(
-    client: TestClient, test_ws_server: ws_server.WSServer
+    async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+    test_ws_server: ws_server.WSServer,
 ):
     user = AuthedUserFactory.create()
-    with mocks.mock_login(user), client.websocket_connect("/ws"):
-        assert user.user_id in getattr(test_ws_server.clients, "_clients")
+    with mocks.mock_login(user):
+        async with async_ws_client as ws:
+            assert user.user_id in getattr(test_ws_server.clients, "_clients")
+            await ws.close()
+
+
+@pytest.mark.usefixtures("db")
+@pytest.mark.anyio
+async def test_user_id_emits(
+    async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+    test_ws_server: ws_server.WSServer,
+):
+    message = {"test": "message"}
+    user = AuthedUserFactory.create()
+
+    with mocks.mock_login(user):
+        async with async_ws_client as ws:
+            await test_ws_server.emit(message, user.user_id)
+            assert await ws.receive_json() == message

@@ -65,20 +65,35 @@ class WSServer:
         Forwards messages to the correct connected clients
         """
 
-        await self._pubsub.subscribe(self._pubsub_channel)
-        async for message in self._pubsub.listen():
-            if message["type"] != "message":
+        while True:
+            try:
+                message = await self._pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=1
+                )
+            except asyncio.CancelledError:
+                return
+
+            if not message or message["type"] != "message":
+                await asyncio.sleep(0)
                 continue
 
+            print(message)
+
             data: bytes = message["data"]
-            clients_id, message = data.decode("utf-8").split(":")
+            clients_id, message = data.decode("utf-8").split(":", 1)
+            print(self.clients._clients)
+
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
 
-    def connect_pubsub(self) -> None:
+    async def connect_pubsub(self) -> None:
         self._pubsub = self._redis.pubsub()
+        await self._pubsub.subscribe(self._pubsub_channel)
+
         self._pubsub_task = asyncio.create_task(self._handle_pubsub())
 
     async def disconnect_pubsub(self) -> None:
         self._pubsub_task.cancel()
+        await self._pubsub_task
+
         await self._pubsub.aclose()

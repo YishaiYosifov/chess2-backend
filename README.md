@@ -1,24 +1,25 @@
 # chess2
 
-The chess2 API, a FastAPI based backend for a chess website with numerous new rules and pieces.
+The chess2 website API made in python with FastAPI.
+
+Chess2 is chess website with many new pieces and rules.
+
+2 players can match against each other if they are rated similarly and choose the same game settings.
+You are also able to play as a guest, but your rating and game history will not be saved.
+
+A video from the older version:
+
+https://github.com/YishaiYosifov/chess2-backend/assets/74960133/01f7e833-a1e8-40bc-8bed-caacc3544d52
 
 ## Installation
 
-Set up the enviroment:
+This project uses docker with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) vscode extension.
+To get started, simply open the project in vscode and reopen it in side a dev container.
+
+For manual setup, you can use docker compose by running the following command:
 
 ```bash
-$ python3 -m venv env
-
-$ "env/Scripts/activate.bat" # Windows
-# OR
-$ source env/bin/activate # Linux & Mac
-```
-
-Install requirements and run
-
-```bash
-$ pip install -r requirements.txt
-$ uvicorn app.main:app
+$ docker compose up
 ```
 
 ## Config

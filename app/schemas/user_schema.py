@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic_extra_types.country import CountryAlpha3
 from pydantic import field_validator, BaseModel, EmailStr, Field
+
+CountryAlpha = CountryAlpha3 | Literal["INTR"]
 
 
 class UserIn(BaseModel):

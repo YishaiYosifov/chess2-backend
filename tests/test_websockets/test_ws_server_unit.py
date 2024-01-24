@@ -36,6 +36,7 @@ def test_ws_server(mock_redis):
         yield server
 
 
+@pytest.mark.anyio
 async def test_connect_websocket(
     mocker: MockerFixture,
     test_ws_server: ws_server.WSServer,

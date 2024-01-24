@@ -13,8 +13,8 @@ class Base(MappedAsDataclass, DeclarativeBase):
 
 engine = create_engine(
     "postgresql+psycopg2://"
-    f"{CONFIG.db_user}:{urllib.parse.quote(CONFIG.db_password)}"
-    f"@{CONFIG.db_host}/{CONFIG.db_name}",
+    f"{CONFIG.postgres_user}:{urllib.parse.quote(CONFIG.postgres_password)}"
+    f"@{CONFIG.postgres_host}/{CONFIG.postgres_db}",
     connect_args={"options": "-c timezone=UTC"},
 )
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)
