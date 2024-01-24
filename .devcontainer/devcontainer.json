@@ -1,0 +1,41 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+    "name": "chess2-backend",
+
+    "dockerComposeFile": ["../docker-compose.yml"],
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/chess2-backend",
+
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {},
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    // Use 'postCreateCommand' to run commands after the container is created.
+    // "postCreateCommand": "pip3 install --user --no-cache-dir -r requirements.txt",
+
+    // Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "editor.formatOnType": true,
+                "editor.defaultFormatter": "ms-python.black-formatter",
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "explicit",
+                    "source.unusedImports": "explicit"
+                }
+            },
+            "extensions": [
+                "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-azuretools.vscode-docker",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    }
+
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "root"
+}

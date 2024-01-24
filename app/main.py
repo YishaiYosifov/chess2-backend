@@ -9,7 +9,6 @@ from app.schemas.config_schema import CONFIG
 from app.schemas import response_schema
 from app.utils import common
 from app.crud import user_crud
-from app.ws import broadcast
 from app.db import engine, SessionLocal, Base
 
 from .routers import game_requests, settings, profile, auth
@@ -17,8 +16,6 @@ from .routers import game_requests, settings, profile, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await broadcast.connect()
-
     # Delete inactive guest accounts every day at 12am
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -32,10 +29,7 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-
     yield
-
-    await broadcast.disconnect()
     scheduler.shutdown()
 
 

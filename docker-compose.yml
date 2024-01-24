@@ -1,0 +1,31 @@
+services:
+    devcontainer:
+        build: .
+        container_name: chess2-backend
+        command: uvicorn app.main:app --host 0.0.0.0 --reload
+        stdin_open: true
+        tty: true
+        environment:
+            - ENV=.env
+        ports:
+            - 8000:8000
+            - 5678:5678
+        volumes:
+            - .:/workspaces/chess2-backend
+        depends_on:
+            - database
+            - redis
+
+    database:
+        image: postgres:latest
+        ports:
+            - 5432:5432
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        env_file: .env
+
+    redis:
+        image: redis:latest
+
+volumes:
+    pgdata:

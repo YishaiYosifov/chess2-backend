@@ -1,6 +1,6 @@
 import os
 
-os.environ["ENV"] = ".env.test.local"
+os.environ["ENV"] = ".env.test"
 
 from glob import glob
 import shutil
