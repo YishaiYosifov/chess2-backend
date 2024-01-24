@@ -13,21 +13,13 @@ https://github.com/YishaiYosifov/chess2-backend/assets/74960133/01f7e833-a1e8-40
 
 ## Installation
 
-Set up the enviroment:
+This project uses docker with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) vscode extension.
+To get started, simply open the project in vscode and reopen it in side a dev container.
+
+For manual setup, you can use docker compose by running the following command:
 
 ```bash
-$ python3 -m venv env
-
-$ "env/Scripts/activate.bat" # Windows
-# OR
-$ source env/bin/activate # Linux & Mac
-```
-
-Install requirements and run
-
-```bash
-$ pip install -r requirements.txt
-$ uvicorn app.main:app
+$ docker compose up
 ```
 
 ## Config
