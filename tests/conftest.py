@@ -84,15 +84,12 @@ def config():
     return get_config()
 
 
-def pytest_collection_modifyitems(items):
+@pytest.hookimpl(tryfirst=True)
+def pytest_pycollect_makeitem(collector, name, obj) -> None:
     """Automatically mark async tests with anyio"""
 
-    anyio_marker = pytest.mark.anyio
-    be_marker = pytest.mark.usefixtures("anyio_backend")
-    for item in items:
-        if item.originalname == "test_connect_websocket":
-            print(item.own_markers)
+    if not collector.istestfunction(obj, name):
+        return
 
-        if inspect.iscoroutinefunction(item.obj):
-            item.add_marker(anyio_marker)
-            item.add_marker(be_marker)
+    if inspect.iscoroutinefunction(obj):
+        pytest.mark.usefixtures("anyio_backend")(obj)

@@ -31,8 +31,8 @@ def test_decode_jwt_token(mocker: MockerFixture, config: Config):
     }
     mock_jwt_decode.assert_called_once_with(
         "token",
-        "test-secret-key",
-        algorithms=["HS256"],
+        config.secret_key,
+        algorithms=[config.jwt_algorithm],
         options=expected_options,
     )
 

@@ -40,15 +40,35 @@ async def test_ws_connect(
 
 
 @pytest.mark.usefixtures("db")
-@pytest.mark.anyio
 async def test_user_id_emits(
     async_ws_client: AsyncContextManager[AsyncWebSocketSession],
     test_ws_server: ws_server.WSServer,
 ):
+    """Test emits to a specific user"""
+
     message = {"test": "message"}
     user = AuthedUserFactory.create()
 
     with mocks.mock_login(user):
         async with async_ws_client as ws:
             await test_ws_server.emit(message, user.user_id)
+            assert await ws.receive_json() == message
+
+
+@pytest.mark.usefixtures("db")
+async def test_room_emits(
+    async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+    test_ws_server: ws_server.WSServer,
+):
+    """Test emits to a room"""
+
+    message = {"test": "message"}
+    room = "test room"
+    user = AuthedUserFactory.create()
+
+    with mocks.mock_login(user):
+        async with async_ws_client as ws:
+            test_ws_server.clients.enter_room(room, user.user_id)
+            await test_ws_server.emit(message, room)
+
             assert await ws.receive_json() == message

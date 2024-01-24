@@ -77,11 +77,8 @@ class WSServer:
                 await asyncio.sleep(0)
                 continue
 
-            print(message)
-
             data: bytes = message["data"]
             clients_id, message = data.decode("utf-8").split(":", 1)
-            print(self.clients._clients)
 
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
