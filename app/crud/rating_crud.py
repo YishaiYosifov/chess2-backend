@@ -113,7 +113,7 @@ def fetch_history(
                 & (Rating.variant.in_(variants))
                 & (Rating.achieved_at >= since)
             )
-            .order_by(Rating.achieved_at.desc())
+            .order_by(Rating.achieved_at)
         )
         .scalars()
         .all()
