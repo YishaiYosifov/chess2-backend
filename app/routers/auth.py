@@ -7,7 +7,6 @@ from fastapi import BackgroundTasks, HTTPException, APIRouter, Response, Depends
 
 from app.utils.email_verification import send_verification_email
 from app.models.user_model import AuthedUser
-from app.websockets import ws_server_instance
 from app.services import auth_service, jwt_service
 from app.schemas import response_schema, user_schema
 from app.crud import user_crud
@@ -152,8 +151,3 @@ def create_guest_account(db: deps.DBDep, config: deps.ConfigDep):
     )
 
     return user_schema.AccessToken(access_token=access_token)
-
-
-@router.get("/test")
-async def test():
-    await ws_server_instance.emit({}, 1)

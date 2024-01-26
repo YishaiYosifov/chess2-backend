@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic_extra_types.country import CountryAlpha3
 from pydantic import field_validator, BaseModel, EmailStr, Field
+
+from app.types import CountryAlpha3
 
 
 class UserIn(BaseModel):
@@ -45,7 +46,7 @@ class PublicUserOut(BaseModel):
     user_id: int
     username: str
     about: str
-    country: CountryAlpha3 | None
+    country_alpha3: CountryAlpha3
     pfp_last_changed: datetime
 
 
@@ -55,8 +56,8 @@ class PrivateUserOut(PublicUserOut):
 
 
 class EditableProfile(BaseModel):
-    country: CountryAlpha3 | None = None
-    about: Annotated[str, Field(max_length=300)] = ""
+    country_alpha3: CountryAlpha3
+    about: Annotated[str, Field(max_length=300)]
 
 
 class AccessToken(BaseModel):

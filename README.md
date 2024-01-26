@@ -14,7 +14,7 @@ https://github.com/YishaiYosifov/chess2-backend/assets/74960133/01f7e833-a1e8-40
 ## Installation
 
 This project uses docker with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) vscode extension.
-To get started, simply open the project in vscode and reopen it in side a dev container.
+To get started, simply open the project in vscode and reopen it in a dev container.
 
 For manual setup, you can use docker compose by running the following command:
 
