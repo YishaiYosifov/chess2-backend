@@ -24,7 +24,7 @@ from tests.utils import mocks
 
 @pytest.mark.integration
 @pytest.mark.usefixtures("db")
-class TestStartPoolGame:
+class TestJoinPoolGame:
     async def join_pool(
         self,
         async_client: AsyncClient,

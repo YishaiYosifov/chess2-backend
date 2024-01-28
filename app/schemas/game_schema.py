@@ -35,8 +35,8 @@ class RatingOverview(BaseModel):
 
 class GameSettings(BaseModel):
     variant: enums.Variant
-    time_control: int
-    increment: int
+    time_control: Annotated[int, Field(ge=10)]
+    increment: Annotated[int, Field(ge=0)]
 
 
 class GameRequest(GameSettings):

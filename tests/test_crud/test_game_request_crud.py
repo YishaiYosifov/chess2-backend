@@ -41,7 +41,7 @@ class TestSearchGameRequest:
             ),
             (
                 GameSettingsFactory.build(increment=0),
-                GameSettingsFactory.build(time_control=1),
+                GameSettingsFactory.build(increment=10),
             ),
         ],
     )

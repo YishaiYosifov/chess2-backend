@@ -25,7 +25,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_redis():
-    return db.redis_pool
+    return db.redis_client
 
 
 RedisDep = Annotated[aioredis.Redis, Depends(get_redis)]

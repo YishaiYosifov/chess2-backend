@@ -2,7 +2,6 @@ from http import HTTPStatus
 
 from fastapi import HTTPException, APIRouter, Response
 
-from app.websockets import ws_server_instance
 from app.constants import enums
 from app.services import game_request_service
 from app.schemas import response_schema, game_schema
@@ -26,6 +25,7 @@ async def start_pool_game(
     db: deps.DBDep,
     user: deps.UnauthedUserDep,
     game_settings: game_schema.GameSettings,
+    ws_server: deps.WSServerDep,
 ):
     """
     Joins the matchmaking pool with the specified game settings.
@@ -51,7 +51,7 @@ async def start_pool_game(
         return Response(status_code=HTTPStatus.CREATED)
 
     # If a game is returned, it means the game started so return the token.
-    await ws_server_instance.emit(
+    await ws_server.emit(
         enums.WebsocketEvent.GAME_START,
         game.token,
         (
