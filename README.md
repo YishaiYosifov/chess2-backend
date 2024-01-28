@@ -67,6 +67,8 @@ The chess gameplay itself has not been implemented yet.
 -   `app/crud`
     -   `app/crud/game_request_crud.py` logic for searching and creating a request
     -   `app/crud/user_crud.py` logic for fetching, creating and deleting authed and guest users
+-   `app/websockets`
+    -   `app/websockets/ws_server.py` logic for horizontally scaling websocket handling
 
 ## Testing
 
