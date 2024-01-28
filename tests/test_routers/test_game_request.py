@@ -1,7 +1,10 @@
+from typing import AsyncContextManager
 from http import HTTPStatus
+import json
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from httpx_ws import AsyncWebSocketSession
 from httpx import AsyncClient
 import pytest
 
@@ -65,16 +68,30 @@ class TestJoinPoolGame:
         assert db.execute(select(GameRequest)).scalar_one().inviter == user
 
     async def test_existing_request_found(
-        self, db: Session, async_client: AsyncClient
+        self,
+        async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+        db: Session,
+        async_client: AsyncClient,
     ):
         """Test that a game is started if there is an existing request"""
 
-        user = AuthedUserFactory.create()
-        GameRequestFactory.create()
+        recipient = AuthedUserFactory.create()
+        inviter = AuthedUserFactory.create()
+        GameRequestFactory.create(inviter=inviter)
 
-        response = await self.join_pool(async_client, user)
+        with mocks.mock_login(inviter):
+            async with async_ws_client as ws:
+                response = await self.join_pool(async_client, recipient)
+                ws_received = await ws.receive_text(3)
+
         assert response.status_code == HTTPStatus.OK
-        assert db.execute(select(Game)).scalar_one()
+
+        created_game = db.execute(select(Game)).scalar_one()
+        assert created_game
+        assert ws_received == (
+            f"{enums.WebsocketEvent.GAME_START.value}:"
+            f"{json.dumps(created_game.token)}"
+        )
 
     async def test_user_has_request(
         self, db: Session, async_client: AsyncClient

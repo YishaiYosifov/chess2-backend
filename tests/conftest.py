@@ -32,7 +32,7 @@ def client():
         shutil.rmtree(file)
 
 
-# @pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 async def connect_websockets(anyio_backend):
     await ws_server_instance.connect_pubsub()
     yield
