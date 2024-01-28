@@ -3,6 +3,7 @@ from http import HTTPStatus
 from fastapi import HTTPException, APIRouter, Response
 
 from app.websockets import ws_server_instance
+from app.constants import enums
 from app.services import game_request_service
 from app.schemas import response_schema, game_schema
 from app import deps
@@ -51,7 +52,8 @@ async def start_pool_game(
 
     # If a game is returned, it means the game started so return the token.
     await ws_server_instance.emit(
-        {"event": "notification", "text": game.token},
+        enums.WebsocketEvent.GAME_START,
+        game.token,
         (
             game.player_white
             if user.player == game.player_black

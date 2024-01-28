@@ -1,4 +1,5 @@
 from typing import AsyncContextManager
+import json
 
 from httpx_ws import AsyncWebSocketSession
 import redis.asyncio as aioredis
@@ -6,6 +7,7 @@ import pytest
 
 from tests.factories.user import AuthedUserFactory
 from app.websockets import ws_server
+from app.constants import enums
 from tests.utils import dep_overrider, mocks
 from app.main import app
 from app import deps
@@ -39,36 +41,40 @@ async def test_ws_connect(
             await ws.close()
 
 
-@pytest.mark.usefixtures("db")
-async def test_user_id_emits(
-    async_ws_client: AsyncContextManager[AsyncWebSocketSession],
-    test_ws_server: ws_server.WSServer,
-):
-    """Test emits to a specific user"""
+class TestEmit:
+    event = enums.WebsocketEvent.NOTIFICATION
+    data = {"test": "message"}
+    expected_message = f"{event.value}:{json.dumps(data)}"
 
-    message = {"test": "message"}
-    user = AuthedUserFactory.create()
+    @pytest.mark.usefixtures("db")
+    async def test_user_id_emits(
+        self,
+        async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+        test_ws_server: ws_server.WSServer,
+    ):
+        """Test emits to a specific user"""
 
-    with mocks.mock_login(user):
-        async with async_ws_client as ws:
-            await test_ws_server.emit(message, user.user_id)
-            assert await ws.receive_json() == message
+        user = AuthedUserFactory.create()
 
+        with mocks.mock_login(user):
+            async with async_ws_client as ws:
+                await test_ws_server.emit(self.event, self.data, user.user_id)
+                assert await ws.receive_text(3) == self.expected_message
 
-@pytest.mark.usefixtures("db")
-async def test_room_emits(
-    async_ws_client: AsyncContextManager[AsyncWebSocketSession],
-    test_ws_server: ws_server.WSServer,
-):
-    """Test emits to a room"""
+    @pytest.mark.usefixtures("db")
+    async def test_room_emits(
+        self,
+        async_ws_client: AsyncContextManager[AsyncWebSocketSession],
+        test_ws_server: ws_server.WSServer,
+    ):
+        """Test emits to a room"""
 
-    message = {"test": "message"}
-    room = "test room"
-    user = AuthedUserFactory.create()
+        room = "test room"
+        user = AuthedUserFactory.create()
 
-    with mocks.mock_login(user):
-        async with async_ws_client as ws:
-            test_ws_server.clients.enter_room(room, user.user_id)
-            await test_ws_server.emit(message, room)
+        with mocks.mock_login(user):
+            async with async_ws_client as ws:
+                test_ws_server.clients.enter_room(room, user.user_id)
+                await test_ws_server.emit(self.event, self.data, room)
 
-            assert await ws.receive_json() == message
+                assert await ws.receive_text(3) == self.expected_message

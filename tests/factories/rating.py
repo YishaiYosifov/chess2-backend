@@ -27,10 +27,13 @@ class RatingFactory(TypedSQLAlchemyFactory[Rating]):
     ) -> list[Rating]:
         """
         Create a multiple rating entries of a certain variant. The first elo will be the active one.
-        The `achieved_at` dates will descend by one day each rating in a variant.
+        The `achieved_at` dates will ascend by one day each rating in a variant.
 
         :param user: the user for whom the rating history is being created
-        :param variants: a dictionary of variants and a list of elos or an amount to create
+        :param variants: a dictionary of variants with either:
+            - a list of elos (or None to use the default elo value)
+            in ascending order (from least to most revent)
+            - an amount, how many of these variant ratings to create with the default elo
 
         :return: a list of the created ratings
         """
@@ -40,19 +43,19 @@ class RatingFactory(TypedSQLAlchemyFactory[Rating]):
             # if elos is an amount, create a list with the correct elos
             elos = [800] * elos if isinstance(elos, int) else elos
 
-            achieved_at = datetime.utcnow()
-            for index, elo in enumerate(elos):
+            achieved_at = datetime.utcnow() - timedelta(days=len(elos))
+            for i, elo in enumerate(elos):
                 rating: Rating = cls.create(
                     user=user,
                     variant=variant,
                     elo=elo,
-                    is_active=index == 0,
+                    is_active=i == 0,
                     achieved_at=achieved_at,
                 )
                 ratings.append(rating)
 
                 # Make sure the ratings have different dates
-                achieved_at -= timedelta(days=1)
+                achieved_at += timedelta(days=1)
 
         cls._meta.sqlalchemy_session.flush()  # type: ignore
 

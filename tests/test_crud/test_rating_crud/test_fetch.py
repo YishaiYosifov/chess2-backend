@@ -170,21 +170,21 @@ def test_fetch_history(
     the history (i.e. {variant: list[Rating]})
     """
 
-    ratings_history = rating_crud.fetch_history(
+    fetched_rating_history = rating_crud.fetch_history(
         db,
         rating_history.user,
         date(2001, 1, 1),
         fetch_variants,
     )
     _assert_correct_fetches(
-        ratings_history,
+        fetched_rating_history,
         rating_history.variants,
         fetch_variants,
     )
 
-    for fetched_ratings in ratings_history.values():
-        for index, rating in enumerate(fetched_ratings):
-            assert rating.elo == rating_history.elos[index]
+    for fetched_ratings in fetched_rating_history.values():
+        for i, rating in enumerate(fetched_ratings):
+            assert rating.elo == rating_history.elos[i]
 
 
 @pytest.mark.integration

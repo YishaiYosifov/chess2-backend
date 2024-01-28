@@ -102,7 +102,8 @@ def fetch_history(
     :param since: the date to fetch since
     :param variants: a list of variants
 
-    :return: a dictionary containing the variants their list of ratings
+    :return: a dictionary containing the variants their list of
+    ratings in ascending order (from least to most recent)
     """
 
     rating_history = (

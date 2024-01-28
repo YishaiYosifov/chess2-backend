@@ -8,6 +8,7 @@ import pytest
 
 from tests.utils.test_common import AsyncIterator
 from app.websockets import ws_server
+from app.constants import enums
 from tests.utils import dep_overrider
 from app.main import app
 from app import deps
@@ -83,10 +84,11 @@ async def test_emit(
     publish_mock = mocker.AsyncMock()
     mock_redis.publish = publish_mock
 
-    message = {"test": "ing"}
+    event = enums.WebsocketEvent.NOTIFICATION
+    data = {"test": "ing"}
     to = 1
-    await test_ws_server.emit(message, to)
+    await test_ws_server.emit(event, data, to)
 
     publish_mock.assert_called_once_with(
-        test_ws_server._pubsub_channel, f"{to}:{json.dumps(message)}"
+        test_ws_server._pubsub_channel, f"{to}:{event.value}:{json.dumps(data)}"
     )

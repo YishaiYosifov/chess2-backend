@@ -40,3 +40,8 @@ class Piece(Enum):
     HORSE = "horse"
     PAWN = "pawn"
     CHILD_PAWN = "child_pawn"
+
+
+class WebsocketEvent(Enum):
+    NOTIFICATION = "notification"
+    GAME_START = "game_start"

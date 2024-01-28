@@ -34,7 +34,7 @@ def rating_batch(db, request: SubRequest) -> RatingBatch:
 def rating_history(db, request: SubRequest) -> RatingHistory:
     variants: list[enums.Variant] = request.param
 
-    elos = [500, 57, 1]
+    elos = [1, 57, 500]
     user = AuthedUserFactory.create()
     RatingFactory.create_history(user, {variant: elos for variant in variants})
 

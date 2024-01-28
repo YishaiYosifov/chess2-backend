@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Any
 import asyncio
 import json
 
@@ -9,6 +9,7 @@ from app.websockets.client_manager import (
     ABCWebsocketClientManager,
     WebsocketClientManager,
 )
+from app.constants import enums
 
 
 class WSServer:
@@ -46,17 +47,24 @@ class WSServer:
         finally:
             self.clients.remove_client(user_id)
 
-    async def emit(self, message: dict, to: str | int) -> None:
+    async def emit(
+        self,
+        event: enums.WebsocketEvent,
+        data: Any,
+        to: str | int,
+    ) -> None:
         """
         Emit a message to a user or a room.
 
+        :param event: the websocket event to emit with
+        :param data: the data to emit
         :param to: an id of a user or a name of a room
         """
 
-        message_str = json.dumps(message)
+        data_str = json.dumps(data)
         await self._redis.publish(
             self._pubsub_channel,
-            f"{to}:{message_str}",
+            f"{to}:{event.value}:{data_str}",
         )
 
     async def _handle_pubsub(self) -> None:

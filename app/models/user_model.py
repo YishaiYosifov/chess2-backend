@@ -83,7 +83,7 @@ class AuthedUser(User, kw_only=True):
     is_email_verified: Mapped[bool] = mapped_column(default=False)
 
     about: Mapped[str] = mapped_column(String(300), default="")
-    country_alpha3: Mapped[str] = mapped_column(String(64), default="INT")
+    country_alpha3: Mapped[str] = mapped_column(String(3), default="INT")
 
     username_last_changed: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
