@@ -9,7 +9,7 @@ import pytest
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
-from app.models.games.piece_model import GamePiece
+from app.models.games.game_piece_model import GamePiece
 from app.models.user_model import AuthedUser
 from tests.factories.user import (
     AuthedUserFactory,
@@ -165,7 +165,7 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
         new=starting_position,
     )
 
-    game = LiveGameFactory.create()
+    game = LiveGameFactory.create(pieces=[])
     game_crud.create_pieces(db, game)
 
     created_pieces = db.execute(select(GamePiece)).scalars().all()

@@ -7,8 +7,8 @@ from sqlalchemy import select, func
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
+from app.models.games.game_piece_model import GamePiece
 from app.models.games.live_game_model import LiveGame
-from app.models.games.piece_model import GamePiece
 from app.models.user_model import AuthedUser, User
 from app.constants import constants, enums
 

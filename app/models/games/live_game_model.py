@@ -6,7 +6,7 @@ from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, CheckConstraint, ForeignKey, DateTime, CHAR
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
-from app.models.games.piece_model import GamePiece
+from app.models.games.game_piece_model import GamePiece
 from app.constants import enums
 from app.db import Base
 

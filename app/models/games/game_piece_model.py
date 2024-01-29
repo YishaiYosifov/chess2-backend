@@ -17,7 +17,7 @@ class GamePiece(Base, kw_only=True):
 
     __tablename__ = "game_piece"
 
-    piece_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    piece_id: Mapped[int] = mapped_column(primary_key=True, default=None)
     piece: Mapped[enums.Piece]
     color: Mapped[enums.Color]
 

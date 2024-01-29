@@ -1,4 +1,4 @@
-from factory import post_generation, SubFactory, Sequence, Faker
+import factory
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from tests.utils.factory_model import TypedSQLAlchemyFactory
@@ -13,7 +13,7 @@ class GuestUserFactory(TypedSQLAlchemyFactory[GuestUser]):
         sqlalchemy_session = TestScopedSession
         model = GuestUser
 
-    username = Faker("name")
+    username = factory.Faker("name")
 
 
 class AuthedUserFactory(TypedSQLAlchemyFactory[AuthedUser]):
@@ -21,13 +21,13 @@ class AuthedUserFactory(TypedSQLAlchemyFactory[AuthedUser]):
         sqlalchemy_session = TestScopedSession
         model = AuthedUser
 
-    user_id = Sequence(lambda n: n)
+    user_id = factory.Sequence(lambda n: n)
 
-    username = Faker("name")
-    email = Faker("email")
+    username = factory.Faker("name")
+    email = factory.Faker("email")
     hashed_password = "$argon2id$v=19$m=65536,t=3,p=4$9f6TQfLJyVg0RisM6m2YUw$4e1KxrjDlgZ3CdO6Da19RPg4nMBqQ7g71FIIG3AFzRE"  # luka
 
-    @post_generation
+    @factory.post_generation
     def password(obj: AuthedUser, create: bool, extracted: str, **kwargs):  # type: ignore
         if not create or not extracted:
             return
@@ -41,5 +41,5 @@ class PlayerFactory(TypedSQLAlchemyFactory[RuntimePlayerInfo]):
         model = RuntimePlayerInfo
 
     color = enums.Color.WHITE
-    user = SubFactory(AuthedUserFactory)
+    user = factory.SubFactory(AuthedUserFactory)
     time_remaining = 600

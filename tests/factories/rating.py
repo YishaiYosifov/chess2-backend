@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 
-from factory import SubFactory
+import factory
 
 from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.models.rating_model import Rating
@@ -16,7 +16,7 @@ class RatingFactory(TypedSQLAlchemyFactory[Rating]):
         sqlalchemy_session = TestScopedSession
         model = Rating
 
-    user = SubFactory(AuthedUserFactory)
+    user = factory.SubFactory(AuthedUserFactory)
     variant = enums.Variant.ANARCHY
 
     @classmethod
