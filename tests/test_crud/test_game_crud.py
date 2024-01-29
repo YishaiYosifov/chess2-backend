@@ -9,14 +9,14 @@ import pytest
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
-from app.models.games.piece_model import Piece
+from app.models.games.piece_model import GamePiece
 from app.models.user_model import AuthedUser
 from tests.factories.user import (
     AuthedUserFactory,
     GuestUserFactory,
     PlayerFactory,
 )
-from tests.factories.game import GameResultFactory, GameFactory
+from tests.factories.game import GameResultFactory, LiveGameFactory
 from app.constants import enums
 from app.schemas import game_schema
 from app.crud import game_crud
@@ -165,10 +165,10 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
         new=starting_position,
     )
 
-    game = GameFactory.create()
+    game = LiveGameFactory.create()
     game_crud.create_pieces(db, game)
 
-    created_pieces = db.execute(select(Piece)).scalars().all()
+    created_pieces = db.execute(select(GamePiece)).scalars().all()
 
     assert len(created_pieces) == len(starting_position)
     for piece, expected_piece_data in zip(created_pieces, starting_position):

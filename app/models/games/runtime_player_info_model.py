@@ -10,7 +10,7 @@ from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.games.game_model import Game
+    from app.models.games.live_game_model import LiveGame
     from app.models.user_model import User
 
 
@@ -27,20 +27,20 @@ class RuntimePlayerInfo(Base, kw_only=True):
     )
     user: Mapped[User] = relationship(back_populates="player")
 
-    game_white: Mapped[Game] = relationship(
+    game_white: Mapped[LiveGame] = relationship(
         back_populates="player_white",
-        foreign_keys="Game.player_white_id",
+        foreign_keys="LiveGame.player_white_id",
         init=False,
     )
 
-    game_black: Mapped[Game] = relationship(
+    game_black: Mapped[LiveGame] = relationship(
         back_populates="player_black",
-        foreign_keys="Game.player_black_id",
+        foreign_keys="LiveGame.player_black_id",
         init=False,
     )
 
     @property
-    def game(self) -> Game:
+    def game(self) -> LiveGame:
         return self.game_white or self.game_black
 
     color: Mapped[enums.Color]

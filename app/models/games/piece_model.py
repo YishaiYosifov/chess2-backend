@@ -9,26 +9,26 @@ from app.constants import enums
 from app.db import Base
 
 if TYPE_CHECKING:
-    from app.models.games.game_model import Game
+    from app.models.games.live_game_model import LiveGame
 
 
-class Piece(Base, kw_only=True):
+class GamePiece(Base, kw_only=True):
     """Represents a piece in a game. This class holds its index (position), name and color."""
 
-    __tablename__ = "piece_position"
+    __tablename__ = "game_piece"
 
-    piece_position_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    piece_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     piece: Mapped[enums.Piece]
     color: Mapped[enums.Color]
 
     index: Mapped[int] = mapped_column()
 
     game_id: Mapped[int] = mapped_column(
-        ForeignKey("game.game_id"),
+        ForeignKey("live_game.live_game_id"),
         init=False,
         index=True,
     )
-    game: Mapped[Game] = relationship(back_populates="pieces")
+    game: Mapped[LiveGame] = relationship(back_populates="pieces")
 
     __table_args__ = (
         UniqueConstraint(index, game_id, name="unique_piece_index"),

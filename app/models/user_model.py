@@ -7,7 +7,7 @@ from sqlalchemy import func, ForeignKey, DateTime, String
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_request_model import GameRequest
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
 from app.models.rating_model import Rating
 from app.constants import enums
 from app.db import Base
@@ -45,7 +45,7 @@ class User(Base, kw_only=True):
     )
 
     @property
-    def game(self) -> Game | None:
+    def game(self) -> LiveGame | None:
         if not self.player:
             return
 

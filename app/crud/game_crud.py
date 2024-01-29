@@ -7,8 +7,8 @@ from sqlalchemy import select, func
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
 from app.models.games.game_result_model import GameResult
-from app.models.games.piece_model import Piece
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
+from app.models.games.piece_model import GamePiece
 from app.models.user_model import AuthedUser, User
 from app.constants import constants, enums
 
@@ -95,7 +95,7 @@ def create_players(
     return inviter_player, recipient_player
 
 
-def create_pieces(db: Session, game: Game) -> None:
+def create_pieces(db: Session, game: LiveGame) -> None:
     """
     Create an entry for each piece in the starting position of game
 
@@ -107,7 +107,7 @@ def create_pieces(db: Session, game: Game) -> None:
 
     # fmt: off
     pieces = [
-        Piece(**piece.model_dump(), game=game)
+        GamePiece(**piece.model_dump(), game=game)
         for piece in constants.STARTING_POSITION
     ]
     # fmt: on
@@ -121,8 +121,8 @@ def create_game(
     variant: enums.Variant,
     time_control: int,
     increment: int,
-) -> Game:
-    game = Game(
+) -> LiveGame:
+    game = LiveGame(
         token=uuid.uuid4().hex[:8],
         variant=variant,
         time_control=time_control,

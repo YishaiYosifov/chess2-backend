@@ -7,6 +7,5 @@ addopts = "-p no:faker -s"
 testpaths = ["tests"]
 markers = ["unit", "integration", "slow"]
 
-
 [tool.black]
 line-length = 80

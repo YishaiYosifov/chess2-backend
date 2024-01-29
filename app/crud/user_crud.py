@@ -194,7 +194,7 @@ def delete_inactive_guests(db: Session, delete_minutes: int):
         )
     ).scalars()
 
-    # this looping over every guest and manually deleting them to
+    # this loops over every guest and manually deletes them to
     # cascade the deletion to relationships
     for guest in guests:
         db.delete(guest)

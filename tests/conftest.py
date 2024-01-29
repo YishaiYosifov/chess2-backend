@@ -1,6 +1,6 @@
 import os
 
-os.environ["ENV"] = ".env.test"
+os.environ["ENV"] = "test.env"
 
 from glob import glob
 import inspect

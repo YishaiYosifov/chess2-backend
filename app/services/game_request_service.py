@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.games.game_request_model import GameRequest
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
 from app.models.user_model import AuthedUser, User
 from app.constants import enums
 from app.schemas import game_schema
@@ -12,7 +12,7 @@ def start_game_request(
     db: Session,
     game_request: GameRequest,
     recipient: User | None = None,
-) -> Game:
+) -> LiveGame:
     """
     Create the game from the game request.
     This function creates the game and assigns the colors and sets the users last color.
@@ -52,7 +52,7 @@ def create_or_start_pool_game(
     db: Session,
     user: User,
     game_settings: game_schema.GameSettings,
-) -> Game | None:
+) -> LiveGame | None:
     """
     Search for a game request with a matching rating and game options.
     If a game request was found, start the game.

@@ -39,10 +39,6 @@ class GameSettings(BaseModel):
     increment: Annotated[int, Field(ge=0)]
 
 
-class GameRequest(GameSettings):
-    test: int
-
-
 class Piece(BaseModel):
     piece: enums.Piece
     color: enums.Color

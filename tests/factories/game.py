@@ -5,7 +5,7 @@ from factory import SubFactory, Faker
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_result_model import GameResult
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
 from tests.utils.factory_model import TypedSQLAlchemyFactory, TypedFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
@@ -14,10 +14,10 @@ from app.constants import enums
 from app.schemas import game_schema
 
 
-class GameFactory(TypedSQLAlchemyFactory[Game]):
+class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
     class Meta:
         sqlalchemy_session = TestScopedSession
-        model = Game
+        model = LiveGame
 
     token = Faker("pystr", max_chars=8)
 

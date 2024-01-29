@@ -6,15 +6,15 @@ from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, CheckConstraint, ForeignKey, DateTime, CHAR
 
 from app.models.games.runtime_player_info_model import RuntimePlayerInfo
-from app.models.games.piece_model import Piece
+from app.models.games.piece_model import GamePiece
 from app.constants import enums
 from app.db import Base
 
 
-class Game(Base, kw_only=True):
-    __tablename__ = "game"
+class LiveGame(Base, kw_only=True):
+    __tablename__ = "live_game"
 
-    game_id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    live_game_id: Mapped[int] = mapped_column(primary_key=True, init=False)
     token: Mapped[str] = mapped_column(CHAR(8))
 
     created_at: Mapped[datetime] = mapped_column(
@@ -54,7 +54,7 @@ class Game(Base, kw_only=True):
         index=True,
     )
 
-    pieces: Mapped[list[Piece]] = relationship(
+    pieces: Mapped[list[GamePiece]] = relationship(
         back_populates="game",
         init=False,
     )

@@ -13,7 +13,7 @@ from app.crud import user_crud
 from app.db import engine, SessionLocal, Base
 from app import deps
 
-from .routers import game_requests, settings, profile, auth
+from .routers import game_requests, live_game, settings, profile, auth
 
 
 @asynccontextmanager
@@ -55,6 +55,7 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(settings.router)
+app.include_router(live_game.router)
 app.include_router(game_requests.router)
 
 # openapi-generator doesn't support 3.1.0 "yet"

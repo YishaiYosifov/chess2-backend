@@ -9,7 +9,7 @@ from httpx import AsyncClient
 import pytest
 
 from app.models.games.game_request_model import GameRequest
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
 from app.models.user_model import User
 from tests.factories.user import (
     AuthedUserFactory,
@@ -19,7 +19,7 @@ from tests.factories.user import (
 from tests.factories.game import (
     GameSettingsFactory,
     GameRequestFactory,
-    GameFactory,
+    LiveGameFactory,
 )
 from app.constants import enums
 from tests.utils import mocks
@@ -49,7 +49,7 @@ class TestJoinPoolGame:
         """Test that you cannot start a game if you're already in a game"""
 
         user = AuthedUserFactory.create()
-        GameFactory.create(
+        LiveGameFactory.create(
             player_white=PlayerFactory.create(user=user), player_black=None
         )
 
@@ -86,7 +86,7 @@ class TestJoinPoolGame:
 
         assert response.status_code == HTTPStatus.OK
 
-        created_game = db.execute(select(Game)).scalar_one()
+        created_game = db.execute(select(LiveGame)).scalar_one()
         assert created_game
         assert ws_received == (
             f"{enums.WebsocketEvent.GAME_START.value}:"

@@ -9,7 +9,7 @@ from sqlalchemy import select
 import pytest
 
 from app.models.games.game_request_model import GameRequest
-from app.models.games.game_model import Game
+from app.models.games.live_game_model import LiveGame
 from app.models.user_model import User
 from tests.factories.user import AuthedUserFactory, GuestUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
@@ -175,7 +175,7 @@ class TestStartGameRequest:
             db, game_request, recipient
         )
 
-        assert db.execute(select(Game)).scalar_one() == game
+        assert db.execute(select(LiveGame)).scalar_one() == game
         assert not db.execute(select(GameRequest)).scalar()
 
         if color == enums.Color.WHITE:
