@@ -14,10 +14,10 @@ if TYPE_CHECKING:
     from app.models.user_model import User
 
 
-class RuntimePlayerInfo(Base, kw_only=True):
+class LivePlayer(Base, kw_only=True):
     """Stores user specifc information for an active game"""
 
-    __tablename__ = "runtime_player_info"
+    __tablename__ = "live_player"
 
     player_id: Mapped[int] = mapped_column(primary_key=True, init=False)
 

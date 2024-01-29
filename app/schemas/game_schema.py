@@ -8,7 +8,7 @@ from app.schemas import user_schema
 
 
 class FinishedGame(BaseModel):
-    token: Annotated[str, Field(max_length=8)]
+    token: str
 
     user_white: user_schema.PublicUserOut | None
     user_black: user_schema.PublicUserOut | None
@@ -44,3 +44,16 @@ class Piece(BaseModel):
     color: enums.Color
 
     index: int
+
+
+class Player(BaseModel):
+    user: user_schema.PublicUserOut
+
+
+class LiveGame(BaseModel):
+    token: str
+
+    player_white: Player
+    player_black: Player
+
+    pieces: list[Piece]

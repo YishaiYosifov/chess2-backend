@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, CheckConstraint, ForeignKey, DateTime, CHAR
 
-from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.live_player_model import LivePlayer
 from app.models.games.game_piece_model import GamePiece
 from app.constants import enums
 from app.db import Base
@@ -25,28 +25,28 @@ class LiveGame(Base, kw_only=True):
 
     # Relationship to the white player
     player_white_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_player_info.player_id"),
+        ForeignKey("live_player.player_id"),
         init=False,
         index=True,
     )
-    player_white: Mapped[RuntimePlayerInfo] = relationship(
+    player_white: Mapped[LivePlayer] = relationship(
         back_populates="game_white",
         foreign_keys=player_white_id,
     )
 
     # Relationship to the black player
     player_black_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_player_info.player_id"),
+        ForeignKey("live_player.player_id"),
         init=False,
         index=True,
     )
-    player_black: Mapped[RuntimePlayerInfo] = relationship(
+    player_black: Mapped[LivePlayer] = relationship(
         back_populates="game_black",
         foreign_keys=player_black_id,
     )
 
     turn_player_id: Mapped[int] = mapped_column(
-        ForeignKey("runtime_player_info.player_id"),
+        ForeignKey("live_player.player_id"),
         insert_default=lambda context: context.get_current_parameters()[
             "player_white_id"
         ],

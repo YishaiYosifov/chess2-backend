@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.live_player_model import LivePlayer
 from app.models.games.game_result_model import GameResult
 from app.models.games.game_piece_model import GamePiece
 from app.models.games.live_game_model import LiveGame
@@ -65,7 +65,7 @@ def total_count(db: Session, user: AuthedUser) -> int:
 
 def create_players(
     db: Session, inviter: User, recipient: User, time_control: int
-) -> tuple[RuntimePlayerInfo, RuntimePlayerInfo]:
+) -> tuple[LivePlayer, LivePlayer]:
     """
     Create the players for a game.
     Their colors will be decided by the inviter last color.
@@ -79,13 +79,13 @@ def create_players(
     inviter_color = random.choice(list(enums.Color))
     recipient_color = inviter_color.invert()
 
-    inviter_player = RuntimePlayerInfo(
+    inviter_player = LivePlayer(
         user=inviter,
         color=inviter_color,
         time_remaining=time_control,
     )
 
-    recipient_player = RuntimePlayerInfo(
+    recipient_player = LivePlayer(
         user=recipient,
         color=recipient_color,
         time_remaining=time_control,
@@ -116,8 +116,8 @@ def create_pieces(db: Session, game: LiveGame) -> None:
 
 def create_game(
     db: Session,
-    player1: RuntimePlayerInfo,
-    player2: RuntimePlayerInfo,
+    player1: LivePlayer,
+    player2: LivePlayer,
     variant: enums.Variant,
     time_control: int,
     increment: int,

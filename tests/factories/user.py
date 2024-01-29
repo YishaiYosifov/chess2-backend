@@ -1,6 +1,6 @@
 import factory
 
-from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.live_player_model import LivePlayer
 from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.services.auth_service import hash_password
 from app.models.user_model import AuthedUser, GuestUser
@@ -35,10 +35,10 @@ class AuthedUserFactory(TypedSQLAlchemyFactory[AuthedUser]):
         obj.hashed_password = hash_password(extracted)
 
 
-class PlayerFactory(TypedSQLAlchemyFactory[RuntimePlayerInfo]):
+class PlayerFactory(TypedSQLAlchemyFactory[LivePlayer]):
     class Meta:
         sqlalchemy_session = TestScopedSession
-        model = RuntimePlayerInfo
+        model = LivePlayer
 
     color = enums.Color.WHITE
     user = factory.SubFactory(AuthedUserFactory)

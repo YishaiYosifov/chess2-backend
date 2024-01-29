@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 import pytest
 
-from app.models.games.runtime_player_info_model import RuntimePlayerInfo
+from app.models.games.live_player_model import LivePlayer
 from app.models.games.game_result_model import GameResult
 from app.models.games.game_piece_model import GamePiece
 from app.models.user_model import AuthedUser
@@ -124,7 +124,7 @@ def test_create_players(
         db, inviter, recipient, time_control=time_control
     )
 
-    assert len(db.execute(select(RuntimePlayerInfo)).all()) == 2
+    assert len(db.execute(select(LivePlayer)).all()) == 2
     assert (
         inviter_player.time_remaining
         == recipient_player.time_remaining
