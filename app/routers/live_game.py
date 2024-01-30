@@ -6,11 +6,11 @@ from app.schemas import response_schema, game_schema
 from app.crud import game_crud
 from app import deps
 
-router = APIRouter(prefix="/live-game", tags=["live-game"])
+router = APIRouter(prefix="/live-game/{token}", tags=["live-game"])
 
 
 @router.get(
-    "/",
+    "/load",
     response_model=game_schema.LiveGame,
     responses={
         HTTPStatus.NOT_FOUND: {

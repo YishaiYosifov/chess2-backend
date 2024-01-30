@@ -1,5 +1,5 @@
 [tool.pytest-watcher]
-runner_args = "."
+clear = true
 ignore_patterns = [".\\env\\*"]
 
 [tool.pytest.ini_options]

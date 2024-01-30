@@ -48,6 +48,7 @@ class Piece(BaseModel):
 
 class Player(BaseModel):
     user: user_schema.PublicUserOut
+    color: enums.Color
     time_remaining: float
 
 
