@@ -21,6 +21,8 @@ from app.constants import enums
 from app.schemas import game_schema
 from app.crud import game_crud
 
+pytestmark = pytest.mark.integration
+
 
 class GameHistory(NamedTuple):
     user1: AuthedUser
@@ -29,7 +31,7 @@ class GameHistory(NamedTuple):
 
 
 @pytest.fixture
-def game_history(db, request: SubRequest) -> GameHistory:
+def game_history(db: Session, request: SubRequest) -> GameHistory:
     num_of_games: int = request.param
 
     user1 = AuthedUserFactory.create()
@@ -43,7 +45,6 @@ def game_history(db, request: SubRequest) -> GameHistory:
     return GameHistory(user1=user1, user2=user2, games=games)
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize("game_history", (0, 3), indirect=["game_history"])
 def test_total(db: Session, game_history: GameHistory):
     assert game_crud.total_count(db, game_history.user1) == len(
@@ -51,7 +52,6 @@ def test_total(db: Session, game_history: GameHistory):
     )
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize(
     "page, per_page, game_history",
     [(0, 2, 3), (1, 2, 5), (0, 2, 1), (0, 2, 0)],
@@ -88,7 +88,6 @@ def test_paginate_history(
     ), len(game_history.games)
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize(
     "random_color_results, expected_inviter_color, expected_recipient_color",
     [
@@ -138,7 +137,6 @@ def test_create_players(
     assert recipient_player.color == expected_recipient_color
 
 
-@pytest.mark.integration
 def test_create_pieces(db: Session, mocker: MockerFixture):
     """
     Test if the `create_pieces` function successfully creates all the pieces from the pieces constant
@@ -177,7 +175,6 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
         assert piece.piece == expected_piece_data.piece
 
 
-@pytest.mark.integration
 def test_create_game(db: Session, mocker: MockerFixture):
     """
     Test if the `create_game` crud function correctly assigns the players to the correct color,
@@ -211,3 +208,19 @@ def test_create_game(db: Session, mocker: MockerFixture):
     assert game.player_white == player_white
     assert game.player_black == player_black
     assert game.token == uuid_hex[:8]
+
+
+class TestFetchLiveGame:
+    def test_correct_token(self, db: Session):
+        """Try to fetch a live game with the correct token"""
+
+        game = LiveGameFactory.create()
+        fetched_game = game_crud.fetch_live_game(db, game.token)
+        assert game == fetched_game
+
+    def test_incorrect_token(self, db: Session):
+        """Try to fetch a live game with a token that does not exist"""
+
+        LiveGameFactory.create()
+        fetched_game = game_crud.fetch_live_game(db, "test token")
+        assert not fetched_game

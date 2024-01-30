@@ -134,3 +134,16 @@ def create_game(
     )
     db.add(game)
     return game
+
+
+def fetch_live_game(db: Session, token: str) -> LiveGame | None:
+    """
+    Fetch a live game by token
+
+    :param db: the database session
+    :param token: the game token to fetch
+
+    :return: a game, or None if the game was not found
+    """
+
+    return db.execute(select(LiveGame).filter_by(token=token)).scalar()

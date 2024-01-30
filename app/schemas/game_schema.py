@@ -48,6 +48,7 @@ class Piece(BaseModel):
 
 class Player(BaseModel):
     user: user_schema.PublicUserOut
+    time_remaining: float
 
 
 class LiveGame(BaseModel):
@@ -55,5 +56,6 @@ class LiveGame(BaseModel):
 
     player_white: Player
     player_black: Player
+    turn_player_id: int
 
     pieces: list[Piece]
