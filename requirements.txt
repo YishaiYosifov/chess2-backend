@@ -14,7 +14,6 @@ charset-normalizer==3.3.2
 click==8.1.7
 colorama==0.4.6
 dnspython==2.4.2
-ecdsa==0.18.0
 email-validator==2.1.0.post1
 execnet==2.0.2
 factory-boy==3.3.0
@@ -55,13 +54,13 @@ pycparser==2.21
 pydantic==2.5.3
 pydantic-settings==2.0.3
 pydantic_core==2.14.6
+PyJWT==2.8.0
 pyparsing==3.1.1
 pytest==8.0.0
 pytest-mock==3.12.0
 pytest-watcher==0.3.5
 python-dateutil==2.8.2
 python-dotenv==1.0.0
-python-jose==3.3.0
 python-multipart==0.0.6
 pytz==2023.3.post1
 PyYAML==6.0.1
