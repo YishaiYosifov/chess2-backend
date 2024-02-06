@@ -5,7 +5,6 @@ import time
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from jwt import PyJWTError
 import jwt
 
 from app.models.jti_blocklist_model import JTIBlocklist
@@ -137,7 +136,7 @@ def _decode_jwt_token(
             options=options,
         )
         return payload
-    except PyJWTError:
+    except jwt.PyJWTError:
         return {}
 
 
