@@ -43,7 +43,8 @@ class Piece(BaseModel):
     piece: enums.Piece
     color: enums.Color
 
-    index: int
+    x: int
+    y: int
 
 
 class Player(BaseModel):

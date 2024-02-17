@@ -22,12 +22,11 @@ class TestLoadGame:
         :param fetched_pieces: the pieces fetched from the endpoint
         """
 
-        pieces.sort(key=lambda x: x.index)
-        fetched_pieces.sort(key=lambda x: x["index"])
         for existing_piece, fetched_piece in zip(pieces, fetched_pieces):
             assert existing_piece.piece.value == fetched_piece["piece"]
             assert existing_piece.color.value == fetched_piece["color"]
-            assert existing_piece.index == fetched_piece["index"]
+            assert existing_piece.x == fetched_piece["x"]
+            assert existing_piece.y == fetched_piece["y"]
 
     def _assert_player(self, player: LivePlayer, fetched_player: dict) -> None:
         """

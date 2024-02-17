@@ -145,16 +145,16 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
 
     starting_position = [
         game_schema.Piece(
-            piece=enums.Piece.ROOK, color=enums.Color.WHITE, index=0
+            piece=enums.Piece.ROOK, color=enums.Color.WHITE, x=0, y=0
         ),
         game_schema.Piece(
-            piece=enums.Piece.QUEEN, color=enums.Color.WHITE, index=10
+            piece=enums.Piece.QUEEN, color=enums.Color.WHITE, x=0, y=1
         ),
         game_schema.Piece(
-            piece=enums.Piece.PAWN, color=enums.Color.BLACK, index=15
+            piece=enums.Piece.PAWN, color=enums.Color.BLACK, x=5, y=1
         ),
         game_schema.Piece(
-            piece=enums.Piece.HORSE, color=enums.Color.BLACK, index=20
+            piece=enums.Piece.HORSE, color=enums.Color.BLACK, x=0, y=2
         ),
     ]
     mocker.patch.object(
@@ -170,7 +170,8 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
 
     assert len(created_pieces) == len(starting_position)
     for piece, expected_piece_data in zip(created_pieces, starting_position):
-        assert piece.index == expected_piece_data.index
+        assert piece.x == expected_piece_data.x
+        assert piece.y == expected_piece_data.y
         assert piece.color == expected_piece_data.color
         assert piece.piece == expected_piece_data.piece
 

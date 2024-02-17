@@ -31,7 +31,7 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
 
     @factory.post_generation
     def pieces(obj: LiveGame, create: bool, extracted: list[game_schema.Piece] | None, **kwargs):  # type: ignore
-        """Automatically created pieces"""
+        """Automatically create pieces"""
 
         if not create:
             return
@@ -46,7 +46,8 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
                     game=obj,
                     piece=piece.piece,
                     color=piece.color,
-                    index=piece.index,
+                    x=piece.x,
+                    y=piece.y,
                 )
             )
 

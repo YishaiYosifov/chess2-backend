@@ -2,7 +2,8 @@ from abc import ABC
 
 from app.models.games import game_piece_model
 from app.constants import constants
-from app.types import Board
+
+Board = dict[int, game_piece_model.GamePiece]
 
 
 class Piece(ABC):
@@ -59,3 +60,7 @@ class Piece(ABC):
     ) -> bool:
         captured = board.get(check_idx)
         return captured is not None and capturer.color != captured.color
+
+
+class Rook(Piece):
+    offsets = [1, -1]
