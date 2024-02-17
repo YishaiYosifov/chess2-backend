@@ -1,10 +1,8 @@
 from abc import ABC
 
 from app.models.games import game_piece_model
-from app.constants import constants
-from app.types import Point
-
-Board = dict[Point, game_piece_model.GamePiece]
+from app.constants import constants, enums
+from app.types import Point, Board
 
 
 class Piece(ABC):
@@ -29,8 +27,7 @@ class Piece(ABC):
         for offset in cls.offsets:
             check_pos = position
             while True:
-                check_pos.x += offset.x
-                check_pos.y += offset.y
+                check_pos += offset
 
                 # Out of bound
                 if (
@@ -42,7 +39,7 @@ class Piece(ABC):
                     break
 
                 # Check if there is an uncapturable piece in the way
-                can_capture = cls.can_capture(board, curr_piece, check_pos)
+                can_capture = cls._can_capture(board, curr_piece, check_pos)
                 is_piece = board.get(check_pos) is not None
                 if is_piece and not can_capture:
                     break
@@ -56,10 +53,17 @@ class Piece(ABC):
         return legal_moves
 
     @staticmethod
-    def can_capture(
+    def _can_capture(
         board: Board,
         capturer: game_piece_model.GamePiece,
         check_pos: Point,
     ) -> bool:
         captured = board.get(check_pos)
         return captured is not None and capturer.color != captured.color
+
+
+class Rook(Piece):
+    offsets = [Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)]
+
+
+PIECES = {enums.Piece.ROOK: Rook}

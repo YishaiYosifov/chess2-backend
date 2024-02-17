@@ -25,23 +25,23 @@ TestScopedSession = scoped_session(sessionmaker())
 
 
 @pytest.fixture(scope="session")
-def client():
+def client(connect_websockets):
     yield TestClient(app)
 
     for file in glob("uploads/*"):
         shutil.rmtree(file)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture
+def async_client(connect_websockets):
+    return AsyncClient(app=app, base_url="http://testserver")
+
+
+@pytest.fixture(scope="session")
 async def connect_websockets(anyio_backend):
     await ws_server_instance.connect_pubsub()
     yield
     await ws_server_instance.disconnect_pubsub()
-
-
-@pytest.fixture
-def async_client():
-    return AsyncClient(app=app, base_url="http://testserver")
 
 
 @pytest.fixture
