@@ -2,8 +2,9 @@ from abc import ABC
 
 from app.models.games import game_piece_model
 from app.constants import constants
+from app.types import Point
 
-Board = dict[int, game_piece_model.GamePiece]
+Board = dict[Point, game_piece_model.GamePiece]
 
 
 class Piece(ABC):
@@ -11,14 +12,10 @@ class Piece(ABC):
     slide: bool = True
 
     # how much to offset the index each move
-    offsets: list[int] = []
+    offsets: list[Point] = []
 
     @classmethod
-    def calc_legal_moves(
-        cls,
-        board: Board,
-        idx: int,
-    ):
+    def calc_legal_moves(cls, board: Board, position: Point):
         """
         Get a list of all the legal board indices the piece can move to
 
@@ -26,25 +23,31 @@ class Piece(ABC):
         :param idx: the index of the piece
         """
 
-        legal_moves: list[int] = []
-        curr_piece = board[idx]
+        legal_moves: list[Point] = []
+        curr_piece = board[position]
 
         for offset in cls.offsets:
-            check_idx = idx
+            check_pos = position
             while True:
-                check_idx += offset
+                check_pos.x += offset.x
+                check_pos.y += offset.y
 
                 # Out of bound
-                if constants.MAILBOX[check_idx] == -1:
+                if (
+                    check_pos.y < 0
+                    or check_pos.y >= constants.BOARD_HEIGHT
+                    or check_pos.x < 0
+                    or check_pos.x >= constants.BOARD_WIDTH
+                ):
                     break
 
                 # Check if there is an uncapturable piece in the way
-                can_capture = cls.can_capture(board, curr_piece, check_idx)
-                is_piece = board.get(check_idx) is not None
+                can_capture = cls.can_capture(board, curr_piece, check_pos)
+                is_piece = board.get(check_pos) is not None
                 if is_piece and not can_capture:
                     break
 
-                legal_moves.append(check_idx)
+                legal_moves.append(check_pos)
 
                 # Is this the final time the piece can move in this direction?
                 if not cls.slide or is_piece:
@@ -56,11 +59,7 @@ class Piece(ABC):
     def can_capture(
         board: Board,
         capturer: game_piece_model.GamePiece,
-        check_idx: int,
+        check_pos: Point,
     ) -> bool:
-        captured = board.get(check_idx)
+        captured = board.get(check_pos)
         return captured is not None and capturer.color != captured.color
-
-
-class Rook(Piece):
-    offsets = [1, -1]

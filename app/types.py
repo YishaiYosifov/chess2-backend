@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Annotated
 import json
 
@@ -17,3 +18,9 @@ def valid_alpha3(value: str) -> str:
 
 
 CountryAlpha3 = Annotated[str, Field(pattern=r"^[A-Z]{3}$"), valid_alpha3]
+
+
+@dataclass(order=True)
+class Point:
+    x: int
+    y: int
