@@ -23,7 +23,9 @@ class TestLoadGame:
         """
 
         for existing_piece, fetched_piece in zip(pieces, fetched_pieces):
-            assert existing_piece.piece.value == fetched_piece["piece"]
+            assert (
+                existing_piece.piece_type.value == fetched_piece["piece_type"]
+            )
             assert existing_piece.color.value == fetched_piece["color"]
             assert existing_piece.x == fetched_piece["x"]
             assert existing_piece.y == fetched_piece["y"]

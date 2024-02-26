@@ -80,4 +80,8 @@ class Rook(Piece):
     offsets = [Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)]
 
 
+class Bishop(Piece):
+    offsets = [Point(-1, 1), Point(-1, -1), Point(1, 1), Point(1, -1)]
+
+
 PIECES = {enums.Piece.ROOK: Rook}

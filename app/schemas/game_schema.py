@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated
 
@@ -41,7 +40,7 @@ class GameSettings(BaseModel):
 
 
 class Piece(BaseModel):
-    piece: enums.Piece
+    piece_type: enums.Piece
     color: enums.Color
 
     x: int

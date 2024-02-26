@@ -44,7 +44,7 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
             obj.pieces.append(
                 GamePieceFactory.create(
                     game=obj,
-                    piece=piece.piece,
+                    piece_type=piece.piece_type,
                     color=piece.color,
                     x=piece.x,
                     y=piece.y,
@@ -59,7 +59,7 @@ class GamePieceFactory(TypedSQLAlchemyFactory[GamePiece]):
 
     piece_id = factory.Sequence(lambda n: n)
     game = factory.SubFactory(LiveGameFactory)
-    piece = enums.Piece.PAWN
+    piece_type = enums.Piece.PAWN
     color = enums.Color.WHITE
 
 

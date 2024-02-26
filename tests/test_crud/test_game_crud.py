@@ -145,16 +145,16 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
 
     starting_position = [
         game_schema.Piece(
-            piece=enums.Piece.ROOK, color=enums.Color.WHITE, x=0, y=0
+            piece_type=enums.Piece.ROOK, color=enums.Color.WHITE, x=0, y=0
         ),
         game_schema.Piece(
-            piece=enums.Piece.QUEEN, color=enums.Color.WHITE, x=0, y=1
+            piece_type=enums.Piece.QUEEN, color=enums.Color.WHITE, x=0, y=1
         ),
         game_schema.Piece(
-            piece=enums.Piece.PAWN, color=enums.Color.BLACK, x=5, y=1
+            piece_type=enums.Piece.PAWN, color=enums.Color.BLACK, x=5, y=1
         ),
         game_schema.Piece(
-            piece=enums.Piece.HORSE, color=enums.Color.BLACK, x=0, y=2
+            piece_type=enums.Piece.HORSE, color=enums.Color.BLACK, x=0, y=2
         ),
     ]
     mocker.patch.object(
@@ -173,7 +173,7 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
         assert piece.x == expected_piece_data.x
         assert piece.y == expected_piece_data.y
         assert piece.color == expected_piece_data.color
-        assert piece.piece == expected_piece_data.piece
+        assert piece.piece_type == expected_piece_data.piece_type
 
 
 def test_create_game(db: Session, mocker: MockerFixture):

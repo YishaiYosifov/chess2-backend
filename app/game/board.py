@@ -19,7 +19,7 @@ class Board:
             # Raise an error if the piece is out of the provided board size
             if self.is_out_of_bound(point):
                 raise ValueError(
-                    f"{piece.color.value} {piece.piece.value}'s position is out of "
+                    f"{piece.color.value} {piece.piece_type.value}'s position is out of "
                     f"the boundaries of the board. "
                     f"(Board is {board_width}x{board_height}, piece is at {point})"
                 )

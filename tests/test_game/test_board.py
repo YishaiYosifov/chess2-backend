@@ -12,8 +12,8 @@ from app.types import Point
     "pieces",
     [
         [
-            GamePieceFactory.build(piece=enums.Piece.PAWN, x=0, y=0),
-            GamePieceFactory.build(piece=enums.Piece.ROOK, x=0, y=9),
+            GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=0),
+            GamePieceFactory.build(piece_type=enums.Piece.ROOK, x=0, y=9),
         ],
         [],
     ],
@@ -32,20 +32,20 @@ def test_initializes_from_pieces(pieces: list[GamePiece]):
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "board_width, board_height, pieces",
+    "pieces",
     [
-        (10, 10, [GamePieceFactory.build(piece=enums.Piece.PAWN, x=-1, y=0)]),
-        (10, 10, [GamePieceFactory.build(piece=enums.Piece.PAWN, x=10, y=0)]),
-        (10, 10, [GamePieceFactory.build(piece=enums.Piece.PAWN, x=0, y=-1)]),
-        (10, 10, [GamePieceFactory.build(piece=enums.Piece.PAWN, x=0, y=10)]),
+        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=-1, y=0)],
+        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=10, y=0)],
+        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=-1)],
+        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=10)],
     ],
 )
 def test_raises_error_when_initializing_out_of_bound(
-    board_width: int,
-    board_height: int,
     pieces: list[GamePiece],
 ):
     """Test that ValueError is raised when a piece is attempted to be placed out of the board"""
+    board_width = 10
+    board_height = 10
 
     with pytest.raises(ValueError):
         Board(pieces, board_width, board_height)
