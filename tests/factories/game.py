@@ -59,6 +59,8 @@ class GamePieceFactory(TypedSQLAlchemyFactory[GamePiece]):
 
     piece_id = factory.Sequence(lambda n: n)
     game = factory.SubFactory(LiveGameFactory)
+    piece = enums.Piece.PAWN
+    color = enums.Color.WHITE
 
 
 class GameResultFactory(TypedSQLAlchemyFactory[GameResult]):

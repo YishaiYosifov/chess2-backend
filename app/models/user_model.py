@@ -79,6 +79,11 @@ class AuthedUser(User, kw_only=True):
     )
     hashed_password: Mapped[str]
 
+    first_name: Mapped[str] = mapped_column(String(50), default="")
+    last_name: Mapped[str] = mapped_column(String(50), default="")
+
+    location: Mapped[str] = mapped_column(String(40), default="")
+
     email: Mapped[str] = mapped_column(String(256), unique=True, index=True)
     is_email_verified: Mapped[bool] = mapped_column(default=False)
 

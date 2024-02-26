@@ -45,8 +45,11 @@ class UserIn(BaseModel):
 class PublicUserOut(BaseModel):
     user_id: int
     username: str
+    first_name: str = ""
+    last_name: str = ""
     about: str
-    country_alpha3: CountryAlpha3
+    country_alpha3: CountryAlpha3 = "INT"
+    location: str = ""
     pfp_last_changed: datetime
 
 
@@ -56,7 +59,10 @@ class PrivateUserOut(PublicUserOut):
 
 
 class EditableProfile(BaseModel):
+    first_name: Annotated[str, Field(max_length=50)]
+    last_name: Annotated[str, Field(max_length=50)]
     country_alpha3: CountryAlpha3
+    location: Annotated[str, Field(max_length=40)]
     about: Annotated[str, Field(max_length=300)]
 
 
