@@ -145,16 +145,16 @@ def test_create_pieces(db: Session, mocker: MockerFixture):
 
     starting_position = [
         game_schema.Piece(
-            piece_type=enums.Piece.ROOK, color=enums.Color.WHITE, x=0, y=0
+            piece_type=enums.PieceType.ROOK, color=enums.Color.WHITE, x=0, y=0
         ),
         game_schema.Piece(
-            piece_type=enums.Piece.QUEEN, color=enums.Color.WHITE, x=0, y=1
+            piece_type=enums.PieceType.QUEEN, color=enums.Color.WHITE, x=0, y=1
         ),
         game_schema.Piece(
-            piece_type=enums.Piece.PAWN, color=enums.Color.BLACK, x=5, y=1
+            piece_type=enums.PieceType.PAWN, color=enums.Color.BLACK, x=5, y=1
         ),
         game_schema.Piece(
-            piece_type=enums.Piece.HORSE, color=enums.Color.BLACK, x=0, y=2
+            piece_type=enums.PieceType.HORSE, color=enums.Color.BLACK, x=0, y=2
         ),
     ]
     mocker.patch.object(

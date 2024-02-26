@@ -11,7 +11,7 @@ from app.game import pieces
 class TestRook:
     def test_moves(self):
         board = Board(
-            [GamePieceFactory.build(piece_type=enums.Piece.ROOK, x=4, y=4)]
+            [GamePieceFactory.build(piece_type=enums.PieceType.ROOK, x=4, y=4)]
         )
 
         legal_moves = set(
@@ -35,7 +35,9 @@ class TestRook:
     def test_friendly_piece_blocks_path(self):
         board = Board(
             [
-                GamePieceFactory.build(piece_type=enums.Piece.ROOK, x=4, y=4),
+                GamePieceFactory.build(
+                    piece_type=enums.PieceType.ROOK, x=4, y=4
+                ),
                 GamePieceFactory.build(x=4, y=6),
             ]
         )
@@ -56,7 +58,9 @@ class TestRook:
     def test_captures_enemy_piece(self):
         board = Board(
             [
-                GamePieceFactory.build(piece_type=enums.Piece.ROOK, x=4, y=4),
+                GamePieceFactory.build(
+                    piece_type=enums.PieceType.ROOK, x=4, y=4
+                ),
                 GamePieceFactory.build(color=enums.Color.BLACK, x=4, y=6),
             ]
         )

@@ -40,7 +40,7 @@ class GameSettings(BaseModel):
 
 
 class Piece(BaseModel):
-    piece_type: enums.Piece
+    piece_type: enums.PieceType
     color: enums.Color
 
     x: int

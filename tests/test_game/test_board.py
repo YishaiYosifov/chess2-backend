@@ -12,8 +12,8 @@ from app.types import Point
     "pieces",
     [
         [
-            GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=0),
-            GamePieceFactory.build(piece_type=enums.Piece.ROOK, x=0, y=9),
+            GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=0),
+            GamePieceFactory.build(piece_type=enums.PieceType.ROOK, x=0, y=9),
         ],
         [],
     ],
@@ -34,10 +34,10 @@ def test_initializes_from_pieces(pieces: list[GamePiece]):
 @pytest.mark.parametrize(
     "pieces",
     [
-        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=-1, y=0)],
-        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=10, y=0)],
-        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=-1)],
-        [GamePieceFactory.build(piece_type=enums.Piece.PAWN, x=0, y=10)],
+        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=-1, y=0)],
+        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=10, y=0)],
+        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=-1)],
+        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=10)],
     ],
 )
 def test_raises_error_when_initializing_out_of_bound(
