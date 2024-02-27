@@ -44,6 +44,7 @@ def test_raises_error_when_initializing_out_of_bound(
     pieces: list[GamePiece],
 ):
     """Test that ValueError is raised when a piece is attempted to be placed out of the board"""
+
     board_width = 10
     board_height = 10
 
