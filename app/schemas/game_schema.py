@@ -10,8 +10,8 @@ from app.schemas import user_schema
 class FinishedGame(BaseModel):
     token: str
 
-    user_white: user_schema.PublicUserOut | None
-    user_black: user_schema.PublicUserOut | None
+    user_white: user_schema.UnauthedProfileOut | None
+    user_black: user_schema.UnauthedProfileOut | None
     results: enums.GameResult
     variant: enums.Variant
     time_control: int
@@ -48,7 +48,7 @@ class Piece(BaseModel):
 
 
 class Player(BaseModel):
-    user: user_schema.PublicUserOut
+    user: user_schema.UnauthedProfileOut
     color: enums.Color
     time_remaining: float
 

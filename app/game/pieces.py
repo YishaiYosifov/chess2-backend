@@ -84,4 +84,7 @@ class Bishop(Piece):
     offsets = [Point(-1, 1), Point(-1, -1), Point(1, 1), Point(1, -1)]
 
 
-PIECES = {enums.PieceType.ROOK: Rook}
+PIECES: dict[enums.PieceType, type[Piece]] = {
+    enums.PieceType.ROOK: Rook,
+    enums.PieceType.BISHOP: Bishop,
+}

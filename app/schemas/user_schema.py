@@ -3,6 +3,7 @@ from typing import Annotated
 
 from pydantic import field_validator, BaseModel, EmailStr, Field
 
+from app.constants import enums
 from app.types import CountryAlpha3
 
 
@@ -42,20 +43,27 @@ class UserIn(BaseModel):
         return password
 
 
-class PublicUserOut(BaseModel):
+class AuthedProfileOut(BaseModel):
     user_id: int
+    user_type: enums.UserType
     username: str
-    first_name: str = ""
-    last_name: str = ""
+    first_name: str
+    last_name: str
     about: str
-    country_alpha3: CountryAlpha3 = "INT"
-    location: str = ""
+    country_alpha3: CountryAlpha3
+    location: str
     pfp_last_changed: datetime
 
 
-class PrivateUserOut(PublicUserOut):
+class PrivateAuthedProfileOut(AuthedProfileOut):
     email: EmailStr
     username_last_changed: datetime | None
+
+
+class UnauthedProfileOut(BaseModel):
+    user_id: int
+    user_type: enums.UserType
+    username: str
 
 
 class EditableProfile(BaseModel):

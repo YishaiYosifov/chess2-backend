@@ -23,7 +23,7 @@ user_not_found_response = {
 
 @router.get(
     "/{target}/info",
-    response_model=user_schema.PublicUserOut,
+    response_model=user_schema.AuthedProfileOut,
     responses={**user_not_found_response},
 )
 def get_info(target: deps.TargetOrMeDep):
@@ -31,7 +31,10 @@ def get_info(target: deps.TargetOrMeDep):
     return target
 
 
-@router.get("/me/info-sensitive", response_model=user_schema.PrivateUserOut)
+@router.get(
+    "/me/info-sensitive",
+    response_model=user_schema.PrivateAuthedProfileOut,
+)
 def get_info_sensitive(user: deps.AuthedUserDep):
     """Fetch the sensitive profile of user"""
     return user
