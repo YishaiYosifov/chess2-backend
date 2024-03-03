@@ -76,15 +76,45 @@ class Piece(ABC):
         return captured is not None and capturer.color != captured.color
 
 
+STRAIGHT_OFFSETS = [Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)]
+DIAGONAL_OFFSETS = [Point(-1, 1), Point(-1, -1), Point(1, 1), Point(1, -1)]
+
+
+class Queen(Piece):
+    offsets = STRAIGHT_OFFSETS + DIAGONAL_OFFSETS
+
+
 class Rook(Piece):
-    offsets = [Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)]
+    offsets = STRAIGHT_OFFSETS
+
+
+class King(Piece):
+    offsets = STRAIGHT_OFFSETS + DIAGONAL_OFFSETS
+    slide = False
+
+
+class Horsie(Piece):
+    offsets = [
+        Point(1, 2),
+        Point(1, -2),
+        Point(-1, 2),
+        Point(-1, -2),
+        Point(2, 1),
+        Point(2, -1),
+        Point(-2, 1),
+        Point(-2, -1),
+    ]
+    slide = False
 
 
 class Bishop(Piece):
-    offsets = [Point(-1, 1), Point(-1, -1), Point(1, 1), Point(1, -1)]
+    offsets = DIAGONAL_OFFSETS
 
 
 PIECES: dict[enums.PieceType, type[Piece]] = {
+    enums.PieceType.KING: King,
+    enums.PieceType.QUEEN: Queen,
     enums.PieceType.ROOK: Rook,
+    enums.PieceType.HORSIE: Horsie,
     enums.PieceType.BISHOP: Bishop,
 }

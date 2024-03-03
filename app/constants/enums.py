@@ -37,7 +37,7 @@ class PieceType(Enum):
     ANTIQUEEN = "antiqueen"
     ARCHBISHOP = "archbishop"
     BISHOP = "bishop"
-    HORSE = "horse"
+    HORSIE = "horse"
     PAWN = "pawn"
     CHILD_PAWN = "child_pawn"
 
