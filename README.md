@@ -53,7 +53,7 @@ User settings can be updated in the `/settings` router. Settings include
 
 ### Gameplay
 
-Not yet implemented in this rewrite, currently being worked on in the piece-movement branch
+Not yet implemented in this rewrite, currently being worked on
 
 ## Key modules and directories
 
