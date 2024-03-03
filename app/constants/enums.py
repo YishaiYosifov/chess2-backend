@@ -28,7 +28,7 @@ class UserType(Enum):
     GUEST = "guest"
 
 
-class Piece(Enum):
+class PieceType(Enum):
     KING = "king"
     QUEEN = "queen"
     ROOK = "rook"

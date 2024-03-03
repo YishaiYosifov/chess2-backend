@@ -14,7 +14,7 @@ from app import deps
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
-@router.patch("/profile", response_model=user_schema.PrivateUserOut)
+@router.patch("/profile", response_model=user_schema.PrivateAuthedProfileOut)
 def update_profile(
     db: deps.DBDep,
     user: deps.AuthedUserDep,
@@ -29,7 +29,7 @@ def update_profile(
 
 @router.put(
     "/email",
-    response_model=user_schema.PrivateUserOut,
+    response_model=user_schema.PrivateAuthedProfileOut,
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Email taken",
@@ -62,7 +62,7 @@ def change_email(
     )
 
 
-@router.put("/password", response_model=user_schema.PrivateUserOut)
+@router.put("/password", response_model=user_schema.PrivateAuthedProfileOut)
 def change_password(
     db: deps.DBDep,
     user: Annotated[AuthedUser, Depends(deps.GetCurrentUser(fresh=True))],
@@ -79,7 +79,7 @@ def change_password(
 
 @router.put(
     "/username",
-    response_model=user_schema.PrivateUserOut,
+    response_model=user_schema.PrivateAuthedProfileOut,
     responses={
         HTTPStatus.CONFLICT: {
             "description": "Username taken",

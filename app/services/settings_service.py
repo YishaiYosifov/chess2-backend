@@ -11,7 +11,7 @@ from app.utils import email_verification
 from app.crud import user_crud
 from app.db import Base
 
-from ..models.user_model import AuthedUser
+from ..models.user_model import AuthedUser, User
 
 
 class Setting(ABC):
@@ -138,7 +138,7 @@ def update_setting_single(
 
 
 def update_settings_many(
-    db: Session, target: Base, to_edit: dict[str, Any]
+    db: Session, target: User, to_edit: dict[str, Any]
 ) -> Base:
     for setting, value in to_edit.items():
         setattr(target, setting, value)

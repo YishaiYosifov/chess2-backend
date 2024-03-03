@@ -4,31 +4,11 @@ from httpx import AsyncClient
 import pytest
 
 from app.models.games.live_player_model import LivePlayer
-from app.models.games.game_piece_model import GamePiece
 from tests.factories.game import LiveGameFactory
 
 
 @pytest.mark.usefixtures("db")
 class TestLoadGame:
-    def _assert_pieces(
-        self,
-        pieces: list[GamePiece],
-        fetched_pieces: list[dict],
-    ) -> None:
-        """
-        Assert the existing pieces and the fetched pieces are equal
-
-        :param pieces: the existing game pieces
-        :param fetched_pieces: the pieces fetched from the endpoint
-        """
-
-        pieces.sort(key=lambda x: x.index)
-        fetched_pieces.sort(key=lambda x: x["index"])
-        for existing_piece, fetched_piece in zip(pieces, fetched_pieces):
-            assert existing_piece.piece.value == fetched_piece["piece"]
-            assert existing_piece.color.value == fetched_piece["color"]
-            assert existing_piece.index == fetched_piece["index"]
-
     def _assert_player(self, player: LivePlayer, fetched_player: dict) -> None:
         """
         Assert a player and the fetched player are equal
@@ -53,7 +33,13 @@ class TestLoadGame:
         data = response.json()
 
         assert "pieces" in data
-        self._assert_pieces(game.pieces, data["pieces"])
+        for existing_piece, fetched_piece in zip(game.pieces, data["pieces"]):
+            assert (
+                existing_piece.piece_type.value == fetched_piece["piece_type"]
+            )
+            assert existing_piece.color.value == fetched_piece["color"]
+            assert existing_piece.x == fetched_piece["x"]
+            assert existing_piece.y == fetched_piece["y"]
 
         assert "player_white" in data
         assert "player_black" in data

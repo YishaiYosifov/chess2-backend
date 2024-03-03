@@ -3,6 +3,7 @@ from typing import Annotated
 
 from pydantic import field_validator, BaseModel, EmailStr, Field
 
+from app.constants import enums
 from app.types import CountryAlpha3
 
 
@@ -42,21 +43,48 @@ class UserIn(BaseModel):
         return password
 
 
-class PublicUserOut(BaseModel):
+class AuthedProfileOut(BaseModel):
+    """
+    Should be used where it is not possible for the user to be a guest.
+    Provides additional information which a guest user would not have.
+    """
+
     user_id: int
+    user_type: enums.UserType
+
     username: str
+    first_name: str
+    last_name: str
+
     about: str
+
     country_alpha3: CountryAlpha3
+    location: str
+
     pfp_last_changed: datetime
 
 
-class PrivateUserOut(PublicUserOut):
+class PrivateAuthedProfileOut(AuthedProfileOut):
     email: EmailStr
     username_last_changed: datetime | None
 
 
+class UnauthedProfileOut(BaseModel):
+    """
+    Should be used when the user could be a guest.
+    Only includes the information about the user.
+    """
+
+    user_id: int
+    user_type: enums.UserType
+    username: str
+
+
 class EditableProfile(BaseModel):
+    first_name: Annotated[str, Field(max_length=50)]
+    last_name: Annotated[str, Field(max_length=50)]
     country_alpha3: CountryAlpha3
+    location: Annotated[str, Field(max_length=40)]
     about: Annotated[str, Field(max_length=300)]
 
 

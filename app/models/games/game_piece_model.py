@@ -13,15 +13,16 @@ if TYPE_CHECKING:
 
 
 class GamePiece(Base, kw_only=True):
-    """Represents a piece in a game. This class holds its index (position), name and color."""
+    """Represents a piece in a game. This class holds its position, name and color."""
 
     __tablename__ = "game_piece"
 
     piece_id: Mapped[int] = mapped_column(primary_key=True, default=None)
-    piece: Mapped[enums.Piece]
+    piece_type: Mapped[enums.PieceType]
     color: Mapped[enums.Color]
 
-    index: Mapped[int] = mapped_column()
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
 
     game_id: Mapped[int] = mapped_column(
         ForeignKey("live_game.live_game_id"),
@@ -31,5 +32,5 @@ class GamePiece(Base, kw_only=True):
     game: Mapped[LiveGame] = relationship(back_populates="pieces")
 
     __table_args__ = (
-        UniqueConstraint(index, game_id, name="unique_piece_index"),
+        UniqueConstraint(x, y, game_id, name="unique_piece_position"),
     )

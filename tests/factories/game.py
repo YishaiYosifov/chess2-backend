@@ -31,7 +31,7 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
 
     @factory.post_generation
     def pieces(obj: LiveGame, create: bool, extracted: list[game_schema.Piece] | None, **kwargs):  # type: ignore
-        """Automatically created pieces"""
+        """Automatically create pieces"""
 
         if not create:
             return
@@ -44,9 +44,10 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
             obj.pieces.append(
                 GamePieceFactory.create(
                     game=obj,
-                    piece=piece.piece,
+                    piece_type=piece.piece_type,
                     color=piece.color,
-                    index=piece.index,
+                    x=piece.x,
+                    y=piece.y,
                 )
             )
 
@@ -58,6 +59,8 @@ class GamePieceFactory(TypedSQLAlchemyFactory[GamePiece]):
 
     piece_id = factory.Sequence(lambda n: n)
     game = factory.SubFactory(LiveGameFactory)
+    piece_type = enums.PieceType.PAWN
+    color = enums.Color.WHITE
 
 
 class GameResultFactory(TypedSQLAlchemyFactory[GameResult]):
