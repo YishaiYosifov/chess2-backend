@@ -44,14 +44,23 @@ class UserIn(BaseModel):
 
 
 class AuthedProfileOut(BaseModel):
+    """
+    Should be used where it is not possible for the user to be a guest.
+    Provides additional information which a guest user would not have.
+    """
+
     user_id: int
     user_type: enums.UserType
+
     username: str
     first_name: str
     last_name: str
+
     about: str
+
     country_alpha3: CountryAlpha3
     location: str
+
     pfp_last_changed: datetime
 
 
@@ -61,6 +70,11 @@ class PrivateAuthedProfileOut(AuthedProfileOut):
 
 
 class UnauthedProfileOut(BaseModel):
+    """
+    Should be used when the user could be a guest.
+    Only includes the information about the user.
+    """
+
     user_id: int
     user_type: enums.UserType
     username: str
