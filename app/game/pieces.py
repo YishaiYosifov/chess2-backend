@@ -50,11 +50,14 @@ class Piece(ABC):
             if board.is_out_of_bound(position):
                 break
 
-            # Check if there is an uncapturable piece in the way
             can_capture = cls._can_capture(board, curr_piece, position)
             is_piece = board[position] is not None
+            # Check if there is an uncapturable piece in the way
             if is_piece and not can_capture:
                 break
+
+            if is_piece and not offset.can_capture:
+                return []
 
             legal_moves.append(position)
 
@@ -72,6 +75,9 @@ class Piece(ABC):
     ) -> bool:
         captured = board[check_pos]
         return captured is not None and capturer.color != captured.color
+
+
+# region Piece Implementation
 
 
 class Queen(Piece):
@@ -121,10 +127,52 @@ class Bishop(Piece):
     offsets = [Offset(-1, 1), Offset(-1, -1), Offset(1, 1), Offset(1, -1)]
 
 
+class Knook(Piece):
+    offsets = [
+        # rook moves
+        Offset(1, 0),
+        Offset(-1, 0),
+        Offset(0, 1),
+        Offset(0, -1),
+        # horsie moves
+        Offset(1, 2, slide=False, can_capture=False),
+        Offset(1, -2, slide=False, can_capture=False),
+        Offset(-1, 2, slide=False, can_capture=False),
+        Offset(-1, -2, slide=False, can_capture=False),
+        Offset(2, 1, slide=False, can_capture=False),
+        Offset(2, -1, slide=False, can_capture=False),
+        Offset(-2, 1, slide=False, can_capture=False),
+        Offset(-2, -1, slide=False, can_capture=False),
+    ]
+
+
+class Archbishop(Piece):
+    offsets = [Offset(2, 0), Offset(-2, 0), Offset(0, 2), Offset(0, -2)]
+
+
+class Diagook(Piece):
+    offsets = [
+        # move like a bishop
+        Offset(-1, 1),
+        Offset(-1, -1),
+        Offset(1, 1),
+        Offset(1, -1),
+        # but one square straight
+        Offset(1, 0, slide=False),
+        Offset(-1, 0, slide=False),
+        Offset(0, 1, slide=False),
+        Offset(0, -1, slide=False),
+    ]
+
+
+# endregion
+
 PIECES: dict[enums.PieceType, type[Piece]] = {
     enums.PieceType.KING: King,
     enums.PieceType.QUEEN: Queen,
     enums.PieceType.ROOK: Rook,
     enums.PieceType.HORSIE: Horsie,
     enums.PieceType.BISHOP: Bishop,
+    enums.PieceType.KNOOK: Knook,
+    enums.PieceType.ARCHBISHOP: Archbishop,
 }

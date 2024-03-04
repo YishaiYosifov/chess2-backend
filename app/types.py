@@ -28,6 +28,7 @@ class Offset(NamedTuple):
     # should the piece "slide" in this direction until blocked
     # or move just once?
     slide: bool = True
+    can_capture: bool = True
 
 
 class Point(NamedTuple):

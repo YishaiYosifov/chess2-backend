@@ -8,6 +8,7 @@ BOARD_HEIGHT = 10
 # fmt: off
 
 STARTING_POSITION: list[game_schema.Piece] = [
+    # white
     game_schema.Piece(piece_type=enums.PieceType.ROOK, color=enums.Color.WHITE, x=0, y=0),
     game_schema.Piece(piece_type=enums.PieceType.HORSIE, color=enums.Color.WHITE, x=1, y=0),
     game_schema.Piece(piece_type=enums.PieceType.KNOOK, color=enums.Color.WHITE, x=2, y=0),
@@ -31,6 +32,7 @@ STARTING_POSITION: list[game_schema.Piece] = [
     game_schema.Piece(piece_type=enums.PieceType.ARCHBISHOP, color=enums.Color.WHITE, x=0, y=2),
     game_schema.Piece(piece_type=enums.PieceType.ARCHBISHOP, color=enums.Color.WHITE, x=9, y=2),
 
+    # black
     game_schema.Piece(piece_type=enums.PieceType.ARCHBISHOP, color=enums.Color.BLACK, x=9, y=7),
     game_schema.Piece(piece_type=enums.PieceType.ARCHBISHOP, color=enums.Color.BLACK, x=0, y=7),
     game_schema.Piece(piece_type=enums.PieceType.CHILD_PAWN, color=enums.Color.BLACK, x=9, y=8),
