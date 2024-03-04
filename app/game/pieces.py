@@ -3,15 +3,13 @@ from abc import ABC
 from app.models.games.game_piece_model import GamePiece
 from app.game.board import Board
 from app.constants import enums
-from app.types import Point
+from app.types import Offset, Point
 
 
 class Piece(ABC):
-    # whether the piece and move all the way in a certain direction or just once
-    slide: bool = True
-
-    # how much to offset the index each move
-    offsets: list[Point] = []
+    # how much to offset the position in each direction
+    # to reach the points the piece could move to in a single move
+    offsets: list[Offset] = []
 
     @classmethod
     def calc_legal_moves(cls, board: Board, position: Point) -> list[Point]:
@@ -33,7 +31,7 @@ class Piece(ABC):
         cls,
         board: Board,
         position: Point,
-        offset: Point,
+        offset: Offset,
     ) -> list[Point]:
         """
         Get a list of all the legal moves in a certain direction
@@ -61,7 +59,7 @@ class Piece(ABC):
             legal_moves.append(position)
 
             # Is this the final time the piece can move in this direction?
-            if not cls.slide or is_piece:
+            if not offset.slide or is_piece:
                 break
 
         return legal_moves
@@ -76,39 +74,51 @@ class Piece(ABC):
         return captured is not None and capturer.color != captured.color
 
 
-STRAIGHT_OFFSETS = [Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1)]
-DIAGONAL_OFFSETS = [Point(-1, 1), Point(-1, -1), Point(1, 1), Point(1, -1)]
-
-
 class Queen(Piece):
-    offsets = STRAIGHT_OFFSETS + DIAGONAL_OFFSETS
-
-
-class Rook(Piece):
-    offsets = STRAIGHT_OFFSETS
+    offsets = [
+        Offset(1, 0),
+        Offset(-1, 0),
+        Offset(0, 1),
+        Offset(0, -1),
+        Offset(-1, 1),
+        Offset(-1, -1),
+        Offset(1, 1),
+        Offset(1, -1),
+    ]
 
 
 class King(Piece):
-    offsets = STRAIGHT_OFFSETS + DIAGONAL_OFFSETS
-    slide = False
+    offsets = [
+        Offset(1, 0, slide=False),
+        Offset(-1, 0, slide=False),
+        Offset(0, 1, slide=False),
+        Offset(0, -1, slide=False),
+        Offset(-1, 1, slide=False),
+        Offset(-1, -1, slide=False),
+        Offset(1, 1, slide=False),
+        Offset(1, -1, slide=False),
+    ]
+
+
+class Rook(Piece):
+    offsets = [Offset(1, 0), Offset(-1, 0), Offset(0, 1), Offset(0, -1)]
 
 
 class Horsie(Piece):
     offsets = [
-        Point(1, 2),
-        Point(1, -2),
-        Point(-1, 2),
-        Point(-1, -2),
-        Point(2, 1),
-        Point(2, -1),
-        Point(-2, 1),
-        Point(-2, -1),
+        Offset(1, 2, slide=False),
+        Offset(1, -2, slide=False),
+        Offset(-1, 2, slide=False),
+        Offset(-1, -2, slide=False),
+        Offset(2, 1, slide=False),
+        Offset(2, -1, slide=False),
+        Offset(-2, 1, slide=False),
+        Offset(-2, -1, slide=False),
     ]
-    slide = False
 
 
 class Bishop(Piece):
-    offsets = DIAGONAL_OFFSETS
+    offsets = [Offset(-1, 1), Offset(-1, -1), Offset(1, 1), Offset(1, -1)]
 
 
 PIECES: dict[enums.PieceType, type[Piece]] = {
