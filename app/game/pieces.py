@@ -50,14 +50,14 @@ class Piece(ABC):
             if board.is_out_of_bound(position):
                 break
 
-            can_capture = cls._can_capture(board, curr_piece, position)
+            can_capture = (
+                cls._can_capture(board, curr_piece, position)
+                and offset.can_capture
+            )
             is_piece = board[position] is not None
             # Check if there is an uncapturable piece in the way
             if is_piece and not can_capture:
                 break
-
-            if is_piece and not offset.can_capture:
-                return []
 
             legal_moves.append(position)
 
