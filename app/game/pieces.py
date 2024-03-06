@@ -7,7 +7,7 @@ from app.types import Offset, Point
 
 
 class Piece(ABC):
-    # how much to offset the position in each direction
+    # how much to offset the position in each step
     # to reach the points the piece could move to in a single move
     offsets: list[Offset] = []
 
@@ -46,22 +46,22 @@ class Piece(ABC):
         while True:
             position += offset
 
-            # Stop searching if out of bound
+            # stop searching if out of bound
             if board.is_out_of_bound(position):
                 break
 
+            # check if there is an uncapturable piece in the way
             can_capture = (
                 cls._can_capture(board, curr_piece, position)
                 and offset.can_capture
             )
             is_piece = board[position] is not None
-            # Check if there is an uncapturable piece in the way
             if is_piece and not can_capture:
                 break
 
             legal_moves.append(position)
 
-            # Is this the final time the piece can move in this direction?
+            # is this the final time the piece can move in this direction?
             if not offset.slide or is_piece:
                 break
 
@@ -147,6 +147,7 @@ class Knook(Piece):
 
 
 class Archbishop(Piece):
+    # move like a rook, but can only go on the same color square
     offsets = [Offset(2, 0), Offset(-2, 0), Offset(0, 2), Offset(0, -2)]
 
 
