@@ -20,8 +20,8 @@ class GamePiece(Base, kw_only=True):
     color: Mapped[enums.Color]
 
     times_moved: Mapped[int] = mapped_column(default=0)
-    x: Mapped[int]
-    y: Mapped[int]
+    x: Mapped[int] = mapped_column()
+    y: Mapped[int] = mapped_column()
 
     game_id: Mapped[int] = mapped_column(
         ForeignKey("live_game.live_game_id"),
