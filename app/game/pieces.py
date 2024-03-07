@@ -52,7 +52,7 @@ class Piece(ABC):
 
             # check if there is an uncapturable piece in the way
             can_capture = (
-                cls._can_capture(board, curr_piece, position)
+                cls.can_capture(board, curr_piece, position)
                 and offset.can_capture
             )
             is_piece = board[position] is not None
@@ -68,7 +68,7 @@ class Piece(ABC):
         return legal_moves
 
     @staticmethod
-    def _can_capture(
+    def can_capture(
         board: Board,
         capturer: GamePiece,
         check_pos: Point,

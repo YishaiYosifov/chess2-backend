@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from enum import Enum
 
 
@@ -13,7 +11,7 @@ class Color(Enum):
     WHITE = "white"
     BLACK = "black"
 
-    def invert(self) -> Color:
+    def invert(self) -> "Color":
         return self.BLACK if self == Color.WHITE else Color.WHITE
 
 

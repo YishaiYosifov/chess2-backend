@@ -39,6 +39,10 @@ class GameSettings(BaseModel):
     increment: Annotated[int, Field(ge=0)]
 
 
+class Move(BaseModel):
+    side_effects: list["Move"]
+
+
 class Piece(BaseModel):
     piece_type: enums.PieceType
     color: enums.Color

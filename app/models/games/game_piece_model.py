@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
@@ -21,8 +19,9 @@ class GamePiece(Base, kw_only=True):
     piece_type: Mapped[enums.PieceType]
     color: Mapped[enums.Color]
 
-    x: Mapped[int] = mapped_column()
-    y: Mapped[int] = mapped_column()
+    times_moved: Mapped[int] = mapped_column(default=0)
+    x: Mapped[int]
+    y: Mapped[int]
 
     game_id: Mapped[int] = mapped_column(
         ForeignKey("live_game.live_game_id"),

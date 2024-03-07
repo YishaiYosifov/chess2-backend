@@ -11,8 +11,8 @@ class Board:
         board_height=constants.BOARD_WIDTH,
     ) -> None:
         self._board: dict[Point, GamePiece] = {}
-        self._board_width = board_width
-        self._board_height = board_height
+        self.board_width = board_width
+        self.board_height = board_height
 
         for piece in pieces:
             point = Point(piece.x, piece.y)
@@ -37,7 +37,7 @@ class Board:
 
         return (
             point.x < 0
-            or point.x >= self._board_width
+            or point.x >= self.board_width
             or point.y < 0
-            or point.y >= self._board_height
+            or point.y >= self.board_height
         )
