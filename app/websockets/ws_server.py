@@ -49,7 +49,7 @@ class WSServer:
 
     async def emit(
         self,
-        event: enums.WebsocketEvent,
+        event: enums.WSEvent,
         data: Any,
         to: str | int,
     ) -> None:

@@ -84,7 +84,7 @@ async def test_emit(
     publish_mock = mocker.AsyncMock()
     mock_redis.publish = publish_mock
 
-    event = enums.WebsocketEvent.NOTIFICATION
+    event = enums.WSEvent.NOTIFICATION
     data = {"test": "ing"}
     to = 1
     await test_ws_server.emit(event, data, to)

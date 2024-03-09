@@ -42,7 +42,7 @@ async def test_ws_connect(
 
 
 class TestEmit:
-    event = enums.WebsocketEvent.NOTIFICATION
+    event = enums.WSEvent.NOTIFICATION
     data = {"test": "message"}
     expected_message = f"{event.value}:{json.dumps(data)}"
 

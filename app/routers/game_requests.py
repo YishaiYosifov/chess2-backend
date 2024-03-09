@@ -52,7 +52,7 @@ async def start_pool_game(
 
     # If a game is returned, it means the game started so return the token.
     await ws_server.emit(
-        enums.WebsocketEvent.GAME_START,
+        enums.WSEvent.GAME_START,
         game.token,
         (
             game.player_white

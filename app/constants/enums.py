@@ -40,6 +40,6 @@ class PieceType(Enum):
     CHILD_PAWN = "child_pawn"
 
 
-class WebsocketEvent(Enum):
+class WSEvent(Enum):
     NOTIFICATION = "notification"
     GAME_START = "game_start"

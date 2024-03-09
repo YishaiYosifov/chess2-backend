@@ -89,7 +89,7 @@ class TestJoinPoolGame:
         created_game = db.execute(select(LiveGame)).scalar_one()
         assert created_game
         assert ws_received == (
-            f"{enums.WebsocketEvent.GAME_START.value}:"
+            f"{enums.WSEvent.GAME_START.value}:"
             f"{json.dumps(created_game.token)}"
         )
 
