@@ -1,35 +1,84 @@
-from app.models.games.game_piece_model import GamePiece
-from app.constants import constants
-from app.types import Point
+from typing import Self
+import re
+
+from app.schemas.config_schema import CONFIG
+from app.types import PieceInfo, Point
+from app import enums
 
 
 class Board:
     def __init__(
         self,
-        pieces: list[GamePiece],
-        board_width=constants.BOARD_WIDTH,
-        board_height=constants.BOARD_WIDTH,
+        board_width=CONFIG.board_width,
+        board_height=CONFIG.board_height,
     ) -> None:
-        self._board: dict[Point, GamePiece] = {}
         self.board_width = board_width
         self.board_height = board_height
+        self._board: dict[Point, PieceInfo] = {}
 
-        for piece in pieces:
-            point = Point(piece.x, piece.y)
-            # Raise an error if the piece is out of the provided board size
-            if self.is_out_of_bound(point):
+    @classmethod
+    def from_fen(
+        cls,
+        fen: str,
+        board_width: int = CONFIG.board_width,
+        board_height: int = CONFIG.board_height,
+    ) -> Self:
+        board = cls(board_width, board_height)
+        board._board = board._parse_fen(fen)
+        return board
+
+    def _parse_fen(self, fen: str) -> dict[Point, PieceInfo]:
+        """
+        Parse fen into a board
+
+        :param fen: the fen to parse
+        :return: a dictionary of the point and piece info of each piece
+        """
+
+        board: dict[Point, PieceInfo] = {}
+        ranks = fen.split("/")
+        # make sure the fen has the correct height
+        if len(ranks) != self.board_height:
+            raise ValueError(
+                f"There are {len(ranks)} ranks, {self.board_height} necessary"
+            )
+
+        for y_coord, rank in enumerate(ranks):
+            # split the rank into numbers and pieces.
+            # this regex makes sure multiple digits are grouped together
+            squares: list[str] = re.findall(r"[a-zA-Z]|\d+", rank)
+
+            x_coord = 0
+            for square in squares:
+                # if the square is a digit, skip that amount of squares
+                if square.isdigit():
+                    x_coord += int(square)
+                    continue
+
+                color = (
+                    enums.Color.WHITE if square.isupper() else enums.Color.BLACK
+                )
+                piece_type = enums.PieceType(square.lower())
+                board[Point(x_coord, y_coord)] = PieceInfo(piece_type, color)
+                x_coord += 1
+
+            if x_coord != self.board_width:
                 raise ValueError(
-                    f"{piece.color.value} {piece.piece_type.value}'s position is out of "
-                    f"the boundaries of the board. "
-                    f"(Board is {board_width}x{board_height}, piece is at {point})"
+                    f"Rank {rank} has {x_coord} squares, {self.board_width} necessary"
                 )
 
-            self._board[point] = piece
+        return board
 
-    def __getitem__(self, point: Point) -> GamePiece | None:
+    def __setitem__(self, point: Point, piece: PieceInfo) -> None:
+        if self.is_out_of_bound(point):
+            raise ValueError(f"Point ({point.x}, {point.y}) is out of bound")
+
+        self._board[point] = piece
+
+    def __getitem__(self, point: Point) -> PieceInfo | None:
         return self._board.get(point)
 
-    def get_piece(self, point: Point) -> GamePiece:
+    def get_piece(self, point: Point) -> PieceInfo:
         return self._board[point]
 
     def is_out_of_bound(self, point: Point):

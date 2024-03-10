@@ -31,6 +31,12 @@ class Config(BaseSettings):
     default_rating: int = 800
     acceptable_rating_difference: int = 300
 
+    board_width: int = 10
+    board_height: int = 10
+    default_fen: str = (
+        "rhnxqkbahr/yypyppypyy/c8c/10/10/10/10/C8C/YYPYPPYPYY/RHNXQKBAHR"
+    )
+
     model_config = SettingsConfigDict(env_file=os.getenv("ENV") or ".env")
 
 

@@ -8,10 +8,9 @@ import pytest
 
 from tests.utils.test_common import AsyncIterator
 from app.websockets import ws_server
-from app.constants import enums
 from tests.utils import dep_overrider
 from app.main import app
-from app import deps
+from app import enums, deps
 
 pytestmark = pytest.mark.unit
 

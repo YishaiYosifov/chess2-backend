@@ -1,47 +1,72 @@
 import pytest
 
-from app.models.games.game_piece_model import GamePiece
-from tests.factories.game import GamePieceFactory
 from app.game.board import Board
-from app.constants import enums
-from app.types import Point
+from app.types import PieceInfo, Point
+from app import enums
+
+pytestmark = pytest.mark.unit
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
-    "pieces",
+    "fen, expected_board",
     [
-        [
-            GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=0),
-            GamePieceFactory.build(piece_type=enums.PieceType.ROOK, x=0, y=9),
-        ],
-        [],
+        ("10/10/10/10/10/10/10/10/10/10", {}),
+        (
+            "Q9/10/10/10/10/10/10/10/10/10",
+            {Point(0, 0): PieceInfo(enums.PieceType.QUEEN, enums.Color.WHITE)},
+        ),
+        (
+            "rh7r/10/c8c/10/10/10/10/10/RrRRRRRRRR/10",
+            {
+                Point(0, 0): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(1, 0): PieceInfo(
+                    enums.PieceType.HORSIE, enums.Color.BLACK
+                ),
+                Point(9, 0): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(0, 2): PieceInfo(
+                    enums.PieceType.ARCHBISHOP, enums.Color.BLACK
+                ),
+                Point(9, 2): PieceInfo(
+                    enums.PieceType.ARCHBISHOP, enums.Color.BLACK
+                ),
+                Point(0, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(1, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(2, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(3, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(4, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(5, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(6, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(7, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(8, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(9, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+            },
+        ),
     ],
 )
-def test_initializes_from_pieces(pieces: list[GamePiece]):
+def test_initializes_from_fen(fen: str, expected_board: dict[Point, PieceInfo]):
     """Test that the board is created correctly"""
 
-    board = Board(pieces)
-
-    assert len(board._board) == len(pieces)
-    for piece in pieces:
-        position = Point(piece.x, piece.y)
-        indexed_piece = board._board.get(position)
-        assert indexed_piece == piece
+    board = Board.from_fen(fen, 10, 10)
+    assert board._board == expected_board
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
-    "pieces",
+    "fen",
     [
-        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=-1, y=0)],
-        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=10, y=0)],
-        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=-1)],
-        [GamePieceFactory.build(piece_type=enums.PieceType.PAWN, x=0, y=10)],
+        "Q10/10/10/10/10/10/10/10/10/10",
+        "1/10/10/10/10/10/10/10/10/10",
+        "10/10/10/10/10/10/10/10/10/10/10",
+        "10/10/10/10/10/10/10/10/10",
+    ],
+    ids=[
+        "too many squares in last rank",
+        "too little squares in last square",
+        "too many ranks",
+        "too little ranks",
     ],
 )
 def test_raises_error_when_initializing_out_of_bound(
-    pieces: list[GamePiece],
+    fen: str,
 ):
     """Test that ValueError is raised when a piece is attempted to be placed out of the board"""
 
@@ -49,4 +74,8 @@ def test_raises_error_when_initializing_out_of_bound(
     board_height = 10
 
     with pytest.raises(ValueError):
-        Board(pieces, board_width, board_height)
+        Board.from_fen(fen, board_width, board_height)
+
+
+def test_initializes_empty_without_fen():
+    assert Board()._board == {}

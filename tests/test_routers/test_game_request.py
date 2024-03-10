@@ -21,8 +21,8 @@ from tests.factories.game import (
     GameRequestFactory,
     LiveGameFactory,
 )
-from app.constants import enums
 from tests.utils import mocks
+from app import enums
 
 
 @pytest.mark.integration

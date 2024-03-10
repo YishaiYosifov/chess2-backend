@@ -9,7 +9,7 @@ from app.websockets.client_manager import (
     ABCWebsocketClientManager,
     WebsocketClientManager,
 )
-from app.constants import enums
+from app import enums
 
 
 class WSServer:

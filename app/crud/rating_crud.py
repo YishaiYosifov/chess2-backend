@@ -7,7 +7,7 @@ from sqlalchemy import select, true, func
 from app.schemas.config_schema import CONFIG
 from app.models.rating_model import Rating
 from app.models.user_model import AuthedUser
-from app.constants import enums
+from app import enums
 
 
 def fetch_single(

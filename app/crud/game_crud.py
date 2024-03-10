@@ -7,10 +7,9 @@ from sqlalchemy import select, func
 
 from app.models.games.live_player_model import LivePlayer
 from app.models.games.game_result_model import GameResult
-from app.models.games.game_piece_model import GamePiece
 from app.models.games.live_game_model import LiveGame
 from app.models.user_model import AuthedUser, User
-from app.constants import constants, enums
+from app import enums
 
 
 def paginate_history(
@@ -95,29 +94,11 @@ def create_players(
     return inviter_player, recipient_player
 
 
-def create_pieces(db: Session, game: LiveGame) -> None:
-    """
-    Create an entry for each piece in the starting position of game
-
-    :param db: the database session
-    :param game: the game to create the pieces for
-    """
-
-    # TODO: allow custom positions
-
-    # fmt: off
-    pieces = [
-        GamePiece(**piece.model_dump(), game=game)
-        for piece in constants.STARTING_POSITION
-    ]
-    # fmt: on
-    db.add_all(pieces)
-
-
 def create_game(
     db: Session,
     player1: LivePlayer,
     player2: LivePlayer,
+    fen: str,
     variant: enums.Variant,
     time_control: int,
     increment: int,
@@ -127,6 +108,7 @@ def create_game(
         variant=variant,
         time_control=time_control,
         increment=increment,
+        fen=fen,
         **{
             f"player_{player1.color.value}": player1,
             f"player_{player2.color.value}": player2,

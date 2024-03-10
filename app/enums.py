@@ -27,17 +27,17 @@ class UserType(Enum):
 
 
 class PieceType(Enum):
-    KING = "king"
-    QUEEN = "queen"
-    ROOK = "rook"
-    KNOOK = "knook"
-    XOOK = "xook"
-    ANTIQUEEN = "antiqueen"
-    ARCHBISHOP = "archbishop"
-    BISHOP = "bishop"
-    HORSIE = "horse"
-    PAWN = "pawn"
-    CHILD_PAWN = "child_pawn"
+    KING = "k"
+    QUEEN = "q"
+    ROOK = "r"
+    KNOOK = "n"
+    XOOK = "x"
+    ANTIQUEEN = "a"
+    ARCHBISHOP = "c"
+    BISHOP = "b"
+    HORSIE = "h"
+    PAWN = "p"
+    CHILD_PAWN = "d"
 
 
 class WSEvent(Enum):

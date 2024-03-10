@@ -9,7 +9,6 @@ import pytest
 
 from app.models.games.live_player_model import LivePlayer
 from app.models.games.game_result_model import GameResult
-from app.models.games.game_piece_model import GamePiece
 from app.models.user_model import AuthedUser
 from tests.factories.user import (
     AuthedUserFactory,
@@ -17,9 +16,8 @@ from tests.factories.user import (
     PlayerFactory,
 )
 from tests.factories.game import GameResultFactory, LiveGameFactory
-from app.constants import enums
-from app.schemas import game_schema
 from app.crud import game_crud
+from app import enums
 
 pytestmark = pytest.mark.integration
 
@@ -135,45 +133,6 @@ def test_create_players(
 
     assert inviter_player.color == expected_inviter_color
     assert recipient_player.color == expected_recipient_color
-
-
-def test_create_pieces(db: Session, mocker: MockerFixture):
-    """
-    Test if the `create_pieces` function successfully creates all the pieces from the pieces constant
-    in the correct order and with the correct parameters
-    """
-
-    starting_position = [
-        game_schema.Piece(
-            piece_type=enums.PieceType.ROOK, color=enums.Color.WHITE, x=0, y=0
-        ),
-        game_schema.Piece(
-            piece_type=enums.PieceType.QUEEN, color=enums.Color.WHITE, x=0, y=1
-        ),
-        game_schema.Piece(
-            piece_type=enums.PieceType.PAWN, color=enums.Color.BLACK, x=5, y=1
-        ),
-        game_schema.Piece(
-            piece_type=enums.PieceType.HORSIE, color=enums.Color.BLACK, x=0, y=2
-        ),
-    ]
-    mocker.patch.object(
-        game_crud.constants,
-        "STARTING_POSITION",
-        new=starting_position,
-    )
-
-    game = LiveGameFactory.create(pieces=[])
-    game_crud.create_pieces(db, game)
-
-    created_pieces = db.execute(select(GamePiece)).scalars().all()
-
-    assert len(created_pieces) == len(starting_position)
-    for piece, expected_piece_data in zip(created_pieces, starting_position):
-        assert piece.x == expected_piece_data.x
-        assert piece.y == expected_piece_data.y
-        assert piece.color == expected_piece_data.color
-        assert piece.piece_type == expected_piece_data.piece_type
 
 
 def test_create_game(db: Session, mocker: MockerFixture):

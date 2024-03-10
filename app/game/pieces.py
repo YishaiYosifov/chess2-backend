@@ -1,9 +1,8 @@
 from abc import ABC
 
-from app.models.games.game_piece_model import GamePiece
 from app.game.board import Board
-from app.constants import enums
-from app.types import Offset, Point
+from app.types import PieceInfo, Offset, Point
+from app import enums
 
 
 class Piece(ABC):
@@ -70,7 +69,7 @@ class Piece(ABC):
     @staticmethod
     def can_capture(
         board: Board,
-        capturer: GamePiece,
+        capturer: PieceInfo,
         check_pos: Point,
     ) -> bool:
         captured = board[check_pos]
@@ -151,7 +150,7 @@ class Archbishop(Piece):
     offsets = [Offset(2, 0), Offset(-2, 0), Offset(0, 2), Offset(0, -2)]
 
 
-class Diagook(Piece):
+class Xook(Piece):
     offsets = [
         # move like a bishop
         Offset(-1, 1),
@@ -176,4 +175,5 @@ PIECES: dict[enums.PieceType, type[Piece]] = {
     enums.PieceType.BISHOP: Bishop,
     enums.PieceType.KNOOK: Knook,
     enums.PieceType.ARCHBISHOP: Archbishop,
+    enums.PieceType.XOOK: Xook,
 }

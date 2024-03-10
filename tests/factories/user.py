@@ -5,7 +5,7 @@ from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.services.auth_service import hash_password
 from app.models.user_model import AuthedUser, GuestUser
 from tests.conftest import TestScopedSession
-from app.constants import enums
+from app import enums
 
 
 class GuestUserFactory(TypedSQLAlchemyFactory[GuestUser]):

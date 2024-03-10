@@ -3,8 +3,8 @@ from typing import Annotated
 
 from pydantic import field_validator, BaseModel, EmailStr, Field
 
-from app.constants import enums
 from app.types import CountryAlpha3
+from app import enums
 
 
 class UserIn(BaseModel):

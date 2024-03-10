@@ -5,14 +5,14 @@ import factory
 
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_result_model import GameResult
-from app.models.games.game_piece_model import GamePiece
 from app.models.games.live_game_model import LiveGame
 from tests.utils.factory_model import TypedSQLAlchemyFactory, TypedFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
 from tests.conftest import TestScopedSession
-from app.constants import constants, enums
 from app.schemas import game_schema
+from app.types import PieceInfo
+from app import enums
 
 
 class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
@@ -22,6 +22,8 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
 
     token = factory.Faker("pystr", max_chars=8)
 
+    fen = "rhnxqkbahr/yypyppypyy/c8c/10/10/10/10/C8C/YYPYPPYPYY/RHNXQKBAHR"
+
     variant = enums.Variant.ANARCHY
     time_control = 600
     increment = 0
@@ -29,36 +31,11 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
     player_white = factory.SubFactory(PlayerFactory)
     player_black = factory.SubFactory(PlayerFactory)
 
-    @factory.post_generation
-    def pieces(obj: LiveGame, create: bool, extracted: list[game_schema.Piece] | None, **kwargs):  # type: ignore
-        """Automatically create pieces"""
 
-        if not create:
-            return
-
-        to_create = (
-            extracted if extracted is not None else constants.STARTING_POSITION
-        )
-
-        for piece in to_create:
-            obj.pieces.append(
-                GamePieceFactory.create(
-                    game=obj,
-                    piece_type=piece.piece_type,
-                    color=piece.color,
-                    x=piece.x,
-                    y=piece.y,
-                )
-            )
-
-
-class GamePieceFactory(TypedSQLAlchemyFactory[GamePiece]):
+class PieceInfoFactory(TypedFactory[PieceInfo]):
     class Meta:
-        sqlalchemy_session = TestScopedSession
-        model = GamePiece
+        model = PieceInfo
 
-    piece_id = factory.Sequence(lambda n: n)
-    game = factory.SubFactory(LiveGameFactory)
     piece_type = enums.PieceType.PAWN
     color = enums.Color.WHITE
 

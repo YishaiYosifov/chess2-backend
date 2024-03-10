@@ -7,8 +7,8 @@ from app.models.games.game_request_model import GameRequest
 from app.models.games.live_player_model import LivePlayer
 from app.models.games.live_game_model import LiveGame
 from app.models.rating_model import Rating
-from app.constants import enums
 from app.db import Base
+from app import enums
 
 
 class User(Base, kw_only=True):

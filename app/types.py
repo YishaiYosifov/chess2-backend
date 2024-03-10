@@ -4,6 +4,8 @@ import json
 from pydantic_core import PydanticCustomError
 from pydantic import Field
 
+from app import enums
+
 with open("assets/data/countries_alpha3.json", "r") as f:
     COUNTRIES_ALPHA3 = set(json.load(f))
 
@@ -35,3 +37,8 @@ class Point(NamedTuple):
 
     def __add__(self, other: "Point | Offset") -> "Point":
         return Point(self.x + other.x, self.y + other.y)
+
+
+class PieceInfo(NamedTuple):
+    piece_type: enums.PieceType
+    color: enums.Color

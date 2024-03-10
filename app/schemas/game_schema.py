@@ -3,8 +3,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from app.constants import enums
 from app.schemas import user_schema
+from app import enums
 
 
 class FinishedGame(BaseModel):
@@ -43,14 +43,6 @@ class Move(BaseModel):
     side_effects: list["Move"]
 
 
-class Piece(BaseModel):
-    piece_type: enums.PieceType
-    color: enums.Color
-
-    x: int
-    y: int
-
-
 class Player(BaseModel):
     user: user_schema.UnauthedProfileOut
     color: enums.Color
@@ -64,4 +56,4 @@ class LiveGame(BaseModel):
     player_black: Player
     turn_player_id: int
 
-    pieces: list[Piece]
+    fen: str

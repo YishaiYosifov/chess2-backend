@@ -6,9 +6,9 @@ from itsdangerous import URLSafeTimedSerializer
 
 from app.services.email_service import EmailService
 
-from ..schemas.config_schema import get_config
+from ..schemas.config_schema import CONFIG
 
-serializer = URLSafeTimedSerializer(get_config().secret_key)
+serializer = URLSafeTimedSerializer(CONFIG.secret_key)
 
 
 def create_message(verification_url: str, token: str | bytes) -> MIMEMultipart:

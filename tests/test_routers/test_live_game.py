@@ -8,6 +8,7 @@ from tests.factories.game import LiveGameFactory
 
 
 @pytest.mark.usefixtures("db")
+@pytest.mark.integration
 class TestLoadGame:
     def _assert_player(self, player: LivePlayer, fetched_player: dict) -> None:
         """

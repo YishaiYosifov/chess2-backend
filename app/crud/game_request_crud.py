@@ -5,8 +5,8 @@ from app.models.games.game_request_model import GameRequest
 from app.schemas.config_schema import CONFIG
 from app.models.rating_model import Rating
 from app.models.user_model import User
-from app.constants import enums
 from app.schemas import game_schema
+from app import enums
 
 
 # TODO: write test auhhh

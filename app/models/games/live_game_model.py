@@ -1,12 +1,18 @@
 from datetime import datetime
 
 from sqlalchemy.orm import mapped_column, relationship, Mapped
-from sqlalchemy import func, CheckConstraint, ForeignKey, DateTime, CHAR
+from sqlalchemy import (
+    func,
+    CheckConstraint,
+    ForeignKey,
+    DateTime,
+    VARCHAR,
+    CHAR,
+)
 
 from app.models.games.live_player_model import LivePlayer
-from app.models.games.game_piece_model import GamePiece
-from app.constants import enums
 from app.db import Base
+from app import enums
 
 
 class LiveGame(Base, kw_only=True):
@@ -52,10 +58,7 @@ class LiveGame(Base, kw_only=True):
         index=True,
     )
 
-    pieces: Mapped[list[GamePiece]] = relationship(
-        back_populates="game",
-        init=False,
-    )
+    fen: Mapped[str] = mapped_column(VARCHAR(128))
 
     variant: Mapped[enums.Variant]
     time_control: Mapped[int]

@@ -7,10 +7,10 @@ from app.schemas.config_schema import CONFIG
 from tests.factories.rating import RatingFactory
 from tests.factories.user import AuthedUserFactory, GuestUserFactory
 from tests.factories.game import GameSettingsFactory, GameRequestFactory
-from app.constants import enums
 from tests.utils import mocks
 from app.schemas import game_schema
 from app.crud import game_request_crud
+from app import enums
 
 
 @pytest.mark.integration

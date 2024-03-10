@@ -2,10 +2,9 @@ from http import HTTPStatus
 
 from fastapi import HTTPException, APIRouter, Response
 
-from app.constants import enums
 from app.services import game_request_service
 from app.schemas import response_schema, game_schema
-from app import deps
+from app import enums, deps
 
 router = APIRouter(prefix="/game-requests", tags=["game-requests"])
 

@@ -1,33 +1,32 @@
 import pytest
 
-from app.models.games.game_piece_model import GamePiece
-from tests.factories.game import GamePieceFactory
+from tests.factories.game import PieceInfoFactory
 from app.game.board import Board
-from app.constants import enums
-from app.types import Point
+from app.types import PieceInfo, Point
 from app.game import pieces
+from app import enums
 
 pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize(
-    "piece_type, start_x, start_y, other_pieces, expected_moves",
+    "piece_type, piece_position, other_pieces, expected_moves",
     # fmt: off
     [
         (
-            enums.PieceType.KING, 4, 4, [], {
+            enums.PieceType.KING, Point(4, 4), {}, {
                 Point(4, 5), # up
-                Point(5, 3), # up right
+                Point(5, 5), # up right
                 Point(5, 4), # right
-                Point(5, 5), # down right
+                Point(5, 3), # down right
                 Point(4, 3), # down
-                Point(3, 5), # down left
+                Point(3, 3), # down left
                 Point(3, 4), # left
-                Point(3, 3), # up left
+                Point(3, 5), # up left
             }
         ),
         (
-            enums.PieceType.QUEEN, 4, 4, [], {
+            enums.PieceType.QUEEN, Point(4, 4), {}, {
                 Point(4, 5), Point(4, 6), Point(4, 7), Point(4, 8), Point(4, 9), # up
                 Point(5, 3), Point(6, 2), Point(7, 1), Point(8, 0), # up right
                 Point(5, 4), Point(6, 4), Point(7, 4), Point(8, 4), Point(9, 4), # right
@@ -39,7 +38,7 @@ pytestmark = pytest.mark.unit
             }
         ),
         (
-            enums.PieceType.ROOK, 4, 4, [], {
+            enums.PieceType.ROOK, Point(4, 4), {}, {
                 Point(3, 4), Point(2, 4), Point(1, 4), Point(0, 4), # left
                 Point(5, 4), Point(6, 4), Point(7, 4), Point(8, 4), Point(9, 4), # right
                 Point(4, 5), Point(4, 6), Point(4, 7), Point(4, 8), Point(4, 9), # up
@@ -47,7 +46,7 @@ pytestmark = pytest.mark.unit
             }
         ),
         (
-            enums.PieceType.HORSIE, 4, 4, [], {
+            enums.PieceType.HORSIE, Point(4, 4), {}, {
                 Point(3, 2), Point(5, 2),
                 Point(6, 3), Point(6, 5),
                 Point(5, 6), Point(3, 6),
@@ -55,7 +54,7 @@ pytestmark = pytest.mark.unit
             }
         ),
         (
-            enums.PieceType.BISHOP, 4, 4, [], {
+            enums.PieceType.BISHOP, Point(4, 4), {}, {
                 Point(3, 3), Point(2, 2), Point(1, 1), Point(0, 0), # up left
                 Point(5, 3), Point(6, 2), Point(7, 1), Point(8, 0), # up right
                 Point(3, 5), Point(2, 6), Point(1, 7), Point(0, 8), # down left
@@ -63,7 +62,7 @@ pytestmark = pytest.mark.unit
             }
         ),
         (
-            enums.PieceType.ARCHBISHOP, 4, 4, [], {
+            enums.PieceType.ARCHBISHOP, Point(4, 4), {}, {
                 Point(2, 4), Point(0, 4), # left
                 Point(6, 4), Point(8, 4), # right
                 Point(4, 2), Point(4, 0), # up
@@ -73,12 +72,10 @@ pytestmark = pytest.mark.unit
 
         # general edge cases
         (
-            enums.PieceType.ROOK, 4, 4, [
-                # friendly piece
-                GamePieceFactory.build(x=4, y=6),
-                # enemy piece
-                GamePieceFactory.build(color=enums.Color.BLACK, x=4, y=2),
-            ], {
+            enums.PieceType.ROOK, Point(4, 4), {
+                Point(4,6): PieceInfoFactory(),
+                Point(4, 2): PieceInfoFactory(color=enums.Color.BLACK)
+            }, {
                 Point(3, 4), Point(2, 4), Point(1, 4), Point(0, 4), # left
                 Point(5, 4), Point(6, 4), Point(7, 4), Point(8, 4), Point(9, 4), # right
                 Point(4, 5), # up, blocked by friendly piece
@@ -86,7 +83,7 @@ pytestmark = pytest.mark.unit
             }
         ),
         (
-            enums.PieceType.ROOK, 9, 9, [], {
+            enums.PieceType.ROOK, Point(9, 9), {}, {
                 # up
                 Point(9, 8), Point(9, 7), Point(9, 6), Point(9, 5),
                 Point(9, 4), Point(9, 3), Point(9, 2), Point(9, 1), Point(9, 0),
@@ -96,12 +93,12 @@ pytestmark = pytest.mark.unit
             },
         ),
         (
-            enums.PieceType.ROOK, 4, 4, [
-                GamePieceFactory.build(x=4, y=5),
-                GamePieceFactory.build(x=4, y=3),
-                GamePieceFactory.build(x=5, y=4),
-                GamePieceFactory.build(x=3, y=4),
-            ], set(),
+            enums.PieceType.ROOK, Point(4, 4), {
+                Point(4, 5): PieceInfoFactory(),
+                Point(4, 3): PieceInfoFactory(),
+                Point(5, 4): PieceInfoFactory(),
+                Point(3, 4): PieceInfoFactory(),
+            }, set(),
         ),
     ],
     # fmt: on
@@ -118,21 +115,20 @@ pytestmark = pytest.mark.unit
     ],
 )
 def test_piece_moves(
+    piece_position: Point,
     piece_type: enums.PieceType,
-    start_x: int,
-    start_y: int,
-    other_pieces: list[GamePiece],
+    other_pieces: dict[Point, PieceInfo],
     expected_moves: set[Point],
 ):
     """Test if a piece finds the correct legal moves in the given position"""
 
-    piece = GamePieceFactory.build(
-        piece_type=piece_type,
-        x=start_x,
-        y=start_y,
-    )
-    board = Board([piece] + other_pieces)
+    board = Board()
+    board[piece_position] = PieceInfo(piece_type, enums.Color.WHITE)
+
+    for other_piece_position, other_piece in other_pieces.items():
+        board[other_piece_position] = other_piece
+
     legal_moves = pieces.PIECES[piece_type].calc_legal_moves(
-        board, Point(start_x, start_y)
+        board, piece_position
     )
     assert set(legal_moves) == expected_moves

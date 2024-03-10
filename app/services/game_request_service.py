@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.models.games.game_request_model import GameRequest
 from app.models.games.live_game_model import LiveGame
 from app.models.user_model import AuthedUser, User
-from app.constants import enums
 from app.schemas import game_schema
 from app.crud import game_request_crud, rating_crud, game_crud
+from app import enums
 
 
 def start_game_request(

@@ -6,7 +6,7 @@ import pytest
 from tests.factories.rating import RatingFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory
-from app.constants import enums
+from app import enums
 
 
 @dataclass(frozen=True)

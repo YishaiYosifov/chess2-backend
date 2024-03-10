@@ -7,8 +7,8 @@ from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import event, func, ForeignKey, DateTime, Index, DDL
 
 from app.schemas.config_schema import CONFIG
-from app.constants import enums
 from app.db import Base
+from app import enums
 
 if TYPE_CHECKING:
     from app.models.user_model import AuthedUser

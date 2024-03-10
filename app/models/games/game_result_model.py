@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy import func, ForeignKey, DateTime, CHAR
 
-from app.constants import enums
 from app.db import Base
+from app import enums
 
 if TYPE_CHECKING:
     from app.models.user_model import AuthedUser

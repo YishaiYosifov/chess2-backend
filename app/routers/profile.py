@@ -6,10 +6,9 @@ import os
 from fastapi.responses import FileResponse
 from fastapi import HTTPException, APIRouter, Query
 
-from app.constants import enums
 from app.schemas import response_schema, user_schema, game_schema
 from app.crud import rating_crud, game_crud
-from app import deps
+from app import enums, deps
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
