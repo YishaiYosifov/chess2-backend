@@ -53,7 +53,7 @@ User settings can be updated in the `/settings` router. Settings include
 
 ### Gameplay
 
-Not yet implemented in this rewrite, currently being worked on
+Pieces are implemented by inheriting the `Piece` class and providing offsets. Offsets are how much the piece has to move each step in order to find all its legal moves.
 
 ## Key modules and directories
 
@@ -61,6 +61,9 @@ Not yet implemented in this rewrite, currently being worked on
     -   `app/routers/game_requests.py` endpoints for the matchmaking pool
     -   `app/routers/auth/py` endpoints for logging in, signing up, refreshing access tokens and creating guest accounts
 -   `app/models` all the sqlalchemy modules
+-   `app/game` piece and board logic
+    - `app/game/pieces.py` piece implementation
+    - `app/game/board.py` class for handling the state of the board
 -   `app/services`
     -   `app/services/game_request_service.py` service for searching / entering the pool and starting a request
     -   `app/services/jwt_service.py` all encoding / decoding jwt logic
@@ -68,7 +71,7 @@ Not yet implemented in this rewrite, currently being worked on
     -   `app/crud/game_request_crud.py` logic for searching and creating a request
     -   `app/crud/user_crud.py` logic for fetching, creating and deleting authed and guest users
 -   `app/websockets`
-    -   `app/websockets/ws_server.py` logic for horizontally scaling websocket handling
+    -   `app/websockets/ws_server.py` logic for horizontally scaling websocket handling using redis pubsub
 
 ## Testing
 
