@@ -141,7 +141,8 @@ def test_create_game(db: Session, mocker: MockerFixture):
     the correct game settings and correct creates a token
     """
 
-    uuid_hex = "0ef0f9722c0344ee94545bdca0613974"
+    uuid_hex = "test-uuid"
+    fen = "test-fen"
     mocker.patch.object(
         game_crud.uuid, "uuid4", return_value=mocker.Mock(hex=uuid_hex)
     )
@@ -159,6 +160,7 @@ def test_create_game(db: Session, mocker: MockerFixture):
         variant=variant,
         time_control=time_control,
         increment=increment,
+        fen=fen,
     )
 
     # assert db.execute(select(Game)).scalar_one() == game
@@ -168,6 +170,7 @@ def test_create_game(db: Session, mocker: MockerFixture):
     assert game.player_white == player_white
     assert game.player_black == player_black
     assert game.token == uuid_hex[:8]
+    assert game.fen == fen
 
 
 class TestFetchLiveGame:

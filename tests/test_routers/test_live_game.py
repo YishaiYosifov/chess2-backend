@@ -4,6 +4,7 @@ from httpx import AsyncClient
 import pytest
 
 from app.models.games.live_player_model import LivePlayer
+from app.schemas.config_schema import Config
 from tests.factories.game import LiveGameFactory
 
 
@@ -22,7 +23,7 @@ class TestLoadGame:
         assert player.color.value == fetched_player["color"]
         assert player.time_remaining == fetched_player["time_remaining"]
 
-    async def test_game_exists(self, async_client: AsyncClient):
+    async def test_game_exists(self, async_client: AsyncClient, config: Config):
         """Test that the game is fetched correctly with all the neccasary data"""
 
         game = LiveGameFactory.create()
@@ -33,14 +34,8 @@ class TestLoadGame:
 
         data = response.json()
 
-        assert "pieces" in data
-        for existing_piece, fetched_piece in zip(game.pieces, data["pieces"]):
-            assert (
-                existing_piece.piece_type.value == fetched_piece["piece_type"]
-            )
-            assert existing_piece.color.value == fetched_piece["color"]
-            assert existing_piece.x == fetched_piece["x"]
-            assert existing_piece.y == fetched_piece["y"]
+        assert "fen" in data
+        assert data["fen"] == config.default_fen
 
         assert "player_white" in data
         assert "player_black" in data

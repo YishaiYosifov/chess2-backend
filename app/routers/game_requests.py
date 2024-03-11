@@ -25,6 +25,7 @@ async def start_pool_game(
     user: deps.UnauthedUserDep,
     game_settings: game_schema.GameSettings,
     ws_server: deps.WSServerDep,
+    config: deps.ConfigDep,
 ):
     """
     Joins the matchmaking pool with the specified game settings.
@@ -41,7 +42,7 @@ async def start_pool_game(
         db.flush()
 
     game = game_request_service.create_or_start_pool_game(
-        db, user, game_settings
+        db, user, game_settings, config.default_fen
     )
     db.commit()
 

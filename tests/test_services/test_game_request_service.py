@@ -67,7 +67,9 @@ class TestCreateOrStartPoolGame:
         db = mocker.MagicMock()
         game_settings = GameSettingsFactory.build()
         user = AuthedUserFactory.build()
-        game_request_service.create_or_start_pool_game(db, user, game_settings)
+        game_request_service.create_or_start_pool_game(
+            db, user, game_settings, "test/fen"
+        )
 
         mock_fetch_rating.assert_called_once_with(
             db, user, game_settings.variant
@@ -88,7 +90,9 @@ class TestCreateOrStartPoolGame:
         db = mocker.MagicMock()
         game_settings = GameSettingsFactory.build()
         user = GuestUserFactory.build()
-        game_request_service.create_or_start_pool_game(db, user, game_settings)
+        game_request_service.create_or_start_pool_game(
+            db, user, game_settings, "test/fen"
+        )
 
         mock_fetch_rating.assert_not_called()
         mock_search_request.assert_called_once_with(
@@ -126,14 +130,15 @@ class TestCreateOrStartPoolGame:
 
         db = mocker.MagicMock()
         game_settings = GameSettingsFactory.build()
+        fen = "test/fen"
         token = game_request_service.create_or_start_pool_game(
-            db, user, game_settings
+            db, user, game_settings, fen
         )
 
         if search_request_result:
             assert token
             mock_start_request.assert_called_once_with(
-                db, search_request_result, user
+                db, search_request_result, fen, user
             )
             mock_create_request.assert_not_called()
         else:
@@ -172,7 +177,7 @@ class TestStartGameRequest:
         recipient = user_factory.create()
 
         game = game_request_service.start_game_request(
-            db, game_request, recipient
+            db, game_request, "test/fen", recipient
         )
 
         assert db.execute(select(LiveGame)).scalar_one() == game
@@ -191,4 +196,6 @@ class TestStartGameRequest:
 
         game_request = GameRequestFactory.build(recipient=None)
         with pytest.raises(ValueError, match="Recipient not provided"):
-            game_request_service.start_game_request(db, game_request)
+            game_request_service.start_game_request(
+                db, game_request, "test/fen"
+            )

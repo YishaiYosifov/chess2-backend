@@ -98,10 +98,10 @@ def create_game(
     db: Session,
     player1: LivePlayer,
     player2: LivePlayer,
-    fen: str,
     variant: enums.Variant,
     time_control: int,
     increment: int,
+    fen: str,
 ) -> LiveGame:
     game = LiveGame(
         token=uuid.uuid4().hex[:8],

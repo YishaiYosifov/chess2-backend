@@ -11,6 +11,7 @@ from app import enums
 def start_game_request(
     db: Session,
     game_request: GameRequest,
+    fen: str,
     recipient: User | None = None,
 ) -> LiveGame:
     """
@@ -19,6 +20,7 @@ def start_game_request(
 
     :param db: the database session
     :param game_request: the request to start
+    :param fen: the board fen to create the game with
     :param recipient: only needs to be provided for games where the recipient was not already provided.
     :raises ValueError: recipient was not provided in the creation of the game request / to this method.
     """
@@ -41,8 +43,8 @@ def start_game_request(
         game_request.variant,
         game_request.time_control,
         game_request.increment,
+        fen,
     )
-    game_crud.create_pieces(db, game)
 
     db.delete(game_request)
     return game
@@ -52,6 +54,7 @@ def create_or_start_pool_game(
     db: Session,
     user: User,
     game_settings: game_schema.GameSettings,
+    fen: str,
 ) -> LiveGame | None:
     """
     Search for a game request with a matching rating and game options.
@@ -61,6 +64,7 @@ def create_or_start_pool_game(
     :param db: the database session
     :param user: the user for whom to search a game request
     :param game_settings: the game settings object
+    :param fen: the board fen to create the game with
 
     :return: the game token if a request was found, otherwise None
     """
@@ -79,6 +83,6 @@ def create_or_start_pool_game(
         enums.UserType.AUTHED if is_authed else enums.UserType.GUEST,
     )
     if found_game_request:
-        return start_game_request(db, found_game_request, user)
+        return start_game_request(db, found_game_request, fen, user)
 
     game_request_crud.create_game_request(db, user, game_settings)
