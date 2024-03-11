@@ -32,6 +32,7 @@ class Board:
         Parse fen into a board
 
         :param fen: the fen to parse
+
         :return: a dictionary of the point and piece info of each piece
         """
 

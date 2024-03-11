@@ -44,6 +44,7 @@ class Move(BaseModel):
 
 
 class Player(BaseModel):
+    player_id: int
     user: user_schema.UnauthedProfileOut
     color: enums.Color
     time_remaining: float

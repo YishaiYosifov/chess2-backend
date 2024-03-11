@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, Any
+from typing import Awaitable, Callable
 import asyncio
 import json
 
@@ -50,7 +50,7 @@ class WSServer:
     async def emit(
         self,
         event: enums.WSEvent,
-        data: Any,
+        data: dict,
         to: str | int,
     ) -> None:
         """

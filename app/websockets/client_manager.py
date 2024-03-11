@@ -40,6 +40,7 @@ class WebsocketClientManager(ABCWebsocketClientManager):
         Get the clients connected to a room, or the client of a user
 
         :param ids: a room name or a user id
+
         :return: a generator the yields with the client instances
         """
 

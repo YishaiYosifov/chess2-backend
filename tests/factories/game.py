@@ -22,7 +22,7 @@ class LiveGameFactory(TypedSQLAlchemyFactory[LiveGame]):
 
     token = factory.Faker("pystr", max_chars=8)
 
-    fen = "rhnxqkbahr/yypyppypyy/c8c/10/10/10/10/C8C/YYPYPPYPYY/RHNXQKBAHR"
+    fen = "rhnxqkbahr/ddpdppdpdd/c8c/10/10/10/10/C8C/DDPDPPDPDD/RHNXQKBAHR"
 
     variant = enums.Variant.ANARCHY
     time_control = 600
