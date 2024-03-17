@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 from app.schemas import user_schema
+from app.types import StrPoint
 from app import enums
 
 
@@ -39,10 +40,6 @@ class GameSettings(BaseModel):
     increment: Annotated[int, Field(ge=0)]
 
 
-class Move(BaseModel):
-    side_effects: list["Move"]
-
-
 class Player(BaseModel):
     player_id: int
     user: user_schema.UnauthedProfileOut
@@ -58,3 +55,21 @@ class LiveGame(BaseModel):
     turn_player_id: int
 
     fen: str
+
+
+class Move(BaseModel):
+    notation_type: Annotated[
+        enums.NotationType,
+        Field(exclude=True),
+    ] = enums.NotationType.REGULAR
+
+    captured: list[StrPoint] = []
+    moved: dict[StrPoint, StrPoint] = {}
+
+
+class LegalMoves(BaseModel):
+    legal_moves: dict[StrPoint, list[StrPoint]]
+
+
+class MoveMade(Move, LegalMoves):
+    notation: str

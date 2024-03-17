@@ -13,32 +13,39 @@ pytestmark = pytest.mark.unit
         ("10/10/10/10/10/10/10/10/10/10", {}),
         (
             "Q9/10/10/10/10/10/10/10/10/10",
-            {Point(0, 0): PieceInfo(enums.PieceType.QUEEN, enums.Color.WHITE)},
+            {Point(0, 9): PieceInfo(enums.PieceType.QUEEN, enums.Color.WHITE)},
         ),
         (
-            "rh7r/10/c8c/10/10/10/10/10/RrRRRRRRRR/10",
+            "rh7r/10/c8c/10/10/4B5/10/10/RrRRRRRRRR/10",
             {
-                Point(0, 0): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
-                Point(1, 0): PieceInfo(
-                    enums.PieceType.HORSIE, enums.Color.BLACK
+                Point(0, 9): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(1, 9): PieceInfo(
+                    enums.PieceType.HORSIE,
+                    enums.Color.BLACK,
                 ),
-                Point(9, 0): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
-                Point(0, 2): PieceInfo(
-                    enums.PieceType.ARCHBISHOP, enums.Color.BLACK
+                Point(9, 9): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(0, 7): PieceInfo(
+                    enums.PieceType.ARCHBISHOP,
+                    enums.Color.BLACK,
                 ),
-                Point(9, 2): PieceInfo(
-                    enums.PieceType.ARCHBISHOP, enums.Color.BLACK
+                Point(9, 7): PieceInfo(
+                    enums.PieceType.ARCHBISHOP,
+                    enums.Color.BLACK,
                 ),
-                Point(0, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(1, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
-                Point(2, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(3, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(4, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(5, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(6, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(7, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(8, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
-                Point(9, 8): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(4, 4): PieceInfo(
+                    enums.PieceType.BISHOP,
+                    enums.Color.WHITE,
+                ),
+                Point(0, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(1, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.BLACK),
+                Point(2, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(3, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(4, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(5, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(6, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(7, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(8, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
+                Point(9, 1): PieceInfo(enums.PieceType.ROOK, enums.Color.WHITE),
             },
         ),
     ],

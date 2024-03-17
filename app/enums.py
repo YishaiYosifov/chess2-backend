@@ -26,6 +26,13 @@ class UserType(Enum):
     GUEST = "guest"
 
 
+class NotationType(Enum):
+    REGULAR = "regular"
+    CASTLE = "castle"
+    VERTICAL_CASTLE = "vertical_castle"
+    IL_VATICANO = "il_vaticano"
+
+
 class PieceType(Enum):
     KING = "k"
     QUEEN = "q"

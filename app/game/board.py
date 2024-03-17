@@ -44,7 +44,7 @@ class Board:
                 f"There are {len(ranks)} ranks, {self.board_height} necessary"
             )
 
-        for y_coord, rank in enumerate(ranks):
+        for y_coord, rank in enumerate(reversed(ranks)):
             # split the rank into numbers and pieces.
             # this regex makes sure multiple digits are grouped together
             squares: list[str] = re.findall(r"[a-zA-Z]|\d+", rank)

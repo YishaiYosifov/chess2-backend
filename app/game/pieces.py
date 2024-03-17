@@ -1,5 +1,6 @@
 from abc import ABC
 
+from app.schemas.game_schema import Move
 from app.game.board import Board
 from app.types import PieceInfo, Offset, Point
 from app import enums
@@ -11,7 +12,9 @@ class Piece(ABC):
     offsets: list[Offset] = []
 
     @classmethod
-    def calc_legal_moves(cls, board: Board, position: Point) -> list[Point]:
+    def calc_legal_moves(
+        cls, board: Board, position: Point
+    ) -> dict[Point, Move]:
         """
         Get a list of all the legal positions the piece can move to
 
@@ -19,9 +22,9 @@ class Piece(ABC):
         :param position: the current position of the piece
         """
 
-        legal_moves: list[Point] = []
+        legal_moves: dict[Point, Move] = {}
         for offset in cls.offsets:
-            legal_moves += cls._check_offset(board, position, offset)
+            legal_moves.update(cls._check_offset(board, position, offset))
 
         return legal_moves
 
@@ -31,7 +34,7 @@ class Piece(ABC):
         board: Board,
         position: Point,
         offset: Offset,
-    ) -> list[Point]:
+    ) -> dict[Point, Move]:
         """
         Get a list of all the legal moves in a certain direction
 
@@ -41,7 +44,7 @@ class Piece(ABC):
         """
 
         curr_piece = board.get_piece(position)
-        legal_moves: list[Point] = []
+        legal_moves: dict[Point, Move] = {}
         while True:
             position += offset
 
@@ -58,7 +61,7 @@ class Piece(ABC):
             if is_piece and not can_capture:
                 break
 
-            legal_moves.append(position)
+            legal_moves[position] = Move()
 
             # is this the final time the piece can move in this direction?
             if not offset.slide or is_piece:
