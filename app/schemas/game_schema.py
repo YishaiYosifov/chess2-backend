@@ -64,12 +64,15 @@ class Move(BaseModel):
     ] = enums.NotationType.REGULAR
 
     captured: list[StrPoint] = []
-    moved: dict[StrPoint, StrPoint] = {}
+    side_effects: dict[StrPoint, StrPoint] = {}
 
 
 class LegalMoves(BaseModel):
     legal_moves: dict[StrPoint, list[StrPoint]]
 
 
-class MoveMade(Move, LegalMoves):
+class MoveMade(LegalMoves):
     notation: str
+
+    moved: dict[StrPoint, StrPoint]
+    captured: list[StrPoint]

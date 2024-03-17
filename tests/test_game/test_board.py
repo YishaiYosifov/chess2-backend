@@ -67,7 +67,7 @@ def test_initializes_from_fen(fen: str, expected_board: dict[Point, PieceInfo]):
     ],
     ids=[
         "too many squares in last rank",
-        "too little squares in last square",
+        "too little squares in last rank",
         "too many ranks",
         "too little ranks",
     ],
