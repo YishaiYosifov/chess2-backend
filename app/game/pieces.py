@@ -52,16 +52,17 @@ class Piece(ABC):
             if board.is_out_of_bound(position):
                 break
 
-            # check if there is an uncapturable piece in the way
             can_capture = (
                 cls.can_capture(board, curr_piece, position)
                 and offset.can_capture
             )
             is_piece = board[position] is not None
+
+            # check if there is an uncapturable piece in the way
             if is_piece and not can_capture:
                 break
 
-            legal_moves[position] = Move()
+            legal_moves[position] = Move(is_capture=is_piece)
 
             # is this the final time the piece can move in this direction?
             if not offset.slide or is_piece:

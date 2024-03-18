@@ -80,18 +80,18 @@ piece_edge_cases: list[tuple[enums.PieceType, Point, str, dict[Point, Move]]] = 
     # general edge cases
     (
         enums.PieceType.ROOK, Point(4, 4),
-        "10/10/10/4P5/10/4R5/10/4p5/10/10", {
+        "10/10/4p5/10/4R5/10/4P5/10/10/10", {
             # left
             Point(3, 4): Move(),
             Point(2, 4): Move(),
             Point(1, 4): Move(),
             Point(0, 4): Move(),
+
+            # right
             Point(5, 4): Move(),
             Point(6, 4): Move(),
             Point(7, 4): Move(),
             Point(8, 4): Move(),
-
-            # right
             Point(9, 4): Move(),
 
             # up, blocked by friendly piece
@@ -99,12 +99,12 @@ piece_edge_cases: list[tuple[enums.PieceType, Point, str, dict[Point, Move]]] = 
 
             # down, captures enemy piece
             Point(4, 3): Move(),
-            Point(4, 2): Move(captured=[Point(4, 2)]),
+            Point(4, 2): Move(is_capture=True),
         },
     ),
     (
         enums.PieceType.ROOK, Point(9, 9),
-        "10/10/10/10/10/10/10/10/10/10", {
+        "10/10/10/10/10/10/10/10/10/9R", {
             # up
             Point(9, 8): Move(),
             Point(9, 7): Move(),
@@ -130,7 +130,7 @@ piece_edge_cases: list[tuple[enums.PieceType, Point, str, dict[Point, Move]]] = 
     ),
     (
         enums.PieceType.ROOK, Point(4, 4),
-        "10/10/10/10/4P5/3PRP4/4P5/10/10/10", {}
+        "10/10/10/4P5/3PRP4/4P5/10/10/10/10", {}
     )
 ]
 # fmt: on
@@ -141,7 +141,10 @@ piece_edge_cases: list[tuple[enums.PieceType, Point, str, dict[Point, Move]]] = 
     piece_expected_moves,
     ids=[f"{case[0].name.lower()} moves" for case in piece_expected_moves],
 )
-def test_piece_moves(piece_type: enums.PieceType, expected_moves: set[Point]):
+def test_piece_movement(
+    piece_type: enums.PieceType,
+    expected_moves: set[Point],
+):
     """
     Test that the piece can find the correct moves
     when nothing is blocking it and it's right in the center

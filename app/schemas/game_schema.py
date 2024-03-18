@@ -63,8 +63,9 @@ class Move(BaseModel):
         Field(exclude=True),
     ] = enums.NotationType.REGULAR
 
-    captured: list[StrPoint] = []
-    side_effects: dict[StrPoint, StrPoint] = {}
+    is_capture: bool = False
+    side_effect_captures: list[StrPoint] = []
+    side_effect_moves: dict[StrPoint, StrPoint] = {}
 
 
 class LegalMoves(BaseModel):
