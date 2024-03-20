@@ -44,6 +44,8 @@ class LivePlayer(Base, kw_only=True):
         return self.game_white or self.game_black
 
     color: Mapped[enums.Color]
+    castle_rights_short: Mapped[bool] = mapped_column(default=True)
+    castle_rights_long: Mapped[bool] = mapped_column(default=True)
 
     player_last_moved: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

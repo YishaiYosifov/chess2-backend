@@ -87,10 +87,11 @@ class TestJoinPoolGame:
         assert response.status_code == HTTPStatus.OK
 
         created_game = db.execute(select(LiveGame)).scalar_one()
+        expected_message = json.dumps({"token": created_game.token})
+
         assert created_game
         assert ws_received == (
-            f"{enums.WSEvent.GAME_START.value}:"
-            f"{json.dumps(created_game.token)}"
+            f"{enums.WSEvent.GAME_START.value}:{expected_message}"
         )
 
     async def test_user_has_request(

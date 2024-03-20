@@ -12,7 +12,7 @@ class Color(Enum):
     BLACK = "black"
 
     def invert(self) -> "Color":
-        return self.BLACK if self == Color.WHITE else Color.WHITE
+        return Color.BLACK if self == Color.WHITE else Color.WHITE
 
 
 class GameResult(Enum):

@@ -1,6 +1,7 @@
 from typing import Self
 import re
 
+from app.models.games.live_player_model import LivePlayer
 from app.schemas.config_schema import CONFIG
 from app.types import PieceInfo, Point
 from app import enums
@@ -11,10 +12,18 @@ class Board:
         self,
         board_width=CONFIG.board_width,
         board_height=CONFIG.board_height,
+        curr_player: LivePlayer | None = None,
     ) -> None:
         self.board_width = board_width
         self.board_height = board_height
         self._board: dict[Point, PieceInfo] = {}
+
+        if curr_player:
+            self.castle_rights_short = curr_player.castle_rights_short
+            self.castle_rights_long = curr_player.castle_rights_long
+        else:
+            self.castle_rights_short = True
+            self.castle_rights_long = True
 
     @classmethod
     def from_fen(
@@ -22,8 +31,9 @@ class Board:
         fen: str,
         board_width: int = CONFIG.board_width,
         board_height: int = CONFIG.board_height,
+        curr_player: LivePlayer | None = None,
     ) -> Self:
-        board = cls(board_width, board_height)
+        board = cls(board_width, board_height, curr_player)
         board._board = board._parse_fen(fen)
         return board
 
@@ -78,6 +88,9 @@ class Board:
 
     def __getitem__(self, point: Point) -> PieceInfo | None:
         return self._board.get(point)
+
+    def __contains__(self, item: Point) -> bool:
+        return item in self._board
 
     def get_piece(self, point: Point) -> PieceInfo:
         return self._board[point]

@@ -1,6 +1,6 @@
 from abc import ABC
 
-from app.schemas.game_schema import Move
+from app.schemas.game_schema import MoveMetadata
 from app.game.board import Board
 from app.types import PieceInfo, Offset, Point
 from app import enums
@@ -14,17 +14,18 @@ class Piece(ABC):
     @classmethod
     def calc_legal_moves(
         cls, board: Board, position: Point
-    ) -> dict[Point, Move]:
+    ) -> dict[Point, MoveMetadata]:
         """
         Get a list of all the legal positions the piece can move to
 
-        :param board: the chess board to scan
+        :param board: the chessboard to scan
         :param position: the current position of the piece
         """
 
-        legal_moves: dict[Point, Move] = {}
+        legal_moves = {}
         for offset in cls.offsets:
-            legal_moves.update(cls._check_offset(board, position, offset))
+            moves = cls._check_offset(board, position, offset)
+            legal_moves.update(moves)
 
         return legal_moves
 
@@ -34,17 +35,19 @@ class Piece(ABC):
         board: Board,
         position: Point,
         offset: Offset,
-    ) -> dict[Point, Move]:
+    ) -> dict[Point, MoveMetadata]:
         """
         Get a list of all the legal moves in a certain direction
 
-        :param board: the chess board to scan
+        :param board: the chessboard to scan
         :param position: the current position of the piece
         :param offset: the offset to add to the current position
+
+        :return: every point the piece could go to and its metadata
         """
 
         curr_piece = board.get_piece(position)
-        legal_moves: dict[Point, Move] = {}
+        legal_moves = {}
         while True:
             position += offset
 
@@ -62,7 +65,7 @@ class Piece(ABC):
             if is_piece and not can_capture:
                 break
 
-            legal_moves[position] = Move(is_capture=is_piece)
+            legal_moves[position] = MoveMetadata(is_capture=is_piece)
 
             # is this the final time the piece can move in this direction?
             if not offset.slide or is_piece:
@@ -74,9 +77,9 @@ class Piece(ABC):
     def can_capture(
         board: Board,
         capturer: PieceInfo,
-        check_pos: Point,
+        captured_pos: Point,
     ) -> bool:
-        captured = board[check_pos]
+        captured = board[captured_pos]
         return captured is not None and capturer.color != captured.color
 
 
@@ -108,6 +111,111 @@ class King(Piece):
         Offset(1, -1, slide=False),
     ]
 
+    # king x position, rook x position
+    short_castle_x: tuple[int, int] = (8, 7)
+    long_castle_x: tuple[int, int] = (2, 3)
+
+    @classmethod
+    def calc_legal_moves(
+        cls, board: Board, position: Point
+    ) -> dict[Point, MoveMetadata]:
+        legal_moves = super().calc_legal_moves(board, position)
+
+        # find castling moves
+        legal_moves.update(cls.castle(board, position, Point(0, position.y)))
+        legal_moves.update(
+            cls.castle(
+                board, position, Point(board.board_width - 1, position.y)
+            )
+        )
+
+        return legal_moves
+
+    @classmethod
+    def castle(
+        cls,
+        board: Board,
+        king_pos: Point,
+        rook_pos: Point,
+    ) -> dict[Point, MoveMetadata]:
+        """
+        Perform castling move if possible
+
+        :param board: the chessboard
+        :param king_pos: the position of the king
+        :param rook_pos: the position of the potential rook to castle with
+
+        :return: the castling moves if found, an empty dictionary otherwise
+        """
+
+        if not cls.can_castle_with(board, king_pos, rook_pos):
+            return {}
+
+        if rook_pos.x < king_pos.x:
+            king_x, rook_x = cls.long_castle_x
+            ghost_range = range(rook_pos.x + 1, king_pos.x - 1)
+        else:
+            king_x, rook_x = cls.short_castle_x
+            ghost_range = range(king_pos.x + 2, rook_pos.x)
+
+        king_dest = Point(king_x, king_pos.y)
+        rook_dest = Point(rook_x, rook_pos.y)
+
+        moves = {}
+
+        # all the points between the king and the rook should be clickable,
+        # but redirect to the actual point
+        ghost_metadata = MoveMetadata(ghost_of=king_dest)
+        ghost_moves = {
+            Point(x, king_pos.y): ghost_metadata for x in ghost_range
+        }
+        moves.update(ghost_moves)
+
+        moves[king_dest] = MoveMetadata(
+            notation_type=enums.NotationType.CASTLE,
+            side_effect_moves={rook_pos: rook_dest},
+        )
+
+        return moves
+
+    @staticmethod
+    def can_castle_with(
+        board: Board,
+        king_pos: Point,
+        castle_with_pos: Point,
+    ) -> bool:
+        """
+        Determine whether castling is possible with a given rook
+
+        :param board: the chessboard
+        :param king_pos: the position of the king
+        :param castle_with_pos: the position of the rook with whom to castle with
+
+        :return: true if possible, false otherwise
+        """
+
+        castle_with = board[castle_with_pos]
+
+        is_path_blocked = any(
+            Point(x, king_pos.y) in board
+            for x in range(king_pos.x + 1, castle_with_pos.x)
+        )
+
+        is_long = castle_with_pos.x < king_pos.x
+        has_castling_rights = (is_long and board.castle_rights_long) or (
+            not is_long and board.castle_rights_short
+        )
+
+        return (
+            not is_path_blocked
+            and has_castling_rights
+            # same rank
+            and castle_with_pos.y == king_pos.y
+            # correct piece type
+            and castle_with is not None
+            and castle_with.piece_type == enums.PieceType.ROOK
+        )
+
 
 class Rook(Piece):
     offsets = [Offset(1, 0), Offset(-1, 0), Offset(0, 1), Offset(0, -1)]
@@ -133,19 +241,19 @@ class Bishop(Piece):
 class Knook(Piece):
     offsets = [
         # rook moves
-        Offset(1, 0),
-        Offset(-1, 0),
-        Offset(0, 1),
-        Offset(0, -1),
+        Offset(1, 0, can_capture=False),
+        Offset(-1, 0, can_capture=False),
+        Offset(0, 1, can_capture=False),
+        Offset(0, -1, can_capture=False),
         # horsie moves
-        Offset(1, 2, slide=False, can_capture=False),
-        Offset(1, -2, slide=False, can_capture=False),
-        Offset(-1, 2, slide=False, can_capture=False),
-        Offset(-1, -2, slide=False, can_capture=False),
-        Offset(2, 1, slide=False, can_capture=False),
-        Offset(2, -1, slide=False, can_capture=False),
-        Offset(-2, 1, slide=False, can_capture=False),
-        Offset(-2, -1, slide=False, can_capture=False),
+        Offset(1, 2, slide=False),
+        Offset(1, -2, slide=False),
+        Offset(-1, 2, slide=False),
+        Offset(-1, -2, slide=False),
+        Offset(2, 1, slide=False),
+        Offset(2, -1, slide=False),
+        Offset(-2, 1, slide=False),
+        Offset(-2, -1, slide=False),
     ]
 
 

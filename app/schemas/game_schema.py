@@ -57,23 +57,23 @@ class LiveGame(BaseModel):
     fen: str
 
 
-class Move(BaseModel):
-    notation_type: Annotated[
-        enums.NotationType,
-        Field(exclude=True),
-    ] = enums.NotationType.REGULAR
+class MoveMetadata(BaseModel):
+    notation_type: enums.NotationType = enums.NotationType.REGULAR
 
     is_capture: bool = False
+    ghost_of: StrPoint | None = None
     side_effect_captures: list[StrPoint] = []
     side_effect_moves: dict[StrPoint, StrPoint] = {}
 
 
 class LegalMoves(BaseModel):
-    legal_moves: dict[StrPoint, list[StrPoint]]
+    legal_moves: dict[StrPoint, list[StrPoint]] = {}
 
 
-class MoveMade(LegalMoves):
+class MoveMade(BaseModel):
     notation: str
 
     moved: dict[StrPoint, StrPoint]
     captured: list[StrPoint]
+
+    legal_moves: dict[StrPoint, list[StrPoint]] = {}
