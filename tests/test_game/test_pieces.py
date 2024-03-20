@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+
 import pytest
 
 from app.schemas.game_schema import MoveMetadata
@@ -70,6 +72,18 @@ piece_expected_moves: list[tuple[enums.PieceType, set[Point]]] = [
 ]
 # fmt: on
 
+
+@dataclass
+class PieceTest:
+    piece_type: enums.PieceType
+    piece_position: Point
+    fen: str
+
+    expected_moves: set[Point] = field(default_factory=set)
+    expected_metadata: dict[Point, MoveMetadata] = field(default_factory=dict)
+    expected_ghosts: dict[Point, Point] = field(default_factory=dict)
+
+
 piece_edge_cases_ids = [
     "king: castling",
     "general edge case: in the center, blocked by friendly and enemy pieces",
@@ -77,38 +91,35 @@ piece_edge_cases_ids = [
     "general edge case: blocked by friendly pieces, no legal moves",
 ]
 # fmt: off
-piece_edge_cases: list[
-    tuple[enums.PieceType, Point, str, set[Point], dict[Point, MoveMetadata]],
-] = [
-    (
-        enums.PieceType.KING, Point(5, 0),
+piece_edge_cases: list[PieceTest] = [
+    PieceTest(enums.PieceType.KING, Point(5, 0),
         "R4K3R/10/10/10/10/10/10/10/10/10", {
             # regular moves
             Point(4, 0), Point(6, 0),
             Point(4, 1), Point(5, 1), Point(6, 1),
 
-            Point(1, 0), Point(2, 0), Point(3, 0), # long castle moves
-            Point(7, 0), Point(8, 0), # short castle moves
+            Point(2, 0), # long castle
+            Point(8, 0), # short castle
         }, {
             # long castle metadata
-            Point(1, 0): MoveMetadata(ghost_of=Point(2, 0)),
             Point(2, 0): MoveMetadata(
                 notation_type=enums.NotationType.CASTLE,
                 side_effect_moves={Point(0, 0): Point(3, 0)}
             ),
-            Point(3, 0): MoveMetadata(ghost_of=Point(2, 0)),
 
             # short castle metadata
-            Point(7, 0): MoveMetadata(ghost_of=Point(8, 0)),
             Point(8, 0): MoveMetadata(
                 notation_type=enums.NotationType.CASTLE,
                 side_effect_moves={Point(9, 0): Point(7, 0)}
             ),
-        }
-    ),
+        }, {
+            Point(3, 0): Point(2, 0),
+            Point(1, 0): Point(2, 0),
+            Point(7, 0): Point(8, 0)
+    }),
 
     # general edge cases
-    (
+    PieceTest(
         enums.PieceType.ROOK, Point(4, 4),
         "10/10/4p5/10/4R5/10/4P5/10/10/10", {
             Point(3, 4), Point(2, 4), Point(1, 4), Point(0, 4), # left
@@ -119,7 +130,7 @@ piece_edge_cases: list[
             Point(4, 2): MoveMetadata(is_capture=True)
         },
     ),
-    (
+    PieceTest(
         enums.PieceType.ROOK, Point(9, 9),
         "10/10/10/10/10/10/10/10/10/9R", {
             # up
@@ -129,11 +140,11 @@ piece_edge_cases: list[
             # left
             Point(8, 9), Point(7, 9), Point(6, 9), Point(5, 9),
             Point(4, 9), Point(3, 9), Point(2, 9), Point(1, 9), Point(0, 9),
-        }, {},
+        },
     ),
-    (
+    PieceTest(
         enums.PieceType.ROOK, Point(4, 4),
-        "10/10/10/4P5/3PRP4/4P5/10/10/10/10", set(), {}
+        "10/10/10/4P5/3PRP4/4P5/10/10/10/10"
     )
 ]
 # fmt: on
@@ -161,37 +172,35 @@ def test_piece_movement(
     legal_moves = pieces.PIECES[piece_type].calc_legal_moves(
         board, piece_position
     )
-    assert set(legal_moves) == expected_moves
+    assert set(legal_moves.moves) == expected_moves
+    assert not legal_moves.ghosts
 
-    regular_move = MoveMetadata()
-    for move in legal_moves.values():
-        assert move == regular_move
+    regular_metadata = MoveMetadata()
+    for metadata in legal_moves.moves.values():
+        assert metadata == regular_metadata
 
 
 @pytest.mark.parametrize(
-    "piece_type, piece_position, fen, expected_moves, expected_metadata",
+    "piece_test_data",
     piece_edge_cases,
     ids=piece_edge_cases_ids,
 )
-def test_piece_edge_cases(
-    piece_type: enums.PieceType,
-    piece_position: Point,
-    fen: str,
-    expected_moves: set[Point],
-    expected_metadata: dict[Point, MoveMetadata],
-):
+def test_piece_edge_cases(piece_test_data: PieceTest):
     """Set up the board in a specific position to check edge cases"""
 
-    board = Board.from_fen(fen)
+    board = Board.from_fen(piece_test_data.fen)
 
-    legal_moves = pieces.PIECES[piece_type].calc_legal_moves(
-        board, piece_position
+    legal_moves = pieces.PIECES[piece_test_data.piece_type].calc_legal_moves(
+        board, piece_test_data.piece_position
     )
-    assert set(legal_moves) == expected_moves
+    assert set(legal_moves.moves) == piece_test_data.expected_moves
+    assert legal_moves.ghosts == piece_test_data.expected_ghosts
 
-    regular_move = MoveMetadata()
-    for point, metadata in legal_moves.items():
-        expected = expected_metadata.get(point, regular_move)
+    regular_metadata = MoveMetadata()
+    for point, metadata in legal_moves.moves.items():
+        expected = piece_test_data.expected_metadata.get(
+            point, regular_metadata
+        )
         assert (
             expected == metadata
         ), f"Invalid metadata for {point}: {metadata} instead of {expected}"

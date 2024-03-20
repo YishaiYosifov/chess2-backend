@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from abc import ABC
 
 from app.schemas.game_schema import MoveMetadata
@@ -6,15 +7,23 @@ from app.types import PieceInfo, Offset, Point
 from app import enums
 
 
+@dataclass
+class PieceMoves:
+    moves: dict[Point, MoveMetadata] = field(default_factory=dict)
+    ghosts: dict[Point, Point] = field(default_factory=dict)
+
+    def merge_moves(self, legal_moves: "PieceMoves") -> None:
+        self.moves.update(legal_moves.moves)
+        self.ghosts.update(legal_moves.ghosts)
+
+
 class Piece(ABC):
     # how much to offset the position in each step
     # to reach the points the piece could move to in a single move
     offsets: list[Offset] = []
 
     @classmethod
-    def calc_legal_moves(
-        cls, board: Board, position: Point
-    ) -> dict[Point, MoveMetadata]:
+    def calc_legal_moves(cls, board: Board, position: Point) -> PieceMoves:
         """
         Get a list of all the legal positions the piece can move to
 
@@ -22,10 +31,10 @@ class Piece(ABC):
         :param position: the current position of the piece
         """
 
-        legal_moves = {}
+        legal_moves = PieceMoves()
         for offset in cls.offsets:
             moves = cls._check_offset(board, position, offset)
-            legal_moves.update(moves)
+            legal_moves.merge_moves(moves)
 
         return legal_moves
 
@@ -35,7 +44,7 @@ class Piece(ABC):
         board: Board,
         position: Point,
         offset: Offset,
-    ) -> dict[Point, MoveMetadata]:
+    ) -> PieceMoves:
         """
         Get a list of all the legal moves in a certain direction
 
@@ -47,7 +56,7 @@ class Piece(ABC):
         """
 
         curr_piece = board.get_piece(position)
-        legal_moves = {}
+        legal_moves = PieceMoves()
         while True:
             position += offset
 
@@ -65,7 +74,7 @@ class Piece(ABC):
             if is_piece and not can_capture:
                 break
 
-            legal_moves[position] = MoveMetadata(is_capture=is_piece)
+            legal_moves.moves[position] = MoveMetadata(is_capture=is_piece)
 
             # is this the final time the piece can move in this direction?
             if not offset.slide or is_piece:
@@ -116,16 +125,23 @@ class King(Piece):
     long_castle_x: tuple[int, int] = (2, 3)
 
     @classmethod
-    def calc_legal_moves(
-        cls, board: Board, position: Point
-    ) -> dict[Point, MoveMetadata]:
+    def calc_legal_moves(cls, board: Board, position: Point) -> PieceMoves:
         legal_moves = super().calc_legal_moves(board, position)
 
         # find castling moves
-        legal_moves.update(cls.castle(board, position, Point(0, position.y)))
-        legal_moves.update(
+        legal_moves.merge_moves(
             cls.castle(
-                board, position, Point(board.board_width - 1, position.y)
+                board,
+                position,
+                Point(0, position.y),
+            )
+        )
+
+        legal_moves.merge_moves(
+            cls.castle(
+                board,
+                position,
+                Point(board.board_width - 1, position.y),
             )
         )
 
@@ -137,7 +153,7 @@ class King(Piece):
         board: Board,
         king_pos: Point,
         rook_pos: Point,
-    ) -> dict[Point, MoveMetadata]:
+    ) -> PieceMoves:
         """
         Perform castling move if possible
 
@@ -149,7 +165,7 @@ class King(Piece):
         """
 
         if not cls.can_castle_with(board, king_pos, rook_pos):
-            return {}
+            return PieceMoves()
 
         if rook_pos.x < king_pos.x:
             king_x, rook_x = cls.long_castle_x
@@ -161,19 +177,22 @@ class King(Piece):
         king_dest = Point(king_x, king_pos.y)
         rook_dest = Point(rook_x, rook_pos.y)
 
-        moves = {}
-
         # all the points between the king and the rook should be clickable,
         # but redirect to the actual point
-        ghost_metadata = MoveMetadata(ghost_of=king_dest)
         ghost_moves = {
-            Point(x, king_pos.y): ghost_metadata for x in ghost_range
+            Point(x, king_pos.y): king_dest
+            for x in ghost_range
+            if x != king_dest.x
         }
-        moves.update(ghost_moves)
 
-        moves[king_dest] = MoveMetadata(
-            notation_type=enums.NotationType.CASTLE,
-            side_effect_moves={rook_pos: rook_dest},
+        moves = PieceMoves(
+            moves={
+                king_dest: MoveMetadata(
+                    notation_type=enums.NotationType.CASTLE,
+                    side_effect_moves={rook_pos: rook_dest},
+                )
+            },
+            ghosts=ghost_moves,
         )
 
         return moves

@@ -61,7 +61,6 @@ class MoveMetadata(BaseModel):
     notation_type: enums.NotationType = enums.NotationType.REGULAR
 
     is_capture: bool = False
-    ghost_of: StrPoint | None = None
     side_effect_captures: list[StrPoint] = []
     side_effect_moves: dict[StrPoint, StrPoint] = {}
 
