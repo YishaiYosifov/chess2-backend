@@ -62,16 +62,16 @@ Pieces are implemented by inheriting the `Piece` class and providing offsets. Of
     -   `app/routers/auth/py` endpoints for logging in, signing up, refreshing access tokens and creating guest accounts
 -   `app/models` all the sqlalchemy modules
 -   `app/game` piece and board logic
-    - `app/game/pieces.py` piece implementation
-    - `app/game/board.py` class for handling the state of the board
+    -   `app/game/pieces.py` piece implementation
+    -   `app/game/board.py` class for handling the state of the board
 -   `app/services`
     -   `app/services/game_request_service.py` service for searching / entering the pool and starting a request
     -   `app/services/jwt_service.py` all encoding / decoding jwt logic
+    -   `app/services/ws_service`
+        -   `app/services/ws_service/ws_server.py` logic for horizontally scaling websocket handling using redis pubsub
 -   `app/crud`
     -   `app/crud/game_request_crud.py` logic for searching and creating a request
     -   `app/crud/user_crud.py` logic for fetching, creating and deleting authed and guest users
--   `app/websockets`
-    -   `app/websockets/ws_server.py` logic for horizontally scaling websocket handling using redis pubsub
 
 ## Testing
 

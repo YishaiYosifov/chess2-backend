@@ -1,5 +1,9 @@
 import os
 
+from tests.utils.test_scoped_session import TestScopedSession
+from tests.factories.user import AuthedUserFactory
+from tests.utils import mocks
+
 os.environ["ENV"] = "test.env"
 
 from glob import glob
@@ -8,7 +12,7 @@ import shutil
 
 from httpx_ws.transport import ASGIWebSocketTransport
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import Session
 from httpx import AsyncClient
 import redis.asyncio as aioredis
 import httpx_ws
@@ -16,12 +20,10 @@ import pytest
 import httpx
 
 from app.schemas.config_schema import get_config, CONFIG
-from app.websockets import ws_server_instance
+from app.services.ws_service import ws_server_inst
 from app.main import app
 from app.deps import get_db
 from app.db import engine
-
-TestScopedSession = scoped_session(sessionmaker())
 
 
 @pytest.fixture(scope="session")
@@ -39,9 +41,9 @@ def async_client(connect_websockets):
 
 @pytest.fixture(scope="session")
 async def connect_websockets(anyio_backend):
-    await ws_server_instance.connect_pubsub()
+    await ws_server_inst.connect_pubsub()
     yield
-    await ws_server_instance.disconnect_pubsub()
+    await ws_server_inst.disconnect_pubsub()
 
 
 @pytest.fixture
@@ -93,3 +95,10 @@ def pytest_pycollect_makeitem(collector, name, obj) -> None:
 
     if inspect.iscoroutinefunction(obj):
         pytest.mark.usefixtures("anyio_backend")(obj)
+
+
+@pytest.fixture
+def authed_user(db: Session):
+    user = AuthedUserFactory.create()
+    with mocks.mock_login(user):
+        yield user

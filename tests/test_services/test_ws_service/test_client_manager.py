@@ -2,7 +2,7 @@ from pytest_mock.plugin import MockType
 from pytest_mock import MockerFixture
 import pytest
 
-from app.websockets.client_manager import WebsocketClientManager
+from app.services.ws_service.client_manager import WebsocketClientManager
 
 
 @pytest.fixture

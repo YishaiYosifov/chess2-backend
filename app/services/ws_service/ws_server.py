@@ -1,18 +1,20 @@
-from typing import Awaitable, Callable
+from __future__ import annotations
+
 import asyncio
 import json
 
-from fastapi import WebSocket
+from fastapi import status, WebSocketException, WebSocket
 import redis.asyncio as aioredis
 
-from app.websockets.client_manager import (
+from app.services.ws_service.client_manager import (
     ABCWebsocketClientManager,
     WebsocketClientManager,
 )
+from app.services.ws_service.ws_router import WSRouter
 from app import enums
 
 
-class WSServer:
+class WSServer(WSRouter):
     def __init__(
         self,
         redis_client: aioredis.Redis,
@@ -20,14 +22,16 @@ class WSServer:
         client_manager: ABCWebsocketClientManager | None = None,
     ):
         self.clients = client_manager or WebsocketClientManager()
+
         self._pubsub_channel = pubsub_channel
         self._redis = redis_client
+
+        super().__init__()
 
     async def connect_websocket(
         self,
         websocket: WebSocket,
         user_id: int,
-        on_receive: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         """
         Subsribe a websocket client to a channel
@@ -42,8 +46,7 @@ class WSServer:
 
         try:
             async for message in websocket.iter_text():
-                if on_receive:
-                    on_receive(message)
+                self._handle_message(message)
         finally:
             self.clients.remove_client(user_id)
 
@@ -66,6 +69,53 @@ class WSServer:
             self._pubsub_channel,
             f"{to}:{event.value}:{data_str}",
         )
+
+    def include_router(self, router: WSRouter):
+        self._event_handlers.update(router)
+
+    async def connect_pubsub(self) -> None:
+        self._pubsub = self._redis.pubsub()
+        await self._pubsub.subscribe(self._pubsub_channel)
+
+        self._pubsub_task = asyncio.create_task(self._handle_pubsub())
+
+    async def disconnect_pubsub(self) -> None:
+        self._pubsub_task.cancel()
+        await self._pubsub_task
+
+        await self._pubsub.aclose()
+
+    def _handle_message(self, message: str) -> None:
+        """
+        Try to forward a message recived from the
+        client into the correct even handler
+
+        :param message: the message received from the client
+        """
+
+        invalid_protocol_err = WebSocketException(status.WS_1002_PROTOCOL_ERROR)
+
+        # make sure the event is valid
+        try:
+            event, data = message.split(":", 1)
+            event = enums.WSEvent(event)
+        except ValueError:
+            raise invalid_protocol_err
+
+        # make sure there is an even handler for this event
+        event_handler = self._event_handlers.get(event)
+        if not event_handler:
+            return
+
+        # try to load the data into a dictionary
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError:
+            raise invalid_protocol_err
+        if not isinstance(data, dict):
+            raise invalid_protocol_err
+
+        event_handler(self, data)
 
     async def _handle_pubsub(self) -> None:
         """
@@ -90,15 +140,3 @@ class WSServer:
 
             for client in self.clients.get_clients(clients_id):
                 await client.send_text(message)
-
-    async def connect_pubsub(self) -> None:
-        self._pubsub = self._redis.pubsub()
-        await self._pubsub.subscribe(self._pubsub_channel)
-
-        self._pubsub_task = asyncio.create_task(self._handle_pubsub())
-
-    async def disconnect_pubsub(self) -> None:
-        self._pubsub_task.cancel()
-        await self._pubsub_task
-
-        await self._pubsub.aclose()

@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Generator, Annotated
 from http import HTTPStatus
 
@@ -6,9 +5,10 @@ from sqlalchemy.orm import Session
 from fastapi import status, WebSocketException, HTTPException, Depends, Path
 import redis.asyncio as aioredis
 
+from app.services.ws_service.ws_server import WSServer
 from app.services.auth_service import oauth2_scheme
+from app.services.ws_service import ws_server_inst
 from app.models.user_model import AuthedUser, GuestUser, User
-from app.websockets import ws_server_instance, ws_server
 from app.schemas import user_schema
 from app.crud import user_crud
 
@@ -28,18 +28,16 @@ def get_redis():
     return db.redis_client
 
 
-RedisDep = Annotated[aioredis.Redis, Depends(get_redis)]
+def get_ws_server():
+    return ws_server_inst
+
+
 DBDep = Annotated[Session, Depends(get_db)]
+RedisDep = Annotated[aioredis.Redis, Depends(get_redis)]
+WSServerDep = Annotated[WSServer, Depends(get_ws_server)]
+
 ConfigDep = Annotated[Config, Depends(get_config)]
 TokensDep = Annotated[user_schema.AuthTokens, Depends(oauth2_scheme)]
-
-
-@lru_cache
-def get_ws_server(redis: RedisDep):
-    return ws_server_instance
-
-
-WSServerDep = Annotated[ws_server.WSServer, Depends(get_ws_server)]
 
 
 class GetCurrentUser:

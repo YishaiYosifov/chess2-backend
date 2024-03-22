@@ -3,17 +3,16 @@ from http import HTTPStatus
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import WebSocket, FastAPI
+from fastapi import FastAPI
 
 from app.schemas.config_schema import CONFIG
-from app.websockets import ws_server_instance
+from app.services.ws_service import ws_server_inst
 from app.schemas import response_schema
 from app.utils import common
 from app.crud import user_crud
 from app.db import engine, SessionLocal, Base
-from app import deps
 
-from .routers import game_requests, live_game, settings, profile, auth
+from .routers import game_requests, live_game, settings, profile, auth, ws
 
 
 @asynccontextmanager
@@ -32,9 +31,9 @@ async def lifespan(app: FastAPI):
 
     scheduler.start()
 
-    await ws_server_instance.connect_pubsub()
+    await ws_server_inst.connect_pubsub()
     yield
-    await ws_server_instance.disconnect_pubsub()
+    await ws_server_inst.disconnect_pubsub()
 
     scheduler.shutdown()
 
@@ -52,6 +51,7 @@ app = FastAPI(
     generate_unique_id_function=lambda route: f"{route.tags[0]}-{route.name}",
     lifespan=lifespan,
 )
+app.include_router(ws.router)
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(settings.router)
@@ -69,12 +69,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.websocket("/ws")
-async def connect_websocket(
-    websocket: WebSocket,
-    user: deps.WSUnauthedUserDep,
-    ws_server: deps.WSServerDep,
-):
-    await ws_server.connect_websocket(websocket, user.user_id)

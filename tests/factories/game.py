@@ -6,10 +6,10 @@ import factory
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_result_model import GameResult
 from app.models.games.live_game_model import LiveGame
+from tests.utils.test_scoped_session import TestScopedSession
 from tests.utils.factory_model import TypedSQLAlchemyFactory, TypedFactory
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
-from tests.conftest import TestScopedSession
 from app.schemas import game_schema
 from app.types import PieceInfo
 from app import enums

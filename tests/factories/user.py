@@ -1,10 +1,10 @@
 import factory
 
 from app.models.games.live_player_model import LivePlayer
+from tests.utils.test_scoped_session import TestScopedSession
 from tests.utils.factory_model import TypedSQLAlchemyFactory
 from app.services.auth_service import hash_password
 from app.models.user_model import AuthedUser, GuestUser
-from tests.conftest import TestScopedSession
 from app import enums
 
 
