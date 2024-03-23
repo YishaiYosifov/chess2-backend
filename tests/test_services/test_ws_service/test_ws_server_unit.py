@@ -134,3 +134,22 @@ class TestHandleMessage:
         )
 
         event_handler.assert_called_once_with(test_ws_server, message)
+
+    async def test_correct_event_handler_ran(
+        self, mocker: MockerFixture, test_ws_server: WSServer
+    ):
+        """Make sure only the correct event handler is ran"""
+
+        correct_event_handler = mocker.Mock()
+        wrong_event_handler = mocker.Mock()
+        event = enums.WSEvent.GAME_START
+
+        test_ws_server.on_event(enums.WSEvent.GAME_START)(correct_event_handler)
+        test_ws_server.on_event(enums.WSEvent.NOTIFICATION)(wrong_event_handler)
+
+        await test_ws_server._handle_message(
+            f"{event.value}:{json.dumps({'key': 'value'})}"
+        )
+
+        correct_event_handler.assert_called_once()
+        wrong_event_handler.assert_not_called()

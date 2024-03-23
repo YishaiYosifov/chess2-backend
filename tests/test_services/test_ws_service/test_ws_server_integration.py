@@ -94,7 +94,7 @@ async def test_on_receive(
     message = {"key": "value"}
 
     @test_ws_server.on_event(event)
-    async def event_handler(ws_server: WSServer, data: dict):
+    async def _(ws_server: WSServer, data: dict):
         websocket = list(ws_server.clients.get_clients(authed_user.user_id))[0]
         await websocket.send_json(data)
 
