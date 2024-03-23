@@ -120,7 +120,7 @@ class WSServer(WSRouter):
         if inspect.iscoroutinefunction(event_handler):
             await event_handler(self, data)
         else:
-            event_handler(self, data)
+            await asyncio.to_thread(event_handler, self, data)
 
     async def _handle_pubsub(self) -> None:
         """
