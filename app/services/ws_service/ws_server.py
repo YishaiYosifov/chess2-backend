@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import asyncio
 import json
 
@@ -46,7 +47,7 @@ class WSServer(WSRouter):
 
         try:
             async for message in websocket.iter_text():
-                self._handle_message(message)
+                await self._handle_message(message)
         finally:
             self.clients.remove_client(user_id)
 
@@ -85,7 +86,7 @@ class WSServer(WSRouter):
 
         await self._pubsub.aclose()
 
-    def _handle_message(self, message: str) -> None:
+    async def _handle_message(self, message: str) -> None:
         """
         Try to forward a message recived from the
         client into the correct even handler
@@ -115,7 +116,11 @@ class WSServer(WSRouter):
         if not isinstance(data, dict):
             raise invalid_protocol_err
 
-        event_handler(self, data)
+        # await async functions, run other functions normally
+        if inspect.iscoroutinefunction(event_handler):
+            await event_handler(self, data)
+        else:
+            event_handler(self, data)
 
     async def _handle_pubsub(self) -> None:
         """

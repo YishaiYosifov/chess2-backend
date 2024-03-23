@@ -1,6 +1,10 @@
 from collections import Counter
 from typing import Sequence, Any
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+TestScopedSession = scoped_session(sessionmaker())
+
 
 def get_duplicates(list: list[Any]):
     """Only get the duplicate items from a list"""

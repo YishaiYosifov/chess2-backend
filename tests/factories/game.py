@@ -6,8 +6,8 @@ import factory
 from app.models.games.game_request_model import GameRequest
 from app.models.games.game_result_model import GameResult
 from app.models.games.live_game_model import LiveGame
-from tests.utils.test_scoped_session import TestScopedSession
 from tests.utils.factory_model import TypedSQLAlchemyFactory, TypedFactory
+from tests.utils.test_common import TestScopedSession
 from app.models.user_model import AuthedUser
 from tests.factories.user import AuthedUserFactory, PlayerFactory
 from app.schemas import game_schema

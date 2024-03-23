@@ -2,8 +2,8 @@ from datetime import timedelta, datetime
 
 import factory
 
-from tests.utils.test_scoped_session import TestScopedSession
 from tests.utils.factory_model import TypedSQLAlchemyFactory
+from tests.utils.test_common import TestScopedSession
 from app.models.rating_model import Rating
 from app.models.user_model import AuthedUser
 from app import enums

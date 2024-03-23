@@ -15,8 +15,8 @@ import httpx_ws
 import pytest
 import httpx
 
-from tests.utils.test_scoped_session import TestScopedSession
 from app.schemas.config_schema import get_config, CONFIG
+from tests.utils.test_common import TestScopedSession
 from app.services.ws_service import ws_server_inst
 from tests.factories.user import AuthedUserFactory
 from tests.utils import mocks

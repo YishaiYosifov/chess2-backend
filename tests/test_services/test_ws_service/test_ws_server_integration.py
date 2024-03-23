@@ -81,3 +81,23 @@ class TestEmit:
             await test_ws_server.emit(self.event, self.data, room)
 
             assert await ws.receive_text(3) == self.expected_message
+
+
+async def test_on_receive(
+    authed_user: AuthedUser,
+    async_ws_client: AsyncWSClient,
+    test_ws_server: WSServer,
+):
+    """Test the event handler is actually ran when a message is received"""
+
+    event = enums.WSEvent.GAME_START
+    message = {"key": "value"}
+
+    @test_ws_server.on_event(event)
+    async def event_handler(ws_server: WSServer, data: dict):
+        websocket = list(ws_server.clients.get_clients(authed_user.user_id))[0]
+        await websocket.send_json(data)
+
+    async with async_ws_client as ws:
+        await ws.send_text(f"{event.value}:{json.dumps(message)}")
+        assert await ws.receive_json(3) == message

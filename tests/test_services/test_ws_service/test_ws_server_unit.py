@@ -103,17 +103,25 @@ class TestHandleMessage:
             "invalid json",
         ],
     )
-    def test_invalid_protocol(self, test_ws_server: WSServer, message: str):
+    async def test_invalid_protocol(
+        self,
+        test_ws_server: WSServer,
+        message: str,
+    ):
         """Test an error is raised when the message protocol is invalid"""
 
         event = enums.WSEvent.GAME_START
         test_ws_server.on_event(event)(lambda a, b: ...)
 
         with pytest.raises(WebSocketException) as err:
-            test_ws_server._handle_message(message)
+            await test_ws_server._handle_message(message)
         assert err.value.code == 1002
 
-    def test_parses_json(self, mocker: MockerFixture, test_ws_server: WSServer):
+    async def test_parses_json(
+        self,
+        mocker: MockerFixture,
+        test_ws_server: WSServer,
+    ):
         """Test the message is parsed and handled correctly"""
 
         event_handler = mocker.Mock()
@@ -121,6 +129,8 @@ class TestHandleMessage:
         test_ws_server.on_event(event)(event_handler)
         message = {"key": "value"}
 
-        test_ws_server._handle_message(f"{event.value}:{json.dumps(message)}")
+        await test_ws_server._handle_message(
+            f"{event.value}:{json.dumps(message)}"
+        )
 
         event_handler.assert_called_once_with(test_ws_server, message)
