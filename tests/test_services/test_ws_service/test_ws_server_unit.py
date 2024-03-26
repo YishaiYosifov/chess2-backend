@@ -80,10 +80,7 @@ def test_include_router(test_ws_server: WSServer):
     """Test routers are correctly added into the event handlers"""
 
     ws_router = WSRouter()
-
-    @ws_router.on_event(enums.WSEvent.NOTIFICATION)
-    def test_event_handler(ws_server: WSServer, data: dict):
-        pass
+    ws_router.on_event(enums.WSEvent.NOTIFICATION)(lambda a, b: ...)
 
     test_ws_server.include_router(ws_router)
     assert test_ws_server._event_handlers == ws_router._event_handlers
