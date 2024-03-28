@@ -17,12 +17,12 @@ def ws_router():
 def test_on_event(ws_router: WSRouter):
     """Test functions are added to the router when registered"""
 
-    @ws_router.on_event(enums.WSEvent.GAME_START)
+    @ws_router.on_event(enums.WSEventIn.MOVE)
     def test_event_handler(ws_server: WSServer, data: dict):
         pass
 
     assert ws_router._event_handlers == {
-        enums.WSEvent.GAME_START: test_event_handler
+        enums.WSEventIn.MOVE: test_event_handler
     }
 
 
@@ -30,8 +30,8 @@ def test_iter(ws_router: WSRouter):
     """Test the iter functions returns the events correctly"""
 
     test_event_handlers = {
-        enums.WSEvent.GAME_START: lambda ws_server, data: ...,
-        enums.WSEvent.NOTIFICATION: lambda ws_server, data: ...,
+        enums.WSEventIn.MOVE: lambda ws_server, data: ...,
+        enums.WSEventIn.RESIGN: lambda ws_server, data: ...,
     }
     ws_router._event_handlers = test_event_handlers
 

@@ -53,7 +53,7 @@ class WSServer(WSRouter):
 
     async def emit(
         self,
-        event: enums.WSEvent,
+        event: enums.WSEventOut,
         data: dict,
         to: str | int,
     ) -> None:
@@ -99,7 +99,7 @@ class WSServer(WSRouter):
         # make sure the event is valid
         try:
             event, data = message.split(":", 1)
-            event = enums.WSEvent(event)
+            event = enums.WSEventIn(event)
         except ValueError:
             raise invalid_protocol_err
 

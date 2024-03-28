@@ -66,7 +66,7 @@ async def test_emit(
     publish_mock = mocker.AsyncMock()
     mock_redis.publish = publish_mock
 
-    event = enums.WSEvent.NOTIFICATION
+    event = enums.WSEventOut.NOTIFICATION
     data = {"test": "ing"}
     to = 1
     await test_ws_server.emit(event, data, to)
@@ -80,7 +80,7 @@ def test_include_router(test_ws_server: WSServer):
     """Test routers are correctly added into the event handlers"""
 
     ws_router = WSRouter()
-    ws_router.on_event(enums.WSEvent.NOTIFICATION)(lambda a, b: ...)
+    ws_router.on_event(enums.WSEventIn.MOVE)(lambda a, b: ...)
 
     test_ws_server.include_router(ws_router)
     assert test_ws_server._event_handlers == ws_router._event_handlers
@@ -92,7 +92,7 @@ class TestHandleMessage:
         [
             "test",
             'invalid_event:{"key": "value"}',
-            enums.WSEvent.GAME_START.value + ":invalid_json",
+            enums.WSEventIn.MOVE.value + ":invalid_json",
         ],
         ids=[
             "no event and json",
@@ -107,7 +107,7 @@ class TestHandleMessage:
     ):
         """Test an error is raised when the message protocol is invalid"""
 
-        event = enums.WSEvent.GAME_START
+        event = enums.WSEventIn.MOVE
         test_ws_server.on_event(event)(lambda a, b: ...)
 
         with pytest.raises(WebSocketException) as err:
@@ -122,7 +122,7 @@ class TestHandleMessage:
         """Test the message is parsed and handled correctly"""
 
         event_handler = mocker.Mock()
-        event = enums.WSEvent.GAME_START
+        event = enums.WSEventIn.MOVE
         test_ws_server.on_event(event)(event_handler)
         message = {"key": "value"}
 
@@ -139,10 +139,10 @@ class TestHandleMessage:
 
         correct_event_handler = mocker.Mock()
         wrong_event_handler = mocker.Mock()
-        event = enums.WSEvent.GAME_START
+        event = enums.WSEventIn.MOVE
 
-        test_ws_server.on_event(enums.WSEvent.GAME_START)(correct_event_handler)
-        test_ws_server.on_event(enums.WSEvent.NOTIFICATION)(wrong_event_handler)
+        test_ws_server.on_event(enums.WSEventIn.MOVE)(correct_event_handler)
+        test_ws_server.on_event(enums.WSEventIn.RESIGN)(wrong_event_handler)
 
         await test_ws_server._handle_message(
             f"{event.value}:{json.dumps({'key': 'value'})}"

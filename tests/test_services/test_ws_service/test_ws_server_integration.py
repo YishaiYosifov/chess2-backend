@@ -44,7 +44,7 @@ async def test_ws_connect(
 
 
 class TestEmit:
-    event = enums.WSEvent.NOTIFICATION
+    event = enums.WSEventOut.NOTIFICATION
     data = {"test": "message"}
     expected_message = f"{event.value}:{json.dumps(data)}"
 
@@ -90,7 +90,7 @@ async def test_on_receive(
 ):
     """Test the event handler is actually ran when a message is received"""
 
-    event = enums.WSEvent.GAME_START
+    event = enums.WSEventIn.MOVE
     message = {"key": "value"}
 
     @test_ws_server.on_event(event)

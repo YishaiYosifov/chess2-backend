@@ -47,6 +47,11 @@ class PieceType(Enum):
     CHILD_PAWN = "d"
 
 
-class WSEvent(Enum):
+class WSEventOut(Enum):
     NOTIFICATION = "notification"
     GAME_START = "game_start"
+
+
+class WSEventIn(Enum):
+    MOVE = "move"
+    RESIGN = "resign"
